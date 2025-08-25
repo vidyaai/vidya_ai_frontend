@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { FolderPlus, Folder as FolderIcon, ArrowLeft, Plus, RefreshCw, MessageSquare } from 'lucide-react';
-import { API_URL } from './utils.jsx';
+import { API_URL, api } from './utils.jsx';
 import { useAuth } from '../context/AuthContext';
 
 const SectionTabs = ({ section, setSection }) => {
@@ -52,8 +52,8 @@ const Gallery = ({ onNavigateToChat }) => {
   const fetchFolders = async () => {
     if (!userId) return;
     try {
-      const resp = await axios.get(`${API_URL}/api/folders`, {
-        params: { user_id: userId, source_type: section },
+      const resp = await api.get(`/api/folders`, {
+        params: { source_type: section },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       setFolders(resp.data || []);
@@ -66,7 +66,7 @@ const Gallery = ({ onNavigateToChat }) => {
   const getThumbnailUrl = async (thumbKey) => {
     if (!thumbKey) return null;
     try {
-      const response = await axios.get(`${API_URL}/api/storage/presign`, {
+      const response = await api.get(`/api/storage/presign`, {
         params: { key: thumbKey, expires_in: 3600 },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
@@ -82,8 +82,8 @@ const Gallery = ({ onNavigateToChat }) => {
     setIsLoading(true);
     setError('');
     try {
-      const resp = await axios.get(`${API_URL}/api/gallery`, {
-        params: { user_id: userId, source_type: section, folder_id: currentFolderId || undefined },
+      const resp = await api.get(`/api/gallery`, {
+        params: { source_type: section, folder_id: currentFolderId || undefined },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       
@@ -127,8 +127,7 @@ const Gallery = ({ onNavigateToChat }) => {
     setCreating(true);
     setError('');
     try {
-      await axios.post(`${API_URL}/api/folders`, {
-        user_id: userId,
+      await api.post(`/api/folders`, {
         name: newFolderName.trim(),
         parent_id: currentFolderId,
         source_type: section
@@ -151,7 +150,7 @@ const Gallery = ({ onNavigateToChat }) => {
     try {
       const data = JSON.parse(e.dataTransfer.getData('text/plain'));
       if (!data || data.source_type !== section) return; // only within same section
-      await axios.post(`${API_URL}/api/gallery/move`, {
+      await api.post(`/api/gallery/move`, {
         video_id: data.video_id,
         target_folder_id: folderId || null
       }, { headers: { 'ngrok-skip-browser-warning': 'true' } });

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import CorrectAnswers from './CorrectAnswers';
-import { API_URL } from './utils.jsx'; // Import API_URL for consistency
+import { API_URL, api } from './utils.jsx'; // Import API_URL for consistency
 
 const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
   const [isFetchingQuiz, setIsFetchingQuiz] = useState(false);
@@ -35,7 +35,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
         const apiUrl = API_URL;
         console.log('Making API call to:', `${apiUrl}/api/quiz/generate`);
         
-        const resp = await axios.post(`${apiUrl}/api/quiz/generate`, {
+        const resp = await api.post(`/api/quiz/generate`, {
           video_id: videoId
         }, {
           // Removed timeout completely - let it take as long as needed

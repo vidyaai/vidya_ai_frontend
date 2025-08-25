@@ -7,7 +7,7 @@ import PlayerComponent from './PlayerComponent';
 import TranscriptComponent from './TranscriptComponent';
 import ChatBoxComponent from './ChatBoxComponent';
 import QuizPanel from './QuizPanel';
-import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner } from './utils.jsx';
+import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from './utils.jsx';
 import { useAuth } from '../context/AuthContext';
 import VideoUploader from './VideoUploader.jsx';
 
@@ -95,9 +95,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     try {
       if (videoData.sourceType === 'youtube') {
         // For YouTube videos, we need to fetch transcript
-        const response = await axios.post(`${API_URL}/api/youtube/info`, {
-          url: `https://www.youtube.com/watch?v=${videoData.videoId}`,
-          user_id: currentUser?.uid || null
+        const response = await api.post(`/api/youtube/info`, {
+          url: `https://www.youtube.com/watch?v=${videoData.videoId}`
         }, {
           headers: {
             'Content-Type': 'application/json',
@@ -120,7 +119,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         });
       } else {
         // For uploaded videos, fetch info from API
-        const response = await axios.get(`${API_URL}/api/user-videos/info`, {
+        const response = await api.get(`/api/user-videos/info`, {
           params: { video_id: videoData.videoId },
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -201,9 +200,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       
       let response;
       try {
-        response = await axios.post(`${API_URL}/api/youtube/info`, {
-          url: youtubeUrl,
-          user_id: currentUser?.uid || null
+        response = await api.post(`/api/youtube/info`, {
+          url: youtubeUrl
         }, {
           timeout: 60000,
           headers: {
@@ -215,9 +213,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         if (networkError.code === 'ERR_NETWORK_CHANGED') {
           console.log("Network changed, retrying...");
           await new Promise(resolve => setTimeout(resolve, 1000));
-          response = await axios.post(`${API_URL}/api/youtube/info`, {
-            url: youtubeUrl,
-            user_id: currentUser?.uid || null
+          response = await api.post(`/api/youtube/info`, {
+            url: youtubeUrl
           }, {
             headers: {
               'Content-Type': 'application/json',
@@ -270,7 +267,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     
     try {
       // Fetch video info from API
-      const response = await axios.get(`${API_URL}/api/user-videos/info`, {
+      const response = await api.get(`/api/user-videos/info`, {
         params: { video_id: videoId },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });

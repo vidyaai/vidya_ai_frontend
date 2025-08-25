@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { Download, AlertCircle } from 'lucide-react';
-import { API_URL } from '../components/utils';
+import { API_URL, api } from '../components/utils';
 
 //const API_URL = import.meta.env.VITE_API_URL;
 // const API_URL='https://d2e2ezlz7asnwt.cloudfront.net';
@@ -20,7 +20,7 @@ const YoutubeDownloader = ({ videoId, videoTitle }) => {
     
     try {
       // Get video download URL from your backend
-      const response = await axios.get(`${API_URL}/api/youtube/download-info`, {
+      const response = await api.get(`/api/youtube/download-info`, {
         params: { videoId }
       });
       
@@ -63,7 +63,7 @@ const YoutubeDownloader = ({ videoId, videoTitle }) => {
     
     try {
       // Get video download URL from your backend
-      const response = await axios.get(`${API_URL}/api/youtube/download-info`, {
+      const response = await api.get(`/api/youtube/download-info`, {
         params: { videoId }
       });
       

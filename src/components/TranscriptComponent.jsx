@@ -1,8 +1,7 @@
 // TranscriptComponent.jsx - Transcript display with timestamps
 import { useState, useEffect } from 'react';
 import { Copy } from 'lucide-react';
-import axios from 'axios';
-import { API_URL, SimpleSpinner } from './utils.jsx';
+import { API_URL, SimpleSpinner, api } from './utils.jsx';
 
 const TranscriptComponent = ({ 
   currentVideo, 
@@ -104,7 +103,7 @@ const TranscriptComponent = ({
     
     try {
       console.log("📡 Making API call to:", `${API_URL}/api/youtube/formatting-status/${currentVideo.videoId}`);
-      const statusResponse = await axios.get(`${API_URL}/api/youtube/formatting-status/${currentVideo.videoId}`, {
+      const statusResponse = await api.get(`/api/youtube/formatting-status/${currentVideo.videoId}`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       
@@ -139,7 +138,7 @@ const TranscriptComponent = ({
             await new Promise(resolve => setTimeout(resolve, 2000));
             
             try {
-              const pollResponse = await axios.get(`${API_URL}/api/youtube/formatting-status/${currentVideo.videoId}`, {
+              const pollResponse = await api.get(`/api/youtube/formatting-status/${currentVideo.videoId}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
               });
               console.log(`📊 Poll attempt ${attempts + 1}:`, pollResponse.data);
@@ -179,7 +178,7 @@ const TranscriptComponent = ({
         await pollForCompletionWithProgress();
       } else {
         console.log("🔍 Status not completed or formatting, trying direct fetch");
-        const transcriptResponse = await axios.get(`${API_URL}/api/youtube/formatted-transcript/${currentVideo.videoId}`, {
+        const transcriptResponse = await api.get(`/api/youtube/formatted-transcript/${currentVideo.videoId}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         

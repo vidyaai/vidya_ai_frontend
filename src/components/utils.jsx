@@ -1,9 +1,39 @@
 // utils.js - Shared utilities and helpers
 import React from 'react';
+import axios from 'axios';
+import { auth } from '../firebase/config';
 
-// export const API_URL = 'https://7de5d1a559ab.ngrok-free.app';
-export const API_URL = 'https://api.vidyaai.co';
-// export const API_URL = 'http://vidya-ai-environment.eba-umbehpru.us-east-1.elasticbeanstalk.com';
+const NODE_ENV = import.meta.env.VITE_NODE_ENV;
+console.log("NODE_ENV", NODE_ENV);
+
+let API_URL;
+
+if (NODE_ENV === 'development') {
+  API_URL = 'https://devapi.vidyaai.co';
+} else if (NODE_ENV === 'production') {
+  API_URL = 'https://api.vidyaai.co';
+} else if (NODE_ENV === 'local') {
+  API_URL = 'http://localhost:8000';
+}
+console.log("API_URL", API_URL);
+export { API_URL };
+
+// Shared axios instance with Firebase ID token attached when available
+export const api = axios.create({ baseURL: API_URL });
+
+api.interceptors.request.use(async (config) => {
+  try {
+    const user = auth?.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (e) {
+    // continue without token
+  }
+  return config;
+});
 
 export const saveToLocalStorage = (key, data) => {
   try {

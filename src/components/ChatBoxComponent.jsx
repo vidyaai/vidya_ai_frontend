@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send } from 'lucide-react';
 import axios from 'axios';
-import { API_URL, formatTime, parseMarkdown, SimpleSpinner } from './utils.jsx';
+import { API_URL, formatTime, parseMarkdown, SimpleSpinner, api } from './utils.jsx';
 
 const ChatBoxComponent = ({ 
   currentVideo, 
@@ -39,7 +39,7 @@ const ChatBoxComponent = ({
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
       
-      const response = await axios.post(`${API_URL}/api/query/video`, {
+      const response = await api.post(`/api/query/video`, {
         video_id: currentVideo.videoId,
         query: currentQuery,
         timestamp: currentTime,

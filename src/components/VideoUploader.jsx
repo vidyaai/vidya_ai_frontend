@@ -2,7 +2,7 @@
 import { useRef, useState, useEffect } from 'react';
 import axios from 'axios';
 import { Upload } from 'lucide-react';
-import { API_URL, SimpleSpinner } from './utils.jsx';
+import { API_URL, SimpleSpinner, api } from './utils.jsx';
 import { useAuth } from '../context/AuthContext';
 
 const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
@@ -71,10 +71,9 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
     setError('');
     try {
       const form = new FormData();
-      form.append('user_id', currentUser.uid);
       form.append('file', file);
       console.log("VideoUploader: Starting upload to:", `${API_URL}/api/user-videos/upload`);
-      const resp = await axios.post(`${API_URL}/api/user-videos/upload`, form, {
+      const resp = await api.post(`/api/user-videos/upload`, form, {
         headers: { 'Content-Type': 'multipart/form-data', 'ngrok-skip-browser-warning': 'true' },
         onUploadProgress: (pe) => {
           if (!pe.total) return;
@@ -104,7 +103,7 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
             const statusUrl = `${API_URL}/api/user-videos/upload-status/${vid}`;
             console.log("VideoUploader: Making API call to check status for video ID:", vid);
             console.log("VideoUploader: Status URL:", statusUrl);
-            const s = await axios.get(statusUrl, {
+            const s = await api.get(`/api/user-videos/upload-status/${vid}`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
             });
             

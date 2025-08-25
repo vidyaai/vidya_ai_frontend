@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
-import { FolderPlus, Folder as FolderIcon, ArrowLeft, Plus, RefreshCw, MessageSquare } from 'lucide-react';
-import { API_URL, api } from './utils.jsx';
+import { FolderPlus, Folder as FolderIcon, ArrowLeft, RefreshCw, MessageSquare } from 'lucide-react';
+import { api } from './utils.jsx';
 import { useAuth } from '../context/AuthContext';
 
 const SectionTabs = ({ section, setSection }) => {

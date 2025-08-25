@@ -1,6 +1,6 @@
 // src/components/AuthForm.jsx
 import { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const AuthForm = () => {

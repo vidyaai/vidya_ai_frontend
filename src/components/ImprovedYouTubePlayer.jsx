@@ -1,6 +1,5 @@
 // ImprovedYoutubePlayer.jsx - Main component with Quiz integration
 import { useState, useRef, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { Youtube, Menu, Home, MessageSquare, Globe, Upload } from 'lucide-react';
 import YoutubeDownloader from './YoutubeDownloader';
 import PlayerComponent from './PlayerComponent';

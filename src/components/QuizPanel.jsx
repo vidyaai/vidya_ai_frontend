@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
+import { useEffect, useRef, useState } from 'react';
 import CorrectAnswers from './CorrectAnswers';
-import { API_URL, api } from './utils.jsx'; // Import API_URL for consistency
+import { api } from './utils.jsx';
 
 const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
   const [isFetchingQuiz, setIsFetchingQuiz] = useState(false);

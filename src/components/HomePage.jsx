@@ -6,13 +6,7 @@ import {
   Brain, 
   Video, 
   User, 
-  LogOut, 
-  BookOpen,
-  Award,
-  Lightbulb,
-  ArrowRight,
-  Menu,
-  X
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 

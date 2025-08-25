@@ -1,7 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Play, Pause, Volume2, VolumeX, Upload, Youtube, Globe, Menu, Home, MessageSquare, Languages } from 'lucide-react';
-import axios from 'axios';
+import { useState, useRef, useEffect } from 'react';
 
 
 

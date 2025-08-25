@@ -1,6 +1,4 @@
 // utils.js - Shared utilities and helpers
-import React from 'react';
-import axios from 'axios';
 import { auth } from '../firebase/config';
 
 const NODE_ENV = import.meta.env.VITE_NODE_ENV;

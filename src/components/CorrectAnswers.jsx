@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const CorrectAnswers = ({ quiz, userAnswers }) => {
   if (!Array.isArray(quiz) || quiz.length === 0) {

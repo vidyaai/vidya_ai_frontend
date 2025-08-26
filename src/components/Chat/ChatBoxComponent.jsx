@@ -1,7 +1,7 @@
 // ChatBoxComponent.jsx - AI chat interface with clickable timestamps
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send } from 'lucide-react';
-import { formatTime, parseMarkdown, SimpleSpinner, api } from './utils.jsx';
+import { formatTime, parseMarkdown, SimpleSpinner, api } from '../generic/utils.jsx';
 
 const ChatBoxComponent = ({ 
   currentVideo, 

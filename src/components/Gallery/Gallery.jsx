@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FolderPlus, Folder as FolderIcon, ArrowLeft, RefreshCw, MessageSquare } from 'lucide-react';
-import { api } from './utils.jsx';
-import { useAuth } from '../context/AuthContext';
+import { api } from '../generic/utils.jsx';
+import { useAuth } from '../../context/AuthContext';
 
 const SectionTabs = ({ section, setSection }) => {
   return (

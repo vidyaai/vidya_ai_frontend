@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Download, AlertCircle } from 'lucide-react';
-import { api } from '../components/utils';
+import { api } from '../generic/utils.jsx';
 
 //const API_URL = import.meta.env.VITE_API_URL;
 // const API_URL='https://d2e2ezlz7asnwt.cloudfront.net';

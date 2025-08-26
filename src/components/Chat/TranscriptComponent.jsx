@@ -1,7 +1,7 @@
 // TranscriptComponent.jsx - Transcript display with timestamps
 import { useState, useEffect } from 'react';
 import { Copy } from 'lucide-react';
-import { SimpleSpinner, api, API_URL } from './utils.jsx';
+import { SimpleSpinner, api, API_URL } from '../generic/utils.jsx';
 
 const TranscriptComponent = ({ 
   currentVideo, 

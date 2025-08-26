@@ -1,11 +1,12 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import AuthForm from './components/AuthForm';
-import HomePage from './components/HomePage';
-import ImprovedYoutubePlayer from './components/ImprovedYouTubePlayer'; // Fixed import
-import Gallery from './components/Gallery.jsx';
-import ProtectedRoute from './components/ProtectedRoute';
+import AuthForm from './components/Login/AuthForm';
+import HomePage from './components/HomePage/HomePage';
+import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
+import Gallery from './components/Gallery/Gallery';
+import ProtectedRoute from './components/generic/ProtectedRoute';
+import TopBar from './components/generic/TopBar';
 import './App.css';
 
 // Placeholder for TranslatePage if it doesn't exist
@@ -131,16 +132,11 @@ const AppContent = () => {
       case 'gallery':
         return (
           <ProtectedRoute>
-            <div className="min-h-screen bg-gray-950 p-6">
-              <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
+            <div className="min-h-screen bg-gray-950">
+              <TopBar />
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="mb-6">
                   <h2 className="text-white text-2xl font-bold">My Gallery</h2>
-                  <button
-                    onClick={handleNavigateToHome}
-                    className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm"
-                  >
-                    Home
-                  </button>
                 </div>
                 <Gallery onNavigateToChat={handleNavigateToChat} />
               </div>

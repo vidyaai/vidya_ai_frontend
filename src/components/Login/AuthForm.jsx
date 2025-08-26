@@ -1,7 +1,7 @@
 // src/components/AuthForm.jsx
 import { useState } from 'react';
 import { Mail, Lock, AlertCircle, User, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);

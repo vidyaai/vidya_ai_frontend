@@ -1,7 +1,7 @@
 // PlayerComponent.jsx - YouTube player with controls
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, VolumeX, Volume2, Rewind, FastForward } from 'lucide-react';
-import { formatTime } from './utils';
+import { formatTime } from '../generic/utils.jsx';
 
 const PlayerComponent = ({ 
   currentVideo, 

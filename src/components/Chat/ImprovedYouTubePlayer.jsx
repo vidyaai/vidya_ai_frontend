@@ -6,9 +6,10 @@ import PlayerComponent from './PlayerComponent';
 import TranscriptComponent from './TranscriptComponent';
 import ChatBoxComponent from './ChatBoxComponent';
 import QuizPanel from './QuizPanel';
-import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from './utils.jsx';
-import { useAuth } from '../context/AuthContext';
+import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
+import { useAuth } from '../../context/AuthContext';
 import VideoUploader from './VideoUploader.jsx';
+import TopBar from '../generic/TopBar';
 
 const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, selectedVideo }) => {
   const { currentUser } = useAuth();
@@ -380,68 +381,17 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   }, []); // Empty dependency array - only run once on mount
   
   return (
-    <div className="w-full min-h-screen px-6 py-8 bg-gray-950">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex-shrink-0 mr-4">
-          <img 
-            src="/logo-new.png" 
-            alt="Website Logo" 
-            className="h-16 w-auto max-w-[200px] object-cover object-center"
-            style={{ 
-              width: '240px',
-              height: '50px'
-            }}
-          />
-          <div>
-            <h1 className="text-3xl font-bold text-white">Chat with My Video</h1>
-            {selectedVideo && (
-              <p className="text-sm text-indigo-400 mt-1">
-                Video loaded from gallery: {selectedVideo.title}
-              </p>
-            )}
-          </div>
-        </div>
-        
-        <div className="relative" ref={menuRef}>
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-          >
-            <Menu size={24} />
-          </button>
-          
-          {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
-              <div className="py-1" role="menu" aria-orientation="vertical">
-                <button 
-                  onClick={onNavigateToHome}
-                  className="flex items-center w-full px-4 py-3 text-white hover:bg-gray-700 transition-colors text-left"
-                  role="menuitem"
-                >
-                  <Home className="mr-3" size={18} />
-                  <span>Home</span>
-                </button>
-                <button 
-                  onClick={() => {}}
-                  className="flex items-center w-full px-4 py-3 text-white hover:bg-gray-700 transition-colors text-left"
-                  role="menuitem"
-                >
-                  <MessageSquare className="mr-3" size={18} />
-                  <span>Chat with Video</span>
-                </button>
-                <button 
-                  onClick={onNavigateToTranslate}
-                  className="flex items-center w-full px-4 py-3 text-white hover:bg-gray-700 transition-colors text-left"
-                  role="menuitem"
-                >
-                  <Globe className="mr-3" size={18} />
-                  <span>Translate</span>
-                </button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-950">
+      <TopBar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Chat with My Video</h1>
+          {selectedVideo && (
+            <p className="text-sm text-indigo-400">
+              Video loaded from gallery: {selectedVideo.title}
+            </p>
           )}
         </div>
-      </div>
       
       <form onSubmit={handleYoutubeSubmit} className="mb-8">
         <div className="relative flex flex-col md:flex-row md:items-center gap-2">
@@ -567,6 +517,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
           />
         </div>
+      </div>
       </div>
     </div>
   );

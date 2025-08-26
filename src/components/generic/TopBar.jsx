@@ -16,47 +16,41 @@ const TopBar = () => {
   };
 
   return (
-    <header className="bg-gray-900 border-b border-gray-800">
+    <header className="bg-gray-900 border-b border-gray-800 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center">
-            <img 
-              src="/logo-new.png" 
-              alt="VidyaAI Logo" 
-              className="h-12 w-auto mr-4"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-white">VidyaAI</h1>
-              <p className="text-sm text-gray-400">Your AI Learning Companion</p>
-            </div>
-          </div>
+        <div className="flex justify-between items-center py-3">
+          <img 
+            src="logo-new-2.png" 
+            alt="VidyaAI Logo" 
+            className="h-16 w-auto rounded-lg border-2 border-white"
+          />
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+          <div className="hidden md:flex items-center space-x-4 h-16">
+            <div className="flex items-center space-x-3 bg-gray-800 rounded-lg px-4 py-2 h-16">
+              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
                 {currentUser?.photoURL ? (
                   <img 
                     src={currentUser.photoURL} 
                     alt="Profile" 
-                    className="w-8 h-8 rounded-full"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <User size={18} className="text-white" />
+                  <User size={20} className="text-white" />
                 )}
               </div>
-              <div>
-                <p className="text-white font-medium">
+              <div className="min-w-0">
+                <p className="text-white font-medium text-sm truncate">
                   {currentUser?.displayName || 'User'}
                 </p>
-                <p className="text-gray-400 text-xs">
+                <p className="text-gray-400 text-xs truncate">
                   {currentUser?.email}
                 </p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 font-medium"
             >
               <LogOut size={18} className="mr-2" />
               Logout
@@ -76,33 +70,33 @@ const TopBar = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-800 py-4">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+          <div className="md:hidden border-t border-gray-800 py-4 space-y-4">
+            <div className="flex items-center space-x-3 bg-gray-800 rounded-lg p-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
                 {currentUser?.photoURL ? (
                   <img 
                     src={currentUser.photoURL} 
                     alt="Profile" 
-                    className="w-10 h-10 rounded-full"
+                    className="w-12 h-12 rounded-full object-cover"
                   />
                 ) : (
-                  <User size={20} className="text-white" />
+                  <User size={24} className="text-white" />
                 )}
               </div>
-              <div>
-                <p className="text-white font-medium">
+              <div className="min-w-0 flex-1">
+                <p className="text-white font-medium text-base truncate">
                   {currentUser?.displayName || 'User'}
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-sm truncate">
                   {currentUser?.email}
                 </p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 font-medium"
             >
-              <LogOut size={18} className="mr-2" />
+              <LogOut size={20} className="mr-3" />
               Logout
             </button>
           </div>

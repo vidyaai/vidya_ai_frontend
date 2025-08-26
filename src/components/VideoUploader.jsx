@@ -1,7 +1,7 @@
 // VideoUploader.jsx - Upload functionality extracted from UserVideoLibrary
 import { useRef, useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
-import { SimpleSpinner, api } from './utils.jsx';
+import { SimpleSpinner, api, API_URL } from './utils.jsx';
 import { useAuth } from '../context/AuthContext';
 
 const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {

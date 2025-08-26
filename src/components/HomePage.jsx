@@ -6,7 +6,13 @@ import {
   Brain, 
   Video, 
   User, 
-  LogOut
+  LogOut,
+  Award,
+  BookOpen,
+  Lightbulb,
+  Menu,
+  X,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -62,6 +68,14 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       action: "Start Translating",
       onClick: onNavigateToTranslate,
       gradient: "from-orange-500 to-red-500"
+    },
+    {
+      icon: BookOpen,
+      title: "Courses",
+      description: "Design or take courses on a wide range of topics. Perfect for learning new skills and understanding complex topics.",
+      action: "Start Courses",
+      onClick: () => console.log("Navigate to courses"),
+      gradient: "from-blue-500 to-green-500"
     }
   ];
 
@@ -182,27 +196,31 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
             return (
               <div
                 key={index}
-                className="group bg-gray-900 rounded-2xl p-8 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10"
+                className="group bg-gray-900 rounded-2xl p-8 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10 flex flex-col h-full"
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <IconComponent size={28} className="text-white" />
+                <div className="flex-1">
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <IconComponent size={28} className="text-white" />
+                  </div>
+                  
+                  <h3 className="text-2xl font-bold text-white mb-4">
+                    {feature.title}
+                  </h3>
+                  
+                  <p className="text-gray-400 leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
                 
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  {feature.title}
-                </h3>
-                
-                <p className="text-gray-400 leading-relaxed mb-6">
-                  {feature.description}
-                </p>
-                
-                <button
-                  onClick={feature.onClick}
-                  className={`group/btn inline-flex items-center px-6 py-3 bg-gradient-to-r ${feature.gradient} text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105`}
-                >
-                  {feature.action}
-                  <ArrowRight size={18} className="ml-2 group-hover/btn:translate-x-1 transition-transform duration-300" />
-                </button>
+                <div className="mt-6">
+                  <button
+                    onClick={feature.onClick}
+                    className={`group/btn inline-flex items-center px-6 py-3 bg-gradient-to-r ${feature.gradient} text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105`}
+                  >
+                    {feature.action}
+                    <ArrowRight size={18} className="ml-2 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                  </button>
+                </div>
               </div>
             );
           })}

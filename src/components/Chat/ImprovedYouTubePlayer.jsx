@@ -9,7 +9,6 @@ import QuizPanel from './QuizPanel';
 import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import VideoUploader from './VideoUploader.jsx';
-import TopBar from '../generic/TopBar';
 
 const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, selectedVideo }) => {
   const { currentUser } = useAuth();
@@ -381,17 +380,14 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   }, []); // Empty dependency array - only run once on mount
   
   return (
-    <div className="min-h-screen bg-gray-950">
-      <TopBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Chat with My Video</h1>
-          {selectedVideo && (
-            <p className="text-sm text-indigo-400">
-              Video loaded from gallery: {selectedVideo.title}
-            </p>
-          )}
+    <div className="w-full">
+      {selectedVideo && (
+        <div className="mb-4">
+          <p className="text-sm text-indigo-400">
+            Video loaded from gallery: {selectedVideo.title}
+          </p>
         </div>
+      )}
       
       <form onSubmit={handleYoutubeSubmit} className="mb-8">
         <div className="relative flex flex-col md:flex-row md:items-center gap-2">
@@ -517,7 +513,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
           />
         </div>
-      </div>
       </div>
     </div>
   );

@@ -7,11 +7,12 @@ import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
 import Gallery from './components/Gallery/Gallery';
 import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
+import PageHeader from './components/generic/PageHeader';
 import './App.css';
 
 // Placeholder for TranslatePage if it doesn't exist
 const TranslatePagePlaceholder = ({ onNavigateToHome }) => (
-  <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+  <div className="w-full flex items-center justify-center py-20">
     <div className="text-center">
       <h2 className="text-2xl font-bold text-white mb-4">Translation Service</h2>
       <p className="text-gray-400 mb-6">This component will be available soon!</p>
@@ -122,11 +123,23 @@ const AppContent = () => {
       case 'chat':
         return (
         <ProtectedRoute>
-          <ImprovedYoutubePlayer 
-            onNavigateToHome={handleNavigateToHome}
-            onNavigateToTranslate={handleNavigateToTranslate}
-            selectedVideo={selectedVideo}
-        />
+          <div className="min-h-screen bg-gray-950">
+            <TopBar />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <PageHeader 
+                title="Chat with My Video"
+                onNavigateToChat={handleNavigateToChat}
+                onNavigateToGallery={handleNavigateToGallery}
+                onNavigateToTranslate={handleNavigateToTranslate}
+                onNavigateToHome={handleNavigateToHome}
+              />
+              <ImprovedYoutubePlayer 
+                onNavigateToHome={handleNavigateToHome}
+                onNavigateToTranslate={handleNavigateToTranslate}
+                selectedVideo={selectedVideo}
+              />
+            </div>
+          </div>
         </ProtectedRoute>
         );
       case 'gallery':
@@ -135,9 +148,13 @@ const AppContent = () => {
             <div className="min-h-screen bg-gray-950">
               <TopBar />
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-6">
-                  <h2 className="text-white text-2xl font-bold">My Gallery</h2>
-                </div>
+                <PageHeader 
+                  title="My Gallery"
+                  onNavigateToChat={handleNavigateToChat}
+                  onNavigateToGallery={handleNavigateToGallery}
+                  onNavigateToTranslate={handleNavigateToTranslate}
+                  onNavigateToHome={handleNavigateToHome}
+                />
                 <Gallery onNavigateToChat={handleNavigateToChat} />
               </div>
             </div>
@@ -145,10 +162,24 @@ const AppContent = () => {
         );
       case 'translate':
         return (
-          <TranslatePage 
-            onNavigateToHome={handleNavigateToHome}
-            onNavigateToChat={handleNavigateToChat}
-          />
+          <ProtectedRoute>
+            <div className="min-h-screen bg-gray-950">
+              <TopBar />
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <PageHeader 
+                  title="Translate"
+                  onNavigateToChat={handleNavigateToChat}
+                  onNavigateToGallery={handleNavigateToGallery}
+                  onNavigateToTranslate={handleNavigateToTranslate}
+                  onNavigateToHome={handleNavigateToHome}
+                />
+                <TranslatePage 
+                  onNavigateToHome={handleNavigateToHome}
+                  onNavigateToChat={handleNavigateToChat}
+                />
+              </div>
+            </div>
+          </ProtectedRoute>
         );
       default:
         return (

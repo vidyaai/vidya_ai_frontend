@@ -3,6 +3,49 @@ import { useState } from 'react';
 import { Mail, Lock, AlertCircle, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+const mapFirebaseError = (error) => {
+  const code = error?.code || '';
+  const message = (error?.message || '').toLowerCase();
+  // Common mappings
+  if (code.includes('auth/invalid-credential') || code.includes('auth/invalid-login-credentials')) {
+    return 'Incorrect email or password';
+  }
+  if (code.includes('auth/user-not-found')) {
+    return 'No account found for this email';
+  }
+  if (code.includes('auth/wrong-password')) {
+    return 'Incorrect email or password';
+  }
+  if (code.includes('auth/too-many-requests')) {
+    return 'Too many attempts. Try again later or reset your password';
+  }
+  if (code.includes('auth/invalid-email')) {
+    return 'Please enter a valid email address';
+  }
+  if (code.includes('auth/popup-closed-by-user')) {
+    return 'Sign-in was cancelled';
+  }
+  if (code.includes('auth/popup-blocked')) {
+    return 'Popup was blocked by your browser';
+  }
+  if (code.includes('auth/network-request-failed')) {
+    return 'Network error. Check your connection and try again';
+  }
+  if (code.includes('auth/operation-not-allowed')) {
+    return 'This sign-in method is disabled for this project';
+  }
+  if (code.includes('auth/user-disabled')) {
+    return 'This account has been disabled';
+  }
+  if (code.includes('auth/weak-password')) {
+    return 'Please choose a stronger password';
+  }
+  if (message.includes('invalid login credentials')) {
+    return 'Incorrect email or password';
+  }
+  return 'Something went wrong. Please try again';
+};
+
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -31,7 +74,7 @@ const AuthForm = () => {
         await signup(email, password, displayName);
       }
     } catch (error) {
-      setError(error.message);
+      setError(mapFirebaseError(error));
     } finally {
       setLoading(false);
     }
@@ -45,7 +88,7 @@ const AuthForm = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      setError(error.message);
+      setError(mapFirebaseError(error));
     } finally {
       setLoading(false);
     }
@@ -63,7 +106,7 @@ const AuthForm = () => {
       await resetPassword(email);
       setInfo('Password reset email sent. Check your inbox (and spam).');
     } catch (e) {
-      setError(e.message || 'Failed to send reset email');
+      setError(mapFirebaseError(e));
     } finally {
       setLoading(false);
     }

@@ -240,16 +240,44 @@ const PlayerComponent = ({
           // eslint-disable-next-line no-console
           console.warn('HTML5 video error event fired');
         };
+        const handlePlay = () => {
+          setIsPlaying(true);
+        };
+        const handlePause = () => {
+          setIsPlaying(false);
+        };
+        const handleTimeUpdate = () => {
+          const cur = el.currentTime || 0;
+          setCurrentTime(cur);
+          setSliderPosition(cur);
+          if (onTimeUpdate) onTimeUpdate(cur);
+        };
+        const handleVolumeChange = () => {
+          setIsMuted(el.muted);
+        };
+        const handleEnded = () => {
+          setIsPlaying(false);
+        };
 
         el.addEventListener('loadedmetadata', handleLoadedMetadata);
         el.addEventListener('canplay', handleCanPlay);
         el.addEventListener('error', handleError);
+        el.addEventListener('play', handlePlay);
+        el.addEventListener('pause', handlePause);
+        el.addEventListener('timeupdate', handleTimeUpdate);
+        el.addEventListener('volumechange', handleVolumeChange);
+        el.addEventListener('ended', handleEnded);
         try { el.load(); } catch (e) {}
 
         return () => {
           el.removeEventListener('loadedmetadata', handleLoadedMetadata);
           el.removeEventListener('canplay', handleCanPlay);
           el.removeEventListener('error', handleError);
+          el.removeEventListener('play', handlePlay);
+          el.removeEventListener('pause', handlePause);
+          el.removeEventListener('timeupdate', handleTimeUpdate);
+          el.removeEventListener('volumechange', handleVolumeChange);
+          el.removeEventListener('ended', handleEnded);
         };
       }
     } else if (currentVideo.videoId && !isInitializing) {
@@ -313,6 +341,20 @@ const PlayerComponent = ({
   };
   
   const handleSliderRelease = () => {
+    if (isHtml5) {
+      const el = html5Ref.current;
+      if (el && isDraggingSlider) {
+        try {
+          el.currentTime = sliderPosition;
+          setCurrentTime(sliderPosition);
+        } catch (error) {
+          console.error('Error seeking HTML5 on release:', error);
+        } finally {
+          setIsDraggingSlider(false);
+        }
+      }
+      return;
+    }
     if (player && isDraggingSlider && typeof player.seekTo === 'function') {
       try {
         player.seekTo(sliderPosition);
@@ -329,7 +371,19 @@ const PlayerComponent = ({
     if (isHtml5) {
       const el = html5Ref.current;
       if (!el) return;
-      try { el.paused ? el.play() : el.pause(); } catch (e) {}
+      try {
+        if (el.paused) {
+          const p = el.play();
+          if (p && typeof p.then === 'function') {
+            p.then(() => setIsPlaying(true)).catch(() => {});
+          } else {
+            setIsPlaying(true);
+          }
+        } else {
+          el.pause();
+          setIsPlaying(false);
+        }
+      } catch (e) {}
       return;
     }
     if (!player) return;

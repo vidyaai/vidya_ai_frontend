@@ -5,6 +5,7 @@ import YoutubeDownloader from './YoutubeDownloader';
 import PlayerComponent from './PlayerComponent';
 import TranscriptComponent from './TranscriptComponent';
 import ChatBoxComponent from './ChatBoxComponent';
+import ChatHistory from './ChatHistory.jsx';
 import QuizPanel from './QuizPanel';
 import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +26,12 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [chatMessages, setChatMessages] = useState(() => {
     return loadFromLocalStorage('chatMessages', []);
   });
+  // Per-video chat sessions
+  const [chatSessionsByVideo, setChatSessionsByVideo] = useState(() => {
+    return loadFromLocalStorage('chatSessionsByVideo', {});
+  });
+  const [activeSessionId, setActiveSessionId] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [player, setPlayer] = useState(null);
   
@@ -319,6 +326,154 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     }
   };
 
+  // Initialize a default session for the current video
+  useEffect(() => {
+    const vid = currentVideo.videoId;
+    if (!vid) return;
+    setChatSessionsByVideo(prev => {
+      const existing = prev[vid] || [];
+      if (existing.length === 0) {
+        const newSession = {
+          id: `${vid}-${Date.now()}`,
+          title: currentVideo.title || 'Session',
+          messages: [],
+          updatedAt: Date.now()
+        };
+        const next = { ...prev, [vid]: [newSession] };
+        saveToLocalStorage('chatSessionsByVideo', next);
+        setActiveSessionId(newSession.id);
+        setChatMessages([]);
+        return next;
+      }
+      if (!activeSessionId || !existing.find(s => s.id === activeSessionId)) {
+        setActiveSessionId(existing[0].id);
+        setChatMessages(existing[0].messages || []);
+      }
+      return prev;
+    });
+  }, [currentVideo.videoId]);
+
+  // Persist chat sessions locally
+  useEffect(() => {
+    saveToLocalStorage('chatSessionsByVideo', chatSessionsByVideo);
+  }, [chatSessionsByVideo]);
+
+  // Update active session when chat messages change
+  useEffect(() => {
+    const vid = currentVideo.videoId;
+    if (!vid || !activeSessionId) return;
+    setChatSessionsByVideo(prev => {
+      const sessions = prev[vid] || [];
+      const idx = sessions.findIndex(s => s.id === activeSessionId);
+      if (idx === -1) return prev;
+      const updated = { ...sessions[idx], messages: chatMessages, updatedAt: Date.now() };
+      const nextSessions = [...sessions];
+      nextSessions[idx] = updated;
+      const next = { ...prev, [vid]: nextSessions };
+      saveToLocalStorage('chatSessionsByVideo', next);
+      return next;
+    });
+  }, [chatMessages]);
+
+  const handleAddSession = () => {
+    if (!currentVideo.videoId) return;
+    const newSession = {
+      id: `${currentVideo.videoId}-${Date.now()}`,
+      title: `Session ${new Date().toLocaleTimeString()}`,
+      messages: [],
+      updatedAt: Date.now()
+    };
+    setChatSessionsByVideo(prev => {
+      const list = [...(prev[currentVideo.videoId] || [])];
+      list.unshift(newSession);
+      const next = { ...prev, [currentVideo.videoId]: list };
+      saveToLocalStorage('chatSessionsByVideo', next);
+      return next;
+    });
+    setActiveSessionId(newSession.id);
+    setChatMessages([]);
+    setShowHistory(false);
+  };
+
+  const handleSelectSession = (sessionId) => {
+    const vid = currentVideo.videoId;
+    if (!vid) return;
+    const sessions = chatSessionsByVideo[vid] || [];
+    const sel = sessions.find(s => s.id === sessionId);
+    if (!sel) return;
+    setActiveSessionId(sessionId);
+    setChatMessages(sel.messages || []);
+    setShowHistory(false);
+  };
+
+  // Backend sync: load sessions for uploaded videos on video change
+  useEffect(() => {
+    const vid = currentVideo.videoId;
+    if (!vid) return;
+    const load = async () => {
+      try {
+        const resp = await api.get(`/api/user-videos/chat-sessions`, {
+          params: { video_id: vid },
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        const serverSessions = resp.data?.chat_sessions || [];
+        if (serverSessions.length > 0) {
+          setChatSessionsByVideo(prev => {
+            const next = { ...prev, [vid]: serverSessions };
+            saveToLocalStorage('chatSessionsByVideo', next);
+            return next;
+          });
+          setActiveSessionId(serverSessions[0]?.id || '');
+          setChatMessages(serverSessions[0]?.messages || []);
+        }
+      } catch (e) {
+        // ignore if endpoint not available or unauthorized
+      }
+    };
+    load();
+  }, [currentVideo.videoId]);
+
+  // Push sessions to backend on change (debounced-ish via effect)
+  useEffect(() => {
+    const vid = currentVideo.videoId;
+    if (!vid) return;
+    const sessions = chatSessionsByVideo[vid] || [];
+    const controller = new AbortController();
+    const post = async () => {
+      try {
+        await api.post(`/api/user-videos/chat-sessions`, { chat_sessions: sessions }, {
+          params: { video_id: vid },
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+          signal: controller.signal
+        });
+      } catch (_e) {}
+    };
+    post();
+    return () => controller.abort();
+  }, [chatSessionsByVideo, currentVideo.videoId]);
+
+  // Handle rename events from child (simple event bus to keep props minimal)
+  useEffect(() => {
+    const handler = (e) => {
+      const { id, title } = e.detail || {};
+      const vid = currentVideo.videoId;
+      if (!vid || !id || !title) return;
+      setChatSessionsByVideo(prev => {
+        const sessions = prev[vid] || [];
+        const idx = sessions.findIndex(s => s.id === id);
+        if (idx === -1) return prev;
+        const updated = { ...sessions[idx], title, updatedAt: Date.now() };
+        const nextSessions = [...sessions];
+        nextSessions[idx] = updated;
+        const next = { ...prev, [vid]: nextSessions };
+        saveToLocalStorage('chatSessionsByVideo', next);
+        return next;
+      });
+    };
+    window.addEventListener('rename-session', handler);
+    return () => window.removeEventListener('rename-session', handler);
+  }, [currentVideo.videoId]);
+
   const handleQuizSystemMessage = (message) => {
     setSystemMessages(prev => [...prev, message]);
     
@@ -502,15 +657,19 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           </div>
         </div>
         
-        <div className="w-full xl:w-2/5">
+        <div className="w-full xl:w-2/5 relative">
           <ChatBoxComponent
             currentVideo={currentVideo}
             currentTime={currentTime}
             chatMessages={chatMessages}
             setChatMessages={setChatMessages}
             onSeekToTime={handleSeekToTime}
-            
-
+            onAddSession={handleAddSession}
+            onToggleHistory={() => setShowHistory(v => !v)}
+            historyList={chatSessionsByVideo[currentVideo.videoId] || []}
+            activeSessionId={activeSessionId}
+            onSelectHistory={handleSelectSession}
+            showHistory={showHistory}
           />
         </div>
       </div>

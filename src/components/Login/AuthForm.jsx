@@ -10,13 +10,15 @@ const AuthForm = () => {
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, signup, signInWithGoogle, isFirebaseConfigured } = useAuth();
+  const { login, signup, signInWithGoogle, resetPassword, isFirebaseConfigured } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
@@ -37,12 +39,31 @@ const AuthForm = () => {
 
   const handleGoogleSignIn = async () => {
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
       await signInWithGoogle();
     } catch (error) {
       setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setInfo('');
+    if (!email) {
+      setError('Please enter your email to reset your password');
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      setInfo('Password reset email sent. Check your inbox (and spam).');
+    } catch (e) {
+      setError(e.message || 'Failed to send reset email');
     } finally {
       setLoading(false);
     }
@@ -82,6 +103,11 @@ const AuthForm = () => {
             <div className="mb-4 p-3 bg-red-900 bg-opacity-30 border border-red-500 rounded-lg flex items-center">
               <AlertCircle size={18} className="text-red-400 mr-2" />
               <span className="text-red-400 text-sm">{error}</span>
+            </div>
+          )}
+          {info && (
+            <div className="mb-4 p-3 bg-green-900 bg-opacity-30 border border-green-500 rounded-lg">
+              <span className="text-green-400 text-sm">{info}</span>
             </div>
           )}
 
@@ -162,6 +188,18 @@ const AuthForm = () => {
                   )}
                 </button>
               </div>
+              {isLogin && (
+                <div className="mt-2 text-right">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                    className="text-sm text-indigo-400 hover:text-indigo-300"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
@@ -268,6 +306,11 @@ const AuthForm = () => {
                   <span className="text-red-400 text-sm">{error}</span>
                 </div>
               )}
+              {info && (
+                <div className="mb-4 p-3 bg-green-900 bg-opacity-30 border border-green-500 rounded-lg">
+                  <span className="text-green-400 text-sm">{info}</span>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {!isLogin && (
@@ -346,6 +389,18 @@ const AuthForm = () => {
                       )}
                     </button>
                   </div>
+                  {isLogin && (
+                    <div className="mt-2 text-right">
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={loading}
+                        className="text-sm text-indigo-400 hover:text-indigo-300"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>

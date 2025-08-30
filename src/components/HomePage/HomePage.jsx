@@ -19,7 +19,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
   const features = [
     {
       icon: MessageSquare,
-      title: "Chat with Videos",
+      title: "Chat with Videos 123456",
       description: "Upload YouTube videos and have intelligent conversations about the content. Ask questions, get summaries, and understand complex topics better.",
       action: "Start Video Chat",
       onClick: onNavigateToChat,

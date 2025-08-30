@@ -78,6 +78,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('demoUser');
   };
 
+  const demoResetPassword = async (email) => {
+    // Simulate sending reset email in demo mode
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return { emailSent: true, email };
+  };
+
   // Real Firebase functions
   const signup = async (email, password, displayName) => {
     if (!isFirebaseConfigured) {
@@ -149,6 +155,15 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  const resetPassword = async (email) => {
+    if (!email) throw new Error('Email is required');
+    if (!isFirebaseConfigured) {
+      return demoResetPassword(email);
+    }
+    const { sendPasswordResetEmail } = await import('firebase/auth');
+    return sendPasswordResetEmail(auth, email);
+  };
+
   useEffect(() => {
     if (!isFirebaseConfigured) {
       // Check for demo user in localStorage
@@ -175,6 +190,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signInWithGoogle,
     logout,
+    resetPassword,
     isFirebaseConfigured
   };
 

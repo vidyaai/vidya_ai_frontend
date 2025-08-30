@@ -3,6 +3,49 @@ import { useState } from 'react';
 import { Mail, Lock, AlertCircle, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+const mapFirebaseError = (error) => {
+  const code = error?.code || '';
+  const message = (error?.message || '').toLowerCase();
+  // Common mappings
+  if (code.includes('auth/invalid-credential') || code.includes('auth/invalid-login-credentials')) {
+    return 'Incorrect email or password';
+  }
+  if (code.includes('auth/user-not-found')) {
+    return 'No account found for this email';
+  }
+  if (code.includes('auth/wrong-password')) {
+    return 'Incorrect email or password';
+  }
+  if (code.includes('auth/too-many-requests')) {
+    return 'Too many attempts. Try again later or reset your password';
+  }
+  if (code.includes('auth/invalid-email')) {
+    return 'Please enter a valid email address';
+  }
+  if (code.includes('auth/popup-closed-by-user')) {
+    return 'Sign-in was cancelled';
+  }
+  if (code.includes('auth/popup-blocked')) {
+    return 'Popup was blocked by your browser';
+  }
+  if (code.includes('auth/network-request-failed')) {
+    return 'Network error. Check your connection and try again';
+  }
+  if (code.includes('auth/operation-not-allowed')) {
+    return 'This sign-in method is disabled for this project';
+  }
+  if (code.includes('auth/user-disabled')) {
+    return 'This account has been disabled';
+  }
+  if (code.includes('auth/weak-password')) {
+    return 'Please choose a stronger password';
+  }
+  if (message.includes('invalid login credentials')) {
+    return 'Incorrect email or password';
+  }
+  return 'Something went wrong. Please try again';
+};
+
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -10,13 +53,15 @@ const AuthForm = () => {
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, signup, signInWithGoogle, isFirebaseConfigured } = useAuth();
+  const { login, signup, signInWithGoogle, resetPassword, isFirebaseConfigured } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
@@ -29,7 +74,7 @@ const AuthForm = () => {
         await signup(email, password, displayName);
       }
     } catch (error) {
-      setError(error.message);
+      setError(mapFirebaseError(error));
     } finally {
       setLoading(false);
     }
@@ -37,12 +82,31 @@ const AuthForm = () => {
 
   const handleGoogleSignIn = async () => {
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
       await signInWithGoogle();
     } catch (error) {
-      setError(error.message);
+      setError(mapFirebaseError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setInfo('');
+    if (!email) {
+      setError('Please enter your email to reset your password');
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      setInfo('Password reset email sent. Check your inbox (and spam).');
+    } catch (e) {
+      setError(mapFirebaseError(e));
     } finally {
       setLoading(false);
     }
@@ -82,6 +146,11 @@ const AuthForm = () => {
             <div className="mb-4 p-3 bg-red-900 bg-opacity-30 border border-red-500 rounded-lg flex items-center">
               <AlertCircle size={18} className="text-red-400 mr-2" />
               <span className="text-red-400 text-sm">{error}</span>
+            </div>
+          )}
+          {info && (
+            <div className="mb-4 p-3 bg-green-900 bg-opacity-30 border border-green-500 rounded-lg">
+              <span className="text-green-400 text-sm">{info}</span>
             </div>
           )}
 
@@ -162,6 +231,18 @@ const AuthForm = () => {
                   )}
                 </button>
               </div>
+              {isLogin && (
+                <div className="mt-2 text-right">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                    className="text-sm text-indigo-400 hover:text-indigo-300"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
@@ -268,6 +349,11 @@ const AuthForm = () => {
                   <span className="text-red-400 text-sm">{error}</span>
                 </div>
               )}
+              {info && (
+                <div className="mb-4 p-3 bg-green-900 bg-opacity-30 border border-green-500 rounded-lg">
+                  <span className="text-green-400 text-sm">{info}</span>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {!isLogin && (
@@ -346,6 +432,18 @@ const AuthForm = () => {
                       )}
                     </button>
                   </div>
+                  {isLogin && (
+                    <div className="mt-2 text-right">
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={loading}
+                        className="text-sm text-indigo-400 hover:text-indigo-300"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>

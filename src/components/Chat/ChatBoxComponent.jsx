@@ -1,6 +1,6 @@
 // ChatBoxComponent.jsx - AI chat interface with clickable timestamps
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send } from 'lucide-react';
+import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X } from 'lucide-react';
 import { formatTime, parseMarkdown, SimpleSpinner, api } from '../generic/utils.jsx';
 
 const ChatBoxComponent = ({ 
@@ -8,11 +8,19 @@ const ChatBoxComponent = ({
   currentTime,
   chatMessages,
   setChatMessages,
-  onSeekToTime // Add this prop to receive the seek function
+  onSeekToTime,
+  onAddSession,
+  onToggleHistory,
+  historyList,
+  activeSessionId,
+  onSelectHistory,
+  showHistory
 }) => {
   const [userQuestion, setUserQuestion] = useState('');
   const [isProcessingQuery, setIsProcessingQuery] = useState(false);
   const [queryType, setQueryType] = useState('video');
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
   
   const chatContainerRef = useRef(null);
 
@@ -99,15 +107,98 @@ const ChatBoxComponent = ({
 
   return (
     <div className="w-full bg-gray-900 rounded-xl shadow-xl overflow-hidden flex flex-col h-[750px]">
-      <div className="p-4 bg-gray-800 border-b border-gray-700">
-        <h3 className="font-semibold text-lg text-white">AI Video Assistant</h3>
-        <p className="text-xs text-gray-400">Current time: {formatTime(currentTime || 0)}</p>
+      <div className="p-4 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-lg text-white">AI Video Assistant</h3>
+          <p className="text-xs text-gray-400">Current time: {formatTime(currentTime || 0)}</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onAddSession}
+            className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg flex items-center justify-center"
+            title="New chat"
+            disabled={!currentVideo.videoId}
+          >
+            <PlusCircle size={18} />
+          </button>
+          <button
+            onClick={onToggleHistory}
+            className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg flex items-center justify-center"
+            title="History"
+            disabled={!currentVideo.videoId}
+          >
+            <Clock size={18} />
+          </button>
+        </div>
       </div>
       
-      <div 
-        ref={chatContainerRef}
-        className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
-      >
+      <div className="flex-grow overflow-hidden">
+        {showHistory ? (
+          <div className="h-full overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+            {(!historyList || historyList.length === 0) ? (
+              <div className="text-gray-500 text-sm p-4 text-center">No history yet</div>
+            ) : (
+              historyList.map((s) => (
+                <div
+                  key={s.id}
+                  className={`w-full px-3 py-3 rounded-lg mb-2 text-sm border border-gray-700 ${s.id === activeSessionId ? 'bg-gray-800 text-white' : 'bg-gray-900 hover:bg-gray-800 text-gray-200'}`}
+                >
+                  {editingSessionId === s.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const title = (editingTitle || '').trim();
+                        if (!title) return;
+                        const evt = new CustomEvent('rename-session', { detail: { id: s.id, title } });
+                        window.dispatchEvent(evt);
+                        setEditingSessionId(null);
+                        setEditingTitle('');
+                      }}
+                      className="flex items-center"
+                    >
+                      <input
+                        autoFocus
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Conversation name"
+                      />
+                      <button type="submit" className="ml-2 text-green-400 hover:text-green-300" title="Save">
+                        <Check size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingSessionId(null); setEditingTitle(''); }}
+                        className="ml-2 text-gray-400 hover:text-white"
+                        title="Cancel"
+                      >
+                        <X size={16} />
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <button onClick={() => onSelectHistory?.(s.id)} className="flex-1 text-left truncate">
+                        <span className="font-medium">{s.title || 'Session'}</span>
+                      </button>
+                      <button
+                        onClick={() => { setEditingSessionId(s.id); setEditingTitle(s.title || ''); }}
+                        className="ml-2 text-gray-300 hover:text-white"
+                        title="Rename"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">{new Date(s.updatedAt || Date.now()).toLocaleString()}</div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+        <div 
+          ref={chatContainerRef}
+          className="h-full overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+        >
         {chatMessages.length === 0 ? (
           <div className="text-center text-gray-500 my-12 flex flex-col items-center">
             <MessageSquare size={40} className="mb-4 text-gray-700" />
@@ -157,8 +248,11 @@ const ChatBoxComponent = ({
             </div>
           </div>
         )}
+        </div>
+        )}
       </div>
       
+      {!showHistory && (
       <div className="p-4 border-t border-gray-700 bg-gray-800 bg-opacity-50">
         <div className="flex space-x-4 mb-3">
           <label className="flex items-center">
@@ -202,6 +296,7 @@ const ChatBoxComponent = ({
           </button>
         </form>
       </div>
+      )}
     </div>
   );
 };

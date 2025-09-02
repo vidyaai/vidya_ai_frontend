@@ -65,12 +65,28 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           lastSelectedRef.current = selectedVideo;
           loadSelectedVideo(selectedVideo);
         }
-      } else if (!selectedVideo && lastSelectedRef.current) {
-        // Clear ref when selection cleared
+      } else if (selectedVideo === null) {
+        // Clear state when explicitly navigating without a video (from PageHeader/HomePage)
         lastSelectedRef.current = null;
+        clearVideoState();
       }
     }
   }, [selectedVideo, isUploadCompleting]);
+
+  const clearVideoState = () => {
+    console.log("Clearing video state - no video preloaded");
+    setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+    setTranscript('');
+    setChatMessages([]);
+    setIsQuizOpen(false);
+    setSystemMessages([]);
+    setErrorMessage('');
+    setIsLoading(false);
+    // Clear localStorage as well so it doesn't persist
+    saveToLocalStorage('currentVideo', { title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+    saveToLocalStorage('transcript', '');
+    saveToLocalStorage('chatMessages', []);
+  };
 
   const loadSelectedVideo = async (videoData) => {
     console.log("loadSelectedVideo called with:", videoData);

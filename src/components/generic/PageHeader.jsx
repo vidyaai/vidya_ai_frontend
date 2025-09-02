@@ -24,7 +24,7 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
     {
       icon: MessageSquare,
       label: 'Chat with My Video',
-      onClick: onNavigateToChat,
+      onClick: () => onNavigateToChat(null),
       active: title === 'Chat with My Video'
     },
     {

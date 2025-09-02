@@ -22,7 +22,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       title: "Chat with Videos",
       description: "Upload YouTube videos and have intelligent conversations about the content. Ask questions, get summaries, and understand complex topics better.",
       action: "Start Video Chat",
-      onClick: onNavigateToChat,
+      onClick: () => onNavigateToChat(null),
       gradient: "from-blue-500 to-cyan-500"
     },
     {
@@ -156,7 +156,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
           <h3 className="text-3xl font-bold text-white mb-8">Ready to Start Learning?</h3>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={onNavigateToChat}
+              onClick={() => onNavigateToChat(null)}
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg"
             >
               <MessageSquare size={20} className="mr-2" />

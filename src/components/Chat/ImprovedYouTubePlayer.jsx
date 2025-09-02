@@ -65,8 +65,9 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           lastSelectedRef.current = selectedVideo;
           loadSelectedVideo(selectedVideo);
         }
-      } else if (selectedVideo === null) {
+      } else if (selectedVideo === null && lastSelectedRef.current?.sourceType !== 'uploaded') {
         // Clear state when explicitly navigating without a video (from PageHeader/HomePage)
+        // But don't clear if we just uploaded a video
         lastSelectedRef.current = null;
         clearVideoState();
       }
@@ -279,6 +280,12 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   };
 
   const handleUploadComplete = useCallback(async (videoId) => {
+    console.log("handleUploadComplete called with video ID:", videoId);
+    if (!videoId) {
+      console.error("handleUploadComplete called with invalid videoId:", videoId);
+      return;
+    }
+    
     console.log("Upload completion started for video ID:", videoId);
     setIsUploadCompleting(true);
     setYoutubeUrl('');
@@ -287,36 +294,57 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     setIsQuizOpen(false);
     setSystemMessages([]);
     
+    // Immediately mark this as an uploaded video to prevent clearing
+    lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
+    
     try {
+      console.log("Making API call to /api/user-videos/info with video_id:", videoId);
       // Fetch video info from API
       const response = await api.get(`/api/user-videos/info`, {
         params: { video_id: videoId },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
+      console.log("API response received:", response.data);
+
       if (response.data) {
         console.log("Upload completion: Setting video data for ID:", videoId);
         setTranscript(response.data.transcript || '');
-        setCurrentVideo({
+        
+        const newVideoData = {
           title: response.data.title || 'Uploaded Video',
           videoId: videoId,
           source: '',
           sourceType: 'uploaded',
           videoUrl: buildAbsoluteVideoUrl(response.data.video_url)
-        });
+        };
         
-        // Update URL to reflect the uploaded video
-        const newUrl = new URL(window.location);
-        newUrl.searchParams.set('v', videoId);
-        window.history.replaceState({}, '', newUrl);
-
-        // Prevent an immediately previous gallery selection from re-triggering after upload
-        // by marking the last selected as this uploaded video
-        lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
+        console.log("New video data:", newVideoData);
+        
+        // Clear the current video first to force a refresh, similar to loadSelectedVideo
+        setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+        
+        // Then set the new video data after a brief delay to ensure the PlayerComponent reacts
+        setTimeout(() => {
+          console.log("Setting current video to:", newVideoData);
+          setCurrentVideo(newVideoData);
+          
+          // Update URL to reflect the uploaded video
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.set('v', videoId);
+          window.history.replaceState({}, '', newUrl);
+        }, 50);
+      } else {
+        console.warn("API response data is empty or null");
+        setErrorMessage('Upload completed but no video data received');
       }
     } catch (e) {
-      console.warn('Failed to fetch uploaded video info', e);
+      console.error('Failed to fetch uploaded video info:', e);
+      console.error('Error response:', e.response?.data);
+      console.error('Error status:', e.response?.status);
       setErrorMessage('Upload completed but failed to load video details');
+      // Reset the ref on error
+      lastSelectedRef.current = null;
     } finally {
       console.log("Upload completion finished for video ID:", videoId);
       setIsUploadCompleting(false);

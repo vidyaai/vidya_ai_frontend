@@ -124,10 +124,21 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
               // Call the callback to notify parent component only once
               if (!hasCalledOnUploadComplete) {
                 console.log("VideoUploader: Calling onUploadComplete for video ID:", vid);
+                console.log("VideoUploader: onUploadComplete function:", typeof onUploadComplete);
                 setHasCalledOnUploadComplete(true);
-                onUploadComplete?.(vid);
+                if (onUploadComplete) {
+                  console.log("VideoUploader: Actually calling onUploadComplete with:", vid);
+                  onUploadComplete(vid);
+                } else {
+                  console.error("VideoUploader: onUploadComplete is not defined!");
+                }
                 // Notify parent that upload was successful
-                onUploadSuccess?.();
+                if (onUploadSuccess) {
+                  console.log("VideoUploader: Calling onUploadSuccess");
+                  onUploadSuccess();
+                } else {
+                  console.warn("VideoUploader: onUploadSuccess is not defined");
+                }
               } else {
                 console.log("VideoUploader: Skipping onUploadComplete call - already called for video ID:", vid);
               }

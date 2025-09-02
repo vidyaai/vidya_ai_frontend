@@ -8,6 +8,7 @@ import Gallery from './components/Gallery/Gallery';
 import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
+import SharedResourceViewer from './components/Sharing/SharedResourceViewer';
 import './App.css';
 
 // Placeholder for TranslatePage if it doesn't exist
@@ -41,6 +42,7 @@ const getInitialPage = () => {
   if (path === '/chat') return 'chat';
   if (path === '/gallery') return 'gallery';
   if (path === '/translate') return 'translate';
+  if (path.startsWith('/shared/')) return 'shared';
   return 'home';
 };
 
@@ -105,7 +107,12 @@ const AppContent = () => {
   }, []);
 
   // NOW AFTER ALL HOOKS, CHECK AUTHENTICATION
-  if (!currentUser) {
+  // Check if user wants to login (from shared link redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const shouldShowLogin = urlParams.get('login') === 'true';
+  
+  // Allow shared page access without authentication
+  if (!currentUser && currentPage !== 'shared') {
     return <AuthForm />;
   }
 
@@ -181,6 +188,8 @@ const AppContent = () => {
             </div>
           </ProtectedRoute>
         );
+      case 'shared':
+        return <SharedResourceViewer />;
       default:
         return (
           <HomePage 

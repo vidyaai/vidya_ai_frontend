@@ -1,7 +1,8 @@
 // ChatBoxComponent.jsx - AI chat interface with clickable timestamps
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X } from 'lucide-react';
+import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X, Share2 } from 'lucide-react';
 import { formatTime, parseMarkdown, SimpleSpinner, api } from '../generic/utils.jsx';
+import SharingModal from '../Sharing/SharingModal.jsx';
 
 const ChatBoxComponent = ({ 
   currentVideo, 
@@ -21,6 +22,7 @@ const ChatBoxComponent = ({
   const [queryType, setQueryType] = useState('video');
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [sharingModal, setSharingModal] = useState({ isOpen: false, sessionId: null });
   
   const chatContainerRef = useRef(null);
 
@@ -105,6 +107,14 @@ const ChatBoxComponent = ({
     }
   }, [chatMessages]);
 
+  const openChatSharing = (sessionId) => {
+    setSharingModal({ isOpen: true, sessionId });
+  };
+
+  const closeSharingModal = () => {
+    setSharingModal({ isOpen: false, sessionId: null });
+  };
+
   return (
     <div className="w-full bg-gray-900 rounded-xl shadow-xl overflow-hidden flex flex-col h-[750px]">
       <div className="p-4 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
@@ -180,13 +190,22 @@ const ChatBoxComponent = ({
                       <button onClick={() => onSelectHistory?.(s.id)} className="flex-1 text-left truncate">
                         <span className="font-medium">{s.title || 'Session'}</span>
                       </button>
-                      <button
-                        onClick={() => { setEditingSessionId(s.id); setEditingTitle(s.title || ''); }}
-                        className="ml-2 text-gray-300 hover:text-white"
-                        title="Rename"
-                      >
-                        <Pencil size={16} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openChatSharing(s.id)}
+                          className="text-gray-300 hover:text-white"
+                          title="Share chat"
+                        >
+                          <Share2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => { setEditingSessionId(s.id); setEditingTitle(s.title || ''); }}
+                          className="text-gray-300 hover:text-white"
+                          title="Rename"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </div>
                     </div>
                   )}
                   <div className="text-xs text-gray-400 mt-1">{new Date(s.updatedAt || Date.now()).toLocaleString()}</div>
@@ -297,6 +316,15 @@ const ChatBoxComponent = ({
         </form>
       </div>
       )}
+
+      {/* Sharing Modal */}
+      <SharingModal
+        isOpen={sharingModal.isOpen}
+        onClose={closeSharingModal}
+        shareType="chat"
+        resourceId={sharingModal.sessionId}
+        resourceData={currentVideo}
+      />
     </div>
   );
 };

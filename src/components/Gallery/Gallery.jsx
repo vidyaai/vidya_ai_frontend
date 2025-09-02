@@ -182,7 +182,7 @@ const Gallery = ({ onNavigateToChat }) => {
 
   const allowDrop = (e) => e.preventDefault();
 
-  const handleVideoChat = (video) => {
+  const handleVideoChat = (video, isShared = false, sharedLink = null) => {
     setChatLoading(video.id);
     
     // Prepare video data for chat interface
@@ -194,6 +194,20 @@ const Gallery = ({ onNavigateToChat }) => {
       source: video.source_type === 'youtube' ? `https://www.youtube.com/embed/${video.id}?enablejsapi=1&origin=https://vidyaai.co&controls=0` : ''
     };
     
+    // Add sharing information if this is a shared video
+    if (isShared && sharedLink) {
+      videoData.isShared = true;
+      videoData.shareToken = sharedLink.share_token;
+      videoData.shareId = sharedLink.id; // Add the shared link ID
+      videoData.shareTitle = sharedLink.title;
+      videoData.sharedBy = sharedLink.owner?.displayName || 'Unknown';
+      
+      console.log('Shared video data prepared:', videoData);
+      console.log('Shared link:', sharedLink);
+    } else {
+      console.log('Regular video data prepared:', videoData);
+    }
+    
     // Navigate to chat with video data
     if (onNavigateToChat) {
       onNavigateToChat(videoData);
@@ -204,10 +218,13 @@ const Gallery = ({ onNavigateToChat }) => {
   };
 
   const handleSharedFolderClick = (sharedFolder) => {
-    // For now, we'll just show the videos in the shared folder
-    // In the future, this could navigate to a shared folder view
-    console.log('Shared folder clicked:', sharedFolder);
-    // You could implement navigation to shared folder content here
+    // Navigate to the shared folder using the share token
+    if (sharedFolder.shared_link?.share_token) {
+      const shareUrl = `/shared/${sharedFolder.shared_link.share_token}`;
+      window.location.href = shareUrl;
+    } else {
+      console.error('No share token found for shared folder:', sharedFolder);
+    }
   };
 
   const handleDeleteVideo = async (video) => {
@@ -419,7 +436,7 @@ const Gallery = ({ onNavigateToChat }) => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleVideoChat(item.video);
+                            handleVideoChat(item.video, true, item.shared_link);
                           }}
                           disabled={chatLoading === item.video.id}
                           className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
@@ -440,7 +457,7 @@ const Gallery = ({ onNavigateToChat }) => {
                       </div>
                       {/* Chat button below title */}
                       <button
-                        onClick={() => handleVideoChat(item.video)}
+                        onClick={() => handleVideoChat(item.video, true, item.shared_link)}
                         disabled={chatLoading === item.video.id}
                         className="mt-2 w-full px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                       >

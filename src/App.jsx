@@ -106,13 +106,49 @@ const AppContent = () => {
     };
   }, []);
 
+  // Handle shared videos from sessionStorage
+  useEffect(() => {
+    if (currentUser && currentPage === 'home') {
+      const sharedVideoData = sessionStorage.getItem('sharedVideoForChat');
+      if (sharedVideoData) {
+        try {
+          const videoData = JSON.parse(sharedVideoData);
+          sessionStorage.removeItem('sharedVideoForChat'); // Clear after use
+          
+          // Convert shared video format to chat format
+          const chatVideoData = {
+            videoId: videoData.id,
+            title: videoData.title || 'Shared Video',
+            source_type: videoData.source_type,
+            youtube_id: videoData.youtube_id,
+            youtube_url: videoData.youtube_url,
+            s3_key: videoData.s3_key,
+            shareToken: videoData.shareToken,
+            shareId: videoData.shareId, // Add the shareId field
+            isShared: true
+          };
+          
+          // Navigate to chat with the shared video
+          handleNavigateToChat(chatVideoData);
+        } catch (error) {
+          console.error('Error parsing shared video data:', error);
+          sessionStorage.removeItem('sharedVideoForChat');
+        }
+      }
+    }
+  }, [currentUser, currentPage]);
+
   // NOW AFTER ALL HOOKS, CHECK AUTHENTICATION
   // Check if user wants to login (from shared link redirect)
   const urlParams = new URLSearchParams(window.location.search);
   const shouldShowLogin = urlParams.get('login') === 'true';
+  const returnUrl = urlParams.get('returnUrl');
   
   // Allow shared page access without authentication
   if (!currentUser && currentPage !== 'shared') {
+    if (shouldShowLogin) {
+      return <AuthForm returnUrl={returnUrl} />;
+    }
     return <AuthForm />;
   }
 
@@ -134,7 +170,7 @@ const AppContent = () => {
             <TopBar />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <PageHeader 
-                title="Chat with My Video"
+                title={selectedVideo?.isShared ? "Chat with Shared Video" : "Chat with My Video"}
                 onNavigateToChat={handleNavigateToChat}
                 onNavigateToGallery={handleNavigateToGallery}
                 onNavigateToTranslate={handleNavigateToTranslate}

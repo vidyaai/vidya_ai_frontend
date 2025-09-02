@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, Eye, AlertCircle, Loader, LogIn } from 'lucide-react';
+import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, Eye, AlertCircle, Loader, LogIn, Play } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 
@@ -223,6 +223,7 @@ const FolderContent = ({ folder, videos, shareToken }) => {
 
 const VideoCard = ({ video, shareToken }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     if (video.thumb_key) {
@@ -256,9 +257,32 @@ const VideoCard = ({ video, shareToken }) => {
     }
   };
 
+  const handleChatClick = () => {
+    if (!currentUser) {
+      // Redirect to login with return URL
+      const returnUrl = encodeURIComponent(`/shared/${shareToken}`);
+      window.location.href = `/?login=true&returnUrl=${returnUrl}`;
+      return;
+    }
+
+    // Navigate to main chat page with video context
+    // We'll pass the shared video info to the main chat
+    const videoData = {
+      ...video,
+      shareToken: shareToken,
+      isShared: true
+    };
+    
+    // Store in sessionStorage for the main chat to pick up
+    sessionStorage.setItem('sharedVideoForChat', JSON.stringify(videoData));
+    
+    // Navigate to main chat page
+    window.location.href = '/';
+  };
+
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-      <div className="aspect-video bg-gray-900 flex items-center justify-center">
+      <div className="aspect-video bg-gray-900 flex items-center justify-center relative group">
         {thumbnailUrl ? (
           <img 
             src={thumbnailUrl} 
@@ -273,14 +297,34 @@ const VideoCard = ({ video, shareToken }) => {
         <div className={`absolute inset-0 flex items-center justify-center text-gray-500 text-sm ${thumbnailUrl ? 'hidden' : 'flex'}`}>
           {video.source_type === 'uploaded' ? 'Uploaded Video' : 'YouTube Video'}
         </div>
+        
+        {/* Overlay with chat button */}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+          <button
+            onClick={handleChatClick}
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg"
+          >
+            <MessageSquare size={16} />
+            Chat
+          </button>
+        </div>
       </div>
       
       <div className="p-3">
         <h3 className="text-white text-sm font-medium line-clamp-2 mb-2">
           {video.title || 'Untitled Video'}
         </h3>
-        <div className="text-xs text-gray-400">
-          {video.source_type === 'youtube' ? 'YouTube' : 'Uploaded'}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-400">
+            {video.source_type === 'youtube' ? 'YouTube' : 'Uploaded'}
+          </div>
+          <button
+            onClick={handleChatClick}
+            className="text-indigo-400 hover:text-indigo-300 text-xs flex items-center gap-1 transition-colors"
+          >
+            <MessageSquare size={12} />
+            Chat
+          </button>
         </div>
       </div>
     </div>

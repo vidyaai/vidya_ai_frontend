@@ -134,12 +134,18 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           source: videoData.source,
           videoId: videoData.videoId,
           sourceType: 'youtube',
-          videoUrl: ''
+          videoUrl: '',
+          isShared: videoData.isShared || false,
+          shareToken: videoData.shareToken || null,
+          shareId: videoData.shareId || null
         });
       } else {
         // For uploaded videos, fetch info from API
         const response = await api.get(`/api/user-videos/info`, {
-          params: { video_id: videoData.videoId },
+          params: { 
+            video_id: videoData.videoId,
+            ...(videoData.shareToken && { share_token: videoData.shareToken })
+          },
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
 
@@ -150,7 +156,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             videoId: videoData.videoId,
             source: '',
             sourceType: 'uploaded',
-            videoUrl: buildAbsoluteVideoUrl(response.data.video_url || videoData.videoUrl)
+            videoUrl: buildAbsoluteVideoUrl(response.data.video_url || videoData.videoUrl),
+            isShared: videoData.isShared || false,
+            shareToken: videoData.shareToken || null,
+            shareId: videoData.shareId || null
           });
         } else {
           setCurrentVideo({
@@ -158,7 +167,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             videoId: videoData.videoId,
             source: '',
             sourceType: 'uploaded',
-            videoUrl: videoData.videoUrl
+            videoUrl: videoData.videoUrl,
+            isShared: videoData.isShared || false,
+            shareToken: videoData.shareToken || null,
+            shareId: videoData.shareId || null
           });
         }
       }
@@ -256,7 +268,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         source: `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://vidyaai.co&controls=0`,
         videoId: videoId,
         sourceType: 'youtube',
-        videoUrl: ''
+        videoUrl: '',
+        isShared: false, // YouTube videos are not shared
+        shareToken: null,
+        shareId: null
       });
 
       const newUrl = new URL(window.location);
@@ -305,7 +320,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           videoId: videoId,
           source: '',
           sourceType: 'uploaded',
-          videoUrl: buildAbsoluteVideoUrl(response.data.video_url)
+          videoUrl: buildAbsoluteVideoUrl(response.data.video_url),
+          isShared: false, // Uploaded videos are not shared
+          shareToken: null,
+          shareId: null
         };
         
         // Clear the current video first to force a refresh, similar to loadSelectedVideo
@@ -434,10 +452,25 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   useEffect(() => {
     const vid = currentVideo.videoId;
     if (!vid) return;
+    
+    console.log('Loading chat sessions for video:', vid);
+    console.log('Current video data:', currentVideo);
+    
     const load = async () => {
       try {
+        // Prepare request parameters
+        const params = { video_id: vid };
+        
+        // If this is a shared video, include the share_id
+        if (currentVideo.isShared && currentVideo.shareId) {
+          params.share_id = currentVideo.shareId;
+          console.log('Adding share_id to params:', currentVideo.shareId);
+        }
+        
+        console.log('Request params:', params);
+        
         const resp = await api.get(`/api/user-videos/chat-sessions`, {
-          params: { video_id: vid },
+          params: params,
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         const serverSessions = resp.data?.chat_sessions || [];
@@ -452,10 +485,11 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         }
       } catch (e) {
         // ignore if endpoint not available or unauthorized
+        console.error('Error loading chat sessions:', e);
       }
     };
     load();
-  }, [currentVideo.videoId]);
+  }, [currentVideo.videoId, currentVideo.isShared, currentVideo.shareId]);
 
   // Push sessions to backend on change (debounced-ish via effect)
   useEffect(() => {

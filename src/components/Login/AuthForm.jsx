@@ -46,7 +46,7 @@ const mapFirebaseError = (error) => {
   return 'Something went wrong. Please try again';
 };
 
-const AuthForm = () => {
+const AuthForm = ({ returnUrl }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,6 +58,15 @@ const AuthForm = () => {
 
   const { login, signup, signInWithGoogle, resetPassword, isFirebaseConfigured } = useAuth();
 
+  const handleSuccessfulAuth = () => {
+    if (returnUrl) {
+      // Decode the return URL and navigate to it
+      const decodedUrl = decodeURIComponent(returnUrl);
+      window.location.href = decodedUrl;
+    }
+    // If no return URL, the default behavior will take over
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -67,11 +76,13 @@ const AuthForm = () => {
     try {
       if (isLogin) {
         await login(email, password);
+        handleSuccessfulAuth();
       } else {
         if (!displayName.trim()) {
           throw new Error('Display name is required');
         }
         await signup(email, password, displayName);
+        handleSuccessfulAuth();
       }
     } catch (error) {
       setError(mapFirebaseError(error));
@@ -87,6 +98,7 @@ const AuthForm = () => {
 
     try {
       await signInWithGoogle();
+      handleSuccessfulAuth();
     } catch (error) {
       setError(mapFirebaseError(error));
     } finally {
@@ -131,6 +143,11 @@ const AuthForm = () => {
               : 'Unlock the future of learning with artificial intelligence ✨'
             }
           </p>
+          {returnUrl && (
+            <p className="mt-2 text-sm text-indigo-400">
+              🔗 You'll be redirected back after signing in
+            </p>
+          )}
         </div>
 
         <div className="bg-gray-900 rounded-xl shadow-2xl p-8 border border-gray-800">

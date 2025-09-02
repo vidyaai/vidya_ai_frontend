@@ -65,8 +65,9 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           lastSelectedRef.current = selectedVideo;
           loadSelectedVideo(selectedVideo);
         }
-      } else if (selectedVideo === null) {
+      } else if (selectedVideo === null && lastSelectedRef.current?.sourceType !== 'uploaded') {
         // Clear state when explicitly navigating without a video (from PageHeader/HomePage)
+        // But don't clear if we just uploaded a video
         lastSelectedRef.current = null;
         clearVideoState();
       }
@@ -74,7 +75,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   }, [selectedVideo, isUploadCompleting]);
 
   const clearVideoState = () => {
-    console.log("Clearing video state - no video preloaded");
     setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
     setTranscript('');
     setChatMessages([]);
@@ -89,16 +89,13 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   };
 
   const loadSelectedVideo = async (videoData) => {
-    console.log("loadSelectedVideo called with:", videoData);
     if (!videoData || !videoData.videoId) {
-      console.error("Invalid video data provided");
       setErrorMessage("Invalid video data provided");
       return;
     }
 
     // Prevent loading if we're in the middle of an upload completion
     if (isUploadCompleting) {
-      console.log("Skipping loadSelectedVideo - upload completion in progress");
       return;
     }
 
@@ -279,13 +276,19 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   };
 
   const handleUploadComplete = useCallback(async (videoId) => {
-    console.log("Upload completion started for video ID:", videoId);
+    if (!videoId) {
+      return;
+    }
+    
     setIsUploadCompleting(true);
     setYoutubeUrl('');
     setTranscript('');
     setChatMessages([]);
     setIsQuizOpen(false);
     setSystemMessages([]);
+    
+    // Immediately mark this as an uploaded video to prevent clearing
+    lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
     
     try {
       // Fetch video info from API
@@ -295,36 +298,41 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       });
 
       if (response.data) {
-        console.log("Upload completion: Setting video data for ID:", videoId);
         setTranscript(response.data.transcript || '');
-        setCurrentVideo({
+        
+        const newVideoData = {
           title: response.data.title || 'Uploaded Video',
           videoId: videoId,
           source: '',
           sourceType: 'uploaded',
           videoUrl: buildAbsoluteVideoUrl(response.data.video_url)
-        });
+        };
         
-        // Update URL to reflect the uploaded video
-        const newUrl = new URL(window.location);
-        newUrl.searchParams.set('v', videoId);
-        window.history.replaceState({}, '', newUrl);
-
-        // Prevent an immediately previous gallery selection from re-triggering after upload
-        // by marking the last selected as this uploaded video
-        lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
+        // Clear the current video first to force a refresh, similar to loadSelectedVideo
+        setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+        
+        // Then set the new video data after a brief delay to ensure the PlayerComponent reacts
+        setTimeout(() => {
+          setCurrentVideo(newVideoData);
+          
+          // Update URL to reflect the uploaded video
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.set('v', videoId);
+          window.history.replaceState({}, '', newUrl);
+        }, 50);
+      } else {
+        setErrorMessage('Upload completed but no video data received');
       }
     } catch (e) {
-      console.warn('Failed to fetch uploaded video info', e);
       setErrorMessage('Upload completed but failed to load video details');
+      // Reset the ref on error
+      lastSelectedRef.current = null;
     } finally {
-      console.log("Upload completion finished for video ID:", videoId);
       setIsUploadCompleting(false);
     }
   }, []);
 
   const handleUploadSuccess = useCallback(() => {
-    console.log("Upload successful, hiding VideoUploader");
     setShowVideoUploader(false);
   }, []);
 

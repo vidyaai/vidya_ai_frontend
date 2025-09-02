@@ -205,6 +205,8 @@ const PlayerComponent = ({
     return () => clearInterval(intervalId);
   }, [player, isDraggingSlider]);
   
+
+  
   useEffect(() => {
     const html5Source = currentVideo?.sourceType === 'uploaded' && currentVideo?.videoUrl;
     setIsHtml5(!!html5Source);
@@ -217,69 +219,69 @@ const PlayerComponent = ({
       }
       setPlayer(null);
       setPlayerReady(false);
-      const el = html5Ref.current;
-      if (el) {
-        // Force reload of the media element when URL changes
-        try { el.pause(); } catch (e) {}
-        el.removeAttribute('src');
-        el.preload = 'metadata';
-        el.playsInline = true;
-        el.muted = false;
-        el.src = currentVideo.videoUrl;
+      
+      // Use a small delay to ensure the video element is rendered
+      const setupVideo = () => {
+        const el = html5Ref.current;
+        if (el) {
+          // Force reload of the media element when URL changes
+          try { el.pause(); } catch (e) {}
+          el.removeAttribute('src');
+          el.load(); // Clear previous state
+          el.src = currentVideo.videoUrl;
 
-        const handleLoadedMetadata = () => {
-          setDuration(el.duration || 0);
-          if (onPlayerReady) onPlayerReady(null);
-        };
-        const handleCanPlay = () => {
-          // Best-effort autoplay to show first frame; ignore failures
-          el.play().catch(() => {});
-        };
-        const handleError = () => {
-          // Surface a simple log to help debugging network/cors issues
-          // eslint-disable-next-line no-console
-          console.warn('HTML5 video error event fired');
-        };
-        const handlePlay = () => {
-          setIsPlaying(true);
-        };
-        const handlePause = () => {
-          setIsPlaying(false);
-        };
-        const handleTimeUpdate = () => {
-          const cur = el.currentTime || 0;
-          setCurrentTime(cur);
-          setSliderPosition(cur);
-          if (onTimeUpdate) onTimeUpdate(cur);
-        };
-        const handleVolumeChange = () => {
-          setIsMuted(el.muted);
-        };
-        const handleEnded = () => {
-          setIsPlaying(false);
-        };
+          const handleLoadedMetadata = () => {
+            setDuration(el.duration || 0);
+            if (onPlayerReady) onPlayerReady(null);
+          };
+          const handleCanPlay = () => {
+            // For uploaded videos, auto-play like gallery videos do
+            el.play().then(() => {
+              setIsPlaying(true);
+            }).catch(() => {
+              // Auto-play failed, but video is still playable
+            });
+          };
+          const handleError = () => {
+            // Surface a simple log to help debugging network/cors issues
+            console.warn('HTML5 video error event fired');
+          };
+          const handlePlay = () => {
+            setIsPlaying(true);
+          };
+          const handlePause = () => {
+            setIsPlaying(false);
+          };
+          const handleTimeUpdate = () => {
+            const cur = el.currentTime || 0;
+            setCurrentTime(cur);
+            setSliderPosition(cur);
+            if (onTimeUpdate) onTimeUpdate(cur);
+          };
+          const handleVolumeChange = () => {
+            setIsMuted(el.muted);
+          };
+          const handleEnded = () => {
+            setIsPlaying(false);
+          };
 
-        el.addEventListener('loadedmetadata', handleLoadedMetadata);
-        el.addEventListener('canplay', handleCanPlay);
-        el.addEventListener('error', handleError);
-        el.addEventListener('play', handlePlay);
-        el.addEventListener('pause', handlePause);
-        el.addEventListener('timeupdate', handleTimeUpdate);
-        el.addEventListener('volumechange', handleVolumeChange);
-        el.addEventListener('ended', handleEnded);
-        try { el.load(); } catch (e) {}
-
-        return () => {
-          el.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          el.removeEventListener('canplay', handleCanPlay);
-          el.removeEventListener('error', handleError);
-          el.removeEventListener('play', handlePlay);
-          el.removeEventListener('pause', handlePause);
-          el.removeEventListener('timeupdate', handleTimeUpdate);
-          el.removeEventListener('volumechange', handleVolumeChange);
-          el.removeEventListener('ended', handleEnded);
-        };
-      }
+          el.addEventListener('loadedmetadata', handleLoadedMetadata);
+          el.addEventListener('canplay', handleCanPlay);
+          el.addEventListener('error', handleError);
+          el.addEventListener('play', handlePlay);
+          el.addEventListener('pause', handlePause);
+          el.addEventListener('timeupdate', handleTimeUpdate);
+          el.addEventListener('volumechange', handleVolumeChange);
+          el.addEventListener('ended', handleEnded);
+          try { el.load(); } catch (e) {}
+        } else {
+          // Video element not found, retry after a short delay
+          setTimeout(setupVideo, 100);
+        }
+      };
+      
+      // Try immediately first, then with delay if needed
+      setupVideo();
     } else if (currentVideo.videoId && !isInitializing) {
       if (!player) {
         const timer = setTimeout(() => {
@@ -461,7 +463,14 @@ const PlayerComponent = ({
     <div className="w-full">
       <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl aspect-video">
         {isHtml5 ? (
-          <video key={currentVideo.videoUrl || 'html5'} ref={html5Ref} className="absolute top-0 left-0 w-full h-full" controls={false} crossOrigin="anonymous" />
+          <video 
+            key={currentVideo.videoUrl || 'html5'} 
+            ref={html5Ref} 
+            className="absolute top-0 left-0 w-full h-full" 
+            controls={false} 
+            playsInline
+            preload="metadata"
+          />
         ) : currentVideo.videoId ? (
           <div ref={playerContainerRef} className="absolute top-0 left-0 w-full h-full"></div>
         ) : (

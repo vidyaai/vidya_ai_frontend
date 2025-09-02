@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FolderPlus, Folder as FolderIcon, ArrowLeft, RefreshCw, MessageSquare } from 'lucide-react';
+import { FolderPlus, Folder as FolderIcon, ArrowLeft, RefreshCw, MessageSquare, Trash2 } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 
@@ -31,6 +31,8 @@ const Gallery = ({ onNavigateToChat }) => {
   const [creating, setCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [chatLoading, setChatLoading] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: 'video'|'folder', id: string, data: object }
+  const [deleting, setDeleting] = useState(null);
 
   const folderMap = useMemo(() => {
     const map = new Map();
@@ -182,6 +184,78 @@ const Gallery = ({ onNavigateToChat }) => {
     setTimeout(() => setChatLoading(null), 1000);
   };
 
+  const handleDeleteVideo = async (video) => {
+    setDeleting(video.id);
+    setError('');
+    try {
+      await api.delete('/api/gallery/video', {
+        data: { video_id: video.id },
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      await fetchVideos(); // Refresh the videos list
+      setDeleteConfirm(null);
+    } catch (e) {
+      console.error(e);
+      setError(e.response?.data?.detail || e.message || 'Failed to delete video');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleDeleteFolder = async (folder, confirmDeleteVideos = false) => {
+    setDeleting(folder.id);
+    setError('');
+    try {
+      const response = await api.delete(`/api/folders/${folder.id}`, {
+        data: { 
+          folder_id: folder.id,
+          confirm_delete_videos: confirmDeleteVideos 
+        },
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      
+      if (response.data.success === false && response.data.error === 'folder_has_videos') {
+        // Show confirmation dialog for folder with videos
+        setDeleteConfirm({
+          type: 'folder',
+          id: folder.id,
+          data: {
+            folder,
+            videoCount: response.data.video_count,
+            message: response.data.message
+          }
+        });
+        setDeleting(null);
+        return;
+      }
+      
+      await fetchFolders(); // Refresh folders list
+      await fetchVideos(); // Refresh videos list
+      setDeleteConfirm(null);
+    } catch (e) {
+      console.error(e);
+      setError(e.response?.data?.detail || e.message || 'Failed to delete folder');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const confirmVideoDelete = (video) => {
+    setDeleteConfirm({
+      type: 'video',
+      id: video.id,
+      data: { video }
+    });
+  };
+
+  const confirmFolderDelete = (folder) => {
+    setDeleteConfirm({
+      type: 'folder',
+      id: folder.id,
+      data: { folder }
+    });
+  };
+
   return (
     <div className="w-full bg-gray-900 border border-gray-800 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-4">
@@ -249,17 +323,36 @@ const Gallery = ({ onNavigateToChat }) => {
           Move to Root
         </div>
         {subfolders.map((f) => (
-          <button
+          <div
             key={f.id}
-            onClick={() => setCurrentFolderId(f.id)}
             onDragOver={allowDrop}
             onDrop={(e) => onDropFolder(e, f.id)}
-            className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 flex items-center gap-2"
+            className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 flex items-center gap-2 relative"
             title={f.name}
           >
-            <FolderIcon size={18} className="text-yellow-400" />
-            <div className="text-white text-sm line-clamp-2">{f.name}</div>
-          </button>
+            <button
+              onClick={() => setCurrentFolderId(f.id)}
+              className="flex items-center gap-2 flex-1 text-left"
+            >
+              <FolderIcon size={18} className="text-yellow-400" />
+              <div className="text-white text-sm line-clamp-2">{f.name}</div>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                confirmFolderDelete(f);
+              }}
+              disabled={deleting === f.id}
+              className="opacity-0 group-hover:opacity-100 p-1 bg-red-600 hover:bg-red-700 text-white rounded transition-opacity duration-200 disabled:opacity-50"
+              title="Delete folder"
+            >
+              {deleting === f.id ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              ) : (
+                <Trash2 size={12} />
+              )}
+            </button>
+          </div>
         ))}
       </div>
 
@@ -288,22 +381,39 @@ const Gallery = ({ onNavigateToChat }) => {
               <div className={`absolute inset-0 flex items-center justify-center ${v.thumbnailUrl ? 'hidden' : 'flex'}`}>
                 {section === 'uploaded' ? 'Uploaded' : 'YouTube'}
               </div>
-              {/* Chat button overlay */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleVideoChat(v);
-                }}
-                disabled={chatLoading === v.id}
-                className="absolute top-2 right-2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50"
-                title="Chat with this video"
-              >
-                {chatLoading === v.id ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                ) : (
-                  <MessageSquare size={16} />
-                )}
-              </button>
+              {/* Action buttons overlay */}
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleVideoChat(v);
+                  }}
+                  disabled={chatLoading === v.id}
+                  className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                  title="Chat with this video"
+                >
+                  {chatLoading === v.id ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <MessageSquare size={16} />
+                  )}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    confirmVideoDelete(v);
+                  }}
+                  disabled={deleting === v.id}
+                  className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+                  title="Delete this video"
+                >
+                  {deleting === v.id ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="px-2 py-2">
               <div className="text-white text-sm line-clamp-2">{v.title || 'Untitled'}</div>
@@ -329,6 +439,89 @@ const Gallery = ({ onNavigateToChat }) => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+            {deleteConfirm.type === 'video' ? (
+              <>
+                <h3 className="text-lg font-semibold text-white mb-4">Delete Video</h3>
+                <p className="text-gray-300 mb-6">
+                  Are you sure you want to delete "{deleteConfirm.data.video.title || 'Untitled'}"? 
+                  This action cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeleteVideo(deleteConfirm.data.video)}
+                    disabled={deleting === deleteConfirm.id}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+                  >
+                    {deleting === deleteConfirm.id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-white mb-4">Delete Folder</h3>
+                {deleteConfirm.data.videoCount ? (
+                  <>
+                    <p className="text-gray-300 mb-4">
+                      The folder "{deleteConfirm.data.folder.name}" contains {deleteConfirm.data.videoCount} video(s).
+                    </p>
+                    <p className="text-yellow-400 mb-6">
+                      ⚠️ Deleting this folder will also permanently delete all videos inside it. This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        onClick={() => setDeleteConfirm(null)}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFolder(deleteConfirm.data.folder, true)}
+                        disabled={deleting === deleteConfirm.id}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+                      >
+                        {deleting === deleteConfirm.id ? 'Deleting...' : 'Delete Folder & Videos'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-300 mb-6">
+                      Are you sure you want to delete the folder "{deleteConfirm.data.folder.name}"? 
+                      This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        onClick={() => setDeleteConfirm(null)}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFolder(deleteConfirm.data.folder, false)}
+                        disabled={deleting === deleteConfirm.id}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+                      >
+                        {deleting === deleteConfirm.id ? 'Deleting...' : 'Delete Folder'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

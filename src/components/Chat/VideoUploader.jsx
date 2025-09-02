@@ -20,13 +20,11 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
 
   const canUse = !!currentUser?.uid;
   
-  console.log("VideoUploader: API_URL is:", API_URL);
+
 
   // Cleanup on unmount
   useEffect(() => {
-    console.log("VideoUploader: Component mounted, isMountedRef set to true");
     return () => {
-      console.log("VideoUploader: Component unmounting, setting isMountedRef to false");
       isMountedRef.current = false;
       if (pollRef.current) {
         clearInterval(pollRef.current);
@@ -71,7 +69,6 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
     try {
       const form = new FormData();
       form.append('file', file);
-      console.log("VideoUploader: Starting upload to:", `${API_URL}/api/user-videos/upload`);
       const resp = await api.post(`/api/user-videos/upload`, form, {
         headers: { 'Content-Type': 'multipart/form-data', 'ngrok-skip-browser-warning': 'true' },
         onUploadProgress: (pe) => {
@@ -80,40 +77,18 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
           setClientUploadProgress(pct);
         }
       });
-      console.log("VideoUploader: Upload response:", resp.data);
 
       const vid = resp.data?.video_id;
-      console.log("VideoUploader: Received video ID:", vid);
       setCurrentUploadId(vid || null);
 
       if (vid) {
-        console.log("VideoUploader: Starting polling for video ID:", vid);
         // Begin polling server-side upload status
         const poll = async () => {
-          console.log("VideoUploader: Poll function called for video ID:", vid);
-          console.log("VideoUploader: isMountedRef.current is:", isMountedRef.current);
-          // Temporarily disable mount check to debug
-          // if (!isMountedRef.current) {
-          //   console.log("VideoUploader: Component unmounted, stopping poll");
-          //   return;
-          // }
-          
           try {
-            const statusUrl = `${API_URL}/api/user-videos/upload-status/${vid}`;
-            console.log("VideoUploader: Making API call to check status for video ID:", vid);
-            console.log("VideoUploader: Status URL:", statusUrl);
             const s = await api.get(`/api/user-videos/upload-status/${vid}`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
             });
             
-            // Check again after API call
-            // Temporarily disable mount check to debug
-            // if (!isMountedRef.current) {
-            //   console.log("VideoUploader: Component unmounted after API call, stopping poll");
-            //   return;
-            // }
-            
-            console.log("VideoUploader: Server status received:", s.data);
             setServerStatus(s.data);
 
             if (s.data?.status === 'completed') {
@@ -123,24 +98,9 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
               setClientUploadProgress(100);
               // Call the callback to notify parent component only once
               if (!hasCalledOnUploadComplete) {
-                console.log("VideoUploader: Calling onUploadComplete for video ID:", vid);
-                console.log("VideoUploader: onUploadComplete function:", typeof onUploadComplete);
                 setHasCalledOnUploadComplete(true);
-                if (onUploadComplete) {
-                  console.log("VideoUploader: Actually calling onUploadComplete with:", vid);
-                  onUploadComplete(vid);
-                } else {
-                  console.error("VideoUploader: onUploadComplete is not defined!");
-                }
-                // Notify parent that upload was successful
-                if (onUploadSuccess) {
-                  console.log("VideoUploader: Calling onUploadSuccess");
-                  onUploadSuccess();
-                } else {
-                  console.warn("VideoUploader: onUploadSuccess is not defined");
-                }
-              } else {
-                console.log("VideoUploader: Skipping onUploadComplete call - already called for video ID:", vid);
+                onUploadComplete?.(vid);
+                onUploadSuccess?.();
               }
               // Reset after a short delay
               setTimeout(() => {
@@ -161,32 +121,18 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
               setError('Upload failed. Try with a shorter video.');
             }
           } catch (err) {
-            console.error("VideoUploader: Poll error for video ID:", vid, err);
-            console.error("VideoUploader: Error response:", err.response?.data);
-            console.error("VideoUploader: Error status:", err.response?.status);
             // keep polling for transient errors, but if 4xx/5xx persist, consider stopping
           }
         };
         // immediate poll, then interval
-        console.log("VideoUploader: Starting immediate poll");
         await poll();
-        // Check if still mounted before setting interval
-        // Temporarily disable mount check to debug
-        // if (isMountedRef.current) {
-          console.log("VideoUploader: Setting up interval poll every 1.5 seconds");
-          pollRef.current = setInterval(poll, 1500);
-        // } else {
-        //   console.log("VideoUploader: Component unmounted, not setting interval");
-        // }
+        pollRef.current = setInterval(poll, 1500);
       } else {
         // No video id returned; treat as error
         resetUploadState();
         setError('Upload failed: missing video_id');
       }
     } catch (e) {
-      console.error("VideoUploader: Upload error:", e);
-      console.error("VideoUploader: Upload error response:", e.response?.data);
-      console.error("VideoUploader: Upload error status:", e.response?.status);
       resetUploadState();
       setError(e.response?.data?.detail || e.message || 'Upload failed');
     }

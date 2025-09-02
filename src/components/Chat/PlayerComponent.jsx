@@ -209,18 +209,11 @@ const PlayerComponent = ({
   
   useEffect(() => {
     const html5Source = currentVideo?.sourceType === 'uploaded' && currentVideo?.videoUrl;
-    console.log('PlayerComponent: Video changed:', {
-      videoId: currentVideo?.videoId,
-      sourceType: currentVideo?.sourceType,
-      videoUrl: currentVideo?.videoUrl,
-      html5Source
-    });
     setIsHtml5(!!html5Source);
     setCurrentTime(0);
     setSliderPosition(0);
     setDuration(0);
     if (html5Source) {
-      console.log('PlayerComponent: Setting up HTML5 video for uploaded video');
       if (player && typeof player.destroy === 'function') {
         try { player.destroy(); } catch (e) {}
       }
@@ -230,49 +223,28 @@ const PlayerComponent = ({
       // Use a small delay to ensure the video element is rendered
       const setupVideo = () => {
         const el = html5Ref.current;
-        console.log('PlayerComponent: Looking for HTML5 video element, found:', !!el);
         if (el) {
-          console.log('PlayerComponent: HTML5 video element found, setting up video');
           // Force reload of the media element when URL changes
           try { el.pause(); } catch (e) {}
           el.removeAttribute('src');
           el.load(); // Clear previous state
           el.src = currentVideo.videoUrl;
-          console.log('PlayerComponent: Set video src to:', el.src);
 
           const handleLoadedMetadata = () => {
-            console.log('PlayerComponent: Video metadata loaded, duration:', el.duration);
             setDuration(el.duration || 0);
             if (onPlayerReady) onPlayerReady(null);
           };
           const handleCanPlay = () => {
             // For uploaded videos, auto-play like gallery videos do
-            console.log('PlayerComponent: HTML5 video can play, attempting to auto-play');
-            console.log('PlayerComponent: Video readyState:', el.readyState);
-            console.log('PlayerComponent: Video networkState:', el.networkState);
-            console.log('PlayerComponent: Video src:', el.src);
-            
             el.play().then(() => {
-              console.log('PlayerComponent: Auto-play successful');
               setIsPlaying(true);
-            }).catch((e) => {
-              console.warn('PlayerComponent: Error auto-playing uploaded video:', e);
-              console.log('PlayerComponent: Video error details:', {
-                error: el.error,
-                readyState: el.readyState,
-                networkState: el.networkState
-              });
+            }).catch(() => {
+              // Auto-play failed, but video is still playable
             });
           };
-          const handleError = (e) => {
+          const handleError = () => {
             // Surface a simple log to help debugging network/cors issues
-            console.error('HTML5 video error event fired:', e);
-            console.error('Video error details:', {
-              error: el.error,
-              src: el.src,
-              readyState: el.readyState,
-              networkState: el.networkState
-            });
+            console.warn('HTML5 video error event fired');
           };
           const handlePlay = () => {
             setIsPlaying(true);
@@ -303,7 +275,7 @@ const PlayerComponent = ({
           el.addEventListener('ended', handleEnded);
           try { el.load(); } catch (e) {}
         } else {
-          console.log('PlayerComponent: HTML5 video element not found, retrying in 100ms');
+          // Video element not found, retry after a short delay
           setTimeout(setupVideo, 100);
         }
       };

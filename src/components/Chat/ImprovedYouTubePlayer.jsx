@@ -75,7 +75,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   }, [selectedVideo, isUploadCompleting]);
 
   const clearVideoState = () => {
-    console.log("Clearing video state - no video preloaded");
     setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
     setTranscript('');
     setChatMessages([]);
@@ -90,16 +89,13 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   };
 
   const loadSelectedVideo = async (videoData) => {
-    console.log("loadSelectedVideo called with:", videoData);
     if (!videoData || !videoData.videoId) {
-      console.error("Invalid video data provided");
       setErrorMessage("Invalid video data provided");
       return;
     }
 
     // Prevent loading if we're in the middle of an upload completion
     if (isUploadCompleting) {
-      console.log("Skipping loadSelectedVideo - upload completion in progress");
       return;
     }
 
@@ -280,13 +276,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   };
 
   const handleUploadComplete = useCallback(async (videoId) => {
-    console.log("handleUploadComplete called with video ID:", videoId);
     if (!videoId) {
-      console.error("handleUploadComplete called with invalid videoId:", videoId);
       return;
     }
     
-    console.log("Upload completion started for video ID:", videoId);
     setIsUploadCompleting(true);
     setYoutubeUrl('');
     setTranscript('');
@@ -298,17 +291,13 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
     
     try {
-      console.log("Making API call to /api/user-videos/info with video_id:", videoId);
       // Fetch video info from API
       const response = await api.get(`/api/user-videos/info`, {
         params: { video_id: videoId },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
-      console.log("API response received:", response.data);
-
       if (response.data) {
-        console.log("Upload completion: Setting video data for ID:", videoId);
         setTranscript(response.data.transcript || '');
         
         const newVideoData = {
@@ -319,14 +308,11 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           videoUrl: buildAbsoluteVideoUrl(response.data.video_url)
         };
         
-        console.log("New video data:", newVideoData);
-        
         // Clear the current video first to force a refresh, similar to loadSelectedVideo
         setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
         
         // Then set the new video data after a brief delay to ensure the PlayerComponent reacts
         setTimeout(() => {
-          console.log("Setting current video to:", newVideoData);
           setCurrentVideo(newVideoData);
           
           // Update URL to reflect the uploaded video
@@ -335,24 +321,18 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           window.history.replaceState({}, '', newUrl);
         }, 50);
       } else {
-        console.warn("API response data is empty or null");
         setErrorMessage('Upload completed but no video data received');
       }
     } catch (e) {
-      console.error('Failed to fetch uploaded video info:', e);
-      console.error('Error response:', e.response?.data);
-      console.error('Error status:', e.response?.status);
       setErrorMessage('Upload completed but failed to load video details');
       // Reset the ref on error
       lastSelectedRef.current = null;
     } finally {
-      console.log("Upload completion finished for video ID:", videoId);
       setIsUploadCompleting(false);
     }
   }, []);
 
   const handleUploadSuccess = useCallback(() => {
-    console.log("Upload successful, hiding VideoUploader");
     setShowVideoUploader(false);
   }, []);
 

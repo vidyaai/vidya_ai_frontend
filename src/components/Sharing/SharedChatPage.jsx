@@ -224,56 +224,12 @@ const SharedChatPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-indigo-600 rounded-lg">
-              <MessageSquare size={24} className="text-white" />
-            </div>
-            
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-white mb-2">
-                {sharedData.title || `Shared Chat Session`}
-              </h1>
-              
-              {sharedData.description && (
-                <p className="text-gray-300 mb-4">{sharedData.description}</p>
-              )}
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                {sharedData.owner_display_name && (
-                  <div className="flex items-center gap-1">
-                    <User size={14} />
-                    <span>Shared by {sharedData.owner_display_name}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-1">
-                  <Calendar size={14} />
-                  <span>Created {formatDate(sharedData.created_at)}</span>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Share2 size={14} />
-                  <span>Chat Share</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Video Player and Chat Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    // <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        // {/* Video Player and Chat Layout */}
+        <div className="flex flex-col xl:flex-row gap-8 mt-6 w-full">
           {/* Video Player Section */}
-          <div className="space-y-4">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Play size={20} className="text-indigo-400" />
-                <h2 className="text-xl font-semibold text-white">Video Player</h2>
-              </div>
-              
+          <div className="w-full xl:w-3/5">
+            {/* <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6"> */}
               <div className="bg-gray-800 rounded-lg p-4 mb-4">
                 <h3 className="text-white font-medium mb-2">{mappedVideo.title || 'Untitled Video'}</h3>
                 <div className="text-sm text-gray-400 mb-2">
@@ -289,7 +245,7 @@ const SharedChatPage = () => {
               </div>
               
               {/* Video Player */}
-               <div className="aspect-video bg-gray-800 rounded-lg">
+               <div className="aspect-video bg-gray-950 rounded-lg">
                  {mappedVideo.videoUrl ? (
                    <PlayerComponent
                      key={`${mappedVideo.sourceType}-${mappedVideo.videoUrl}`}
@@ -306,11 +262,11 @@ const SharedChatPage = () => {
                  )}
 
                </div>
-            </div>
+            {/* </div> */}
           </div>
 
           {/* Chat Messages Section */}
-          <div className="space-y-4">
+          <div className="w-full xl:w-2/5 relative">
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare size={20} className="text-indigo-400" />
@@ -370,8 +326,7 @@ const SharedChatPage = () => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    // {/* </div> */}
   );
 };
 

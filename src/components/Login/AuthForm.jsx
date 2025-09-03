@@ -130,7 +130,7 @@ const AuthForm = ({ returnUrl }) => {
       <div className="lg:hidden max-w-md w-full space-y-8 mt-8">
         <div className="text-center">
           <img 
-            src="logo-new-2.png" 
+            src="/logo-new-2.png" 
             alt="VidyaAI Logo" 
             className="mx-auto h-32 w-auto rounded-lg border-2 border-white mb-4"
           />
@@ -327,7 +327,7 @@ const AuthForm = ({ returnUrl }) => {
         <div className="flex-1 flex items-center justify-center pr-8">
           <div className="text-center max-w-lg">
             <img 
-              src="logo-new-2.png" 
+              src="/logo-new-2.png" 
               alt="VidyaAI Logo" 
               className="mx-auto h-40 w-auto rounded-lg border-2 border-white mb-8"
             />

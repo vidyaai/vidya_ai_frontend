@@ -227,7 +227,6 @@ const AppContent = () => {
         );
       case 'shared':
         return (
-          <ProtectedRoute>
           <div className="min-h-screen bg-gray-950">
             <TopBar />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -241,7 +240,6 @@ const AppContent = () => {
               <SharedResourceViewer />
             </div>
           </div>
-          </ProtectedRoute>
         );
       default:
         return (

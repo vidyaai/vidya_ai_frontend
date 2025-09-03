@@ -101,28 +101,26 @@ const SharedResourceViewer = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle size={48} className="text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Unable to Load Content</h2>
-          <p className="text-gray-400 mb-6">{error}</p>
-          <div className="flex gap-3 justify-center">
-            {requiresAuth ? (
-              <button
-                onClick={() => window.location.href = '/?login=true'}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <LogIn size={16} />
-                Log In
-              </button>
-            ) : null}
+      <div className="text-center max-w-md mx-auto px-4">
+        <AlertCircle size={48} className="text-red-400 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-white mb-2">Unable to Load Content</h2>
+        <p className="text-gray-400 mb-6">{error}</p>
+        <div className="flex gap-3 justify-center">
+          {requiresAuth ? (
             <button
-              onClick={() => window.location.href = '/'}
-              className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              onClick={() => window.location.href = '/?login=true'}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2"
             >
-              Go to Home
+              <LogIn size={16} />
+              Log In
             </button>
-          </div>
+          ) : null}
+          <button
+            onClick={() => window.location.href = '/'}
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+          >
+            Go to Home
+          </button>
         </div>
       </div>
     );
@@ -130,69 +128,65 @@ const SharedResourceViewer = () => {
 
   if (!sharedData) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle size={48} className="text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-400">No shared content found.</p>
-        </div>
+      <div className="text-center">
+        <AlertCircle size={48} className="text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-400">No shared content found.</p>
       </div>
     );
   }
 
   return (
     <div className="w-full">
-      {/* <div className="max-w-6xl mx-auto px-4 py-8"> */}
-        {/* Header */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-indigo-600 rounded-lg">
-              {sharedData.share_type === 'folder' ? (
-                <FolderIcon size={24} className="text-white" />
-              ) : (
-                <MessageSquare size={24} className="text-white" />
-              )}
-            </div>
+      {/* Header */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-indigo-600 rounded-lg">
+            {sharedData.share_type === 'folder' ? (
+              <FolderIcon size={24} className="text-white" />
+            ) : (
+              <MessageSquare size={24} className="text-white" />
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {sharedData.title || `Shared ${sharedData.share_type}`}
+            </h1>
             
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-white mb-2">
-                {sharedData.title || `Shared ${sharedData.share_type}`}
-              </h1>
-              
-              {sharedData.description && (
-                <p className="text-gray-300 mb-4">{sharedData.description}</p>
+            {sharedData.description && (
+              <p className="text-gray-300 mb-4">{sharedData.description}</p>
+            )}
+            
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+              {sharedData.owner_display_name && (
+                <div className="flex items-center gap-1">
+                  <User size={14} />
+                  <span>Shared by {sharedData.owner_display_name}</span>
+                </div>
               )}
               
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                {sharedData.owner_display_name && (
-                  <div className="flex items-center gap-1">
-                    <User size={14} />
-                    <span>Shared by {sharedData.owner_display_name}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-1">
-                  <Calendar size={14} />
-                  <span>Created {formatDate(sharedData.created_at)}</span>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Share2 size={14} />
-                  <span className="capitalize">{sharedData.share_type} Share</span>
-                </div>
+              <div className="flex items-center gap-1">
+                <Calendar size={14} />
+                <span>Created {formatDate(sharedData.created_at)}</span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Share2 size={14} />
+                <span className="capitalize">{sharedData.share_type} Share</span>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Content */}
-        {sharedData.share_type === 'folder' && sharedData.folder && (
-          <FolderContent folder={sharedData.folder} videos={sharedData.videos || []} shareToken={shareToken} />
-        )}
-        
-        {sharedData.share_type === 'chat' && sharedData.video && sharedData.chat_session && (
-          <SharedChatPage />
-        )}
-      {/* </div> */}
+      {/* Content */}
+      {sharedData.share_type === 'folder' && sharedData.folder && (
+        <FolderContent folder={sharedData.folder} videos={sharedData.videos || []} shareToken={shareToken} />
+      )}
+      
+      {sharedData.share_type === 'chat' && sharedData.video && sharedData.chat_session && (
+        <SharedChatPage />
+      )}
     </div>
   );
 };

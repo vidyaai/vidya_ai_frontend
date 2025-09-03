@@ -140,8 +140,8 @@ const SharedResourceViewer = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="w-full">
+      {/* <div className="max-w-6xl mx-auto px-4 py-8"> */}
         {/* Header */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-4">
@@ -192,7 +192,7 @@ const SharedResourceViewer = () => {
         {sharedData.share_type === 'chat' && sharedData.video && sharedData.chat_session && (
           <SharedChatPage />
         )}
-      </div>
+      {/* </div> */}
     </div>
   );
 };

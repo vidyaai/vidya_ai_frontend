@@ -226,7 +226,23 @@ const AppContent = () => {
           </ProtectedRoute>
         );
       case 'shared':
-        return <SharedResourceViewer />;
+        return (
+          <ProtectedRoute>
+          <div className="min-h-screen bg-gray-950">
+            <TopBar />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <PageHeader 
+                title="Shared Resource"
+                onNavigateToChat={handleNavigateToChat}
+                onNavigateToGallery={handleNavigateToGallery}
+                onNavigateToTranslate={handleNavigateToTranslate}
+                onNavigateToHome={handleNavigateToHome}
+              />
+              <SharedResourceViewer />
+            </div>
+          </div>
+          </ProtectedRoute>
+        );
       default:
         return (
           <HomePage 

@@ -9,6 +9,7 @@ import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
 import SharedResourceViewer from './components/Sharing/SharedResourceViewer';
+import SharedChatPage from './components/Sharing/SharedChatPage';
 import './App.css';
 
 // Placeholder for TranslatePage if it doesn't exist

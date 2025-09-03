@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, Eye, AlertCircle, Loader, LogIn, Play } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
+import SharedChatPage from './SharedChatPage';
 
 const SharedResourceViewer = () => {
   // Extract share token from URL path
@@ -189,7 +190,7 @@ const SharedResourceViewer = () => {
         )}
         
         {sharedData.share_type === 'chat' && sharedData.video && sharedData.chat_session && (
-          <ChatContent video={sharedData.video} chatSession={sharedData.chat_session} />
+          <SharedChatPage />
         )}
       </div>
     </div>
@@ -331,86 +332,7 @@ const VideoCard = ({ video, shareToken }) => {
   );
 };
 
-const ChatContent = ({ video, chatSession }) => {
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
-  const parseMarkdown = (text) => {
-    // Simple markdown parsing for timestamps
-    return text.replace(/\[(\d+:\d+)\]/g, '<span class="text-indigo-400 font-mono">[$1]</span>');
-  };
 
-  return (
-    <div className="space-y-6">
-      {/* Video Info */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <MessageSquare size={20} className="text-indigo-400" />
-          <h2 className="text-xl font-semibold text-white">Chat Session</h2>
-        </div>
-        
-        <div className="bg-gray-800 rounded-lg p-4 mb-4">
-          <h3 className="text-white font-medium mb-2">{video.title || 'Untitled Video'}</h3>
-          <div className="text-sm text-gray-400">
-            {video.source_type === 'youtube' ? 'YouTube Video' : 'Uploaded Video'}
-          </div>
-        </div>
-        
-        <div className="text-sm text-gray-400">
-          <strong>Session:</strong> {chatSession.title || 'Chat Session'}
-        </div>
-      </div>
-
-      {/* Chat Messages */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Conversation</h3>
-        
-        {!chatSession.messages || chatSession.messages.length === 0 ? (
-          <div className="text-center py-8">
-            <MessageSquare size={48} className="text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No messages in this chat session.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {chatSession.messages.map((message, index) => (
-              <div
-                key={index}
-                className={`${
-                  message.sender === 'user'
-                    ? 'ml-8 bg-indigo-900 bg-opacity-50'
-                    : message.sender === 'system'
-                    ? 'bg-gray-700 bg-opacity-70'
-                    : 'mr-8 bg-gray-800'
-                } rounded-xl p-4 ${message.isError ? 'border border-red-500' : ''}`}
-              >
-                <div className="flex items-center mb-2">
-                  <span className={`font-medium text-sm ${
-                    message.sender === 'user' ? 'text-indigo-300' : 
-                    message.sender === 'system' ? 'text-yellow-300' : 'text-cyan-300'
-                  }`}>
-                    {message.sender === 'user' ? 'User' : 
-                     message.sender === 'system' ? 'System' : 'AI Assistant'}
-                  </span>
-                  {message.timestamp !== null && (
-                    <span className="text-gray-500 text-xs ml-2">
-                      at {formatTime(message.timestamp)}
-                    </span>
-                  )}
-                </div>
-                <div 
-                  className="text-white"
-                  dangerouslySetInnerHTML={{ __html: parseMarkdown(message.text) }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 export default SharedResourceViewer;

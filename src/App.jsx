@@ -8,6 +8,8 @@ import Gallery from './components/Gallery/Gallery';
 import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
+import SharedResourceViewer from './components/Sharing/SharedResourceViewer';
+import SharedChatPage from './components/Sharing/SharedChatPage';
 import './App.css';
 
 // Placeholder for TranslatePage if it doesn't exist
@@ -38,6 +40,13 @@ try {
 // Utility function to get initial page from URL
 const getInitialPage = () => {
   const path = window.location.pathname;
+  const urlParams = new URLSearchParams(window.location.search);
+  const returnUrl = urlParams.get('returnUrl');
+  
+  // Only set to shared if we're actually on a shared URL, not just have it in returnUrl
+  // The returnUrl will be handled by the redirect logic after login
+  if (path.startsWith('/shared/')) return 'shared';
+  
   if (path === '/chat') return 'chat';
   if (path === '/gallery') return 'gallery';
   if (path === '/translate') return 'translate';
@@ -94,7 +103,8 @@ const AppContent = () => {
 
     // Set initial history state
     if (!window.history.state) {
-      window.history.replaceState({ page: getInitialPage() }, '', window.location.pathname);
+      const currentUrl = window.location.pathname + window.location.search;
+      window.history.replaceState({ page: getInitialPage() }, '', currentUrl);
     }
 
     window.addEventListener('popstate', handlePopState);
@@ -104,8 +114,72 @@ const AppContent = () => {
     };
   }, []);
 
+  // Handle shared videos from sessionStorage
+  useEffect(() => {
+    if (currentUser && currentPage === 'home') {
+      const sharedVideoData = sessionStorage.getItem('sharedVideoForChat');
+      if (sharedVideoData) {
+        try {
+          const videoData = JSON.parse(sharedVideoData);
+          sessionStorage.removeItem('sharedVideoForChat'); // Clear after use
+          
+          // Convert shared video format to chat format
+          const chatVideoData = {
+            videoId: videoData.id,
+            title: videoData.title || 'Shared Video',
+            source_type: videoData.source_type,
+            youtube_id: videoData.youtube_id,
+            youtube_url: videoData.youtube_url,
+            s3_key: videoData.s3_key,
+            shareToken: videoData.shareToken,
+            shareId: videoData.shareId, // Add the shareId field
+            isShared: true
+          };
+          
+          // Navigate to chat with the shared video
+          handleNavigateToChat(chatVideoData);
+        } catch (error) {
+          console.error('Error parsing shared video data:', error);
+          sessionStorage.removeItem('sharedVideoForChat');
+        }
+      }
+    }
+  }, [currentUser, currentPage]);
+
   // NOW AFTER ALL HOOKS, CHECK AUTHENTICATION
-  if (!currentUser) {
+  // Check if user wants to login (from shared link redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const shouldShowLogin = urlParams.get('login') === 'true';
+  const returnUrl = urlParams.get('returnUrl');
+  
+  
+  // Handle redirect after successful login
+  useEffect(() => {
+    if (currentUser && returnUrl && shouldShowLogin) {
+      // Clear the URL parameters and navigate to the return URL
+      const newUrl = returnUrl;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Update the current page state based on the return URL
+      if (newUrl.startsWith('/shared/')) {
+        setCurrentPage('shared');
+      } else if (newUrl === '/chat') {
+        setCurrentPage('chat');
+      } else if (newUrl === '/gallery') {
+        setCurrentPage('gallery');
+      } else if (newUrl === '/translate') {
+        setCurrentPage('translate');
+      } else {
+        setCurrentPage('home');
+      }
+    }
+  }, [currentUser, returnUrl, shouldShowLogin]);
+  
+  // Allow shared page access without authentication
+  if (!currentUser && currentPage !== 'shared') {
+    if (shouldShowLogin) {
+      return <AuthForm returnUrl={returnUrl} />;
+    }
     return <AuthForm />;
   }
 
@@ -127,7 +201,7 @@ const AppContent = () => {
             <TopBar />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <PageHeader 
-                title="Chat with My Video"
+                title={selectedVideo?.isShared ? "Chat with Shared Video" : "Chat with My Video"}
                 onNavigateToChat={handleNavigateToChat}
                 onNavigateToGallery={handleNavigateToGallery}
                 onNavigateToTranslate={handleNavigateToTranslate}
@@ -180,6 +254,22 @@ const AppContent = () => {
               </div>
             </div>
           </ProtectedRoute>
+        );
+      case 'shared':
+        return (
+          <div className="min-h-screen bg-gray-950">
+            <TopBar />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <PageHeader 
+                title="Shared Resource"
+                onNavigateToChat={handleNavigateToChat}
+                onNavigateToGallery={handleNavigateToGallery}
+                onNavigateToTranslate={handleNavigateToTranslate}
+                onNavigateToHome={handleNavigateToHome}
+              />
+              <SharedResourceViewer />
+            </div>
+          </div>
         );
       default:
         return (

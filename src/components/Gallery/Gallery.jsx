@@ -327,12 +327,12 @@ const Gallery = ({ onNavigateToChat }) => {
 
   return (
     <div className="w-full bg-gray-900 border border-gray-800 rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           {currentFolderId && (
             <button
               onClick={() => setCurrentFolderId(folderMap.get(currentFolderId)?.parent_id || null)}
-              className="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center gap-2"
+              className="w-full sm:w-auto mb-4 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
             >
               <ArrowLeft size={16} />
               Up
@@ -348,24 +348,24 @@ const Gallery = ({ onNavigateToChat }) => {
                 fetchVideos();
               }
             }}
-            className="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center gap-2"
+            className="w-full sm:w-auto mb-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
             title="Refresh"
           >
             <RefreshCw size={16} />
           </button>
         </div>
         {section !== 'shared' && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="New folder name"
-              className="px-2 py-1 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white"
+              className="w-full sm:w-auto px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white"
             />
             <button
               onClick={handleCreateFolder}
               disabled={creating || !newFolderName.trim()}
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm flex items-center gap-2"
+              className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
             >
               <FolderPlus size={16} />
               Create

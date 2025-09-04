@@ -46,7 +46,7 @@ const mapFirebaseError = (error) => {
   return 'Something went wrong. Please try again';
 };
 
-const AuthForm = () => {
+const AuthForm = ({ returnUrl }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,6 +58,12 @@ const AuthForm = () => {
 
   const { login, signup, signInWithGoogle, resetPassword, isFirebaseConfigured } = useAuth();
 
+
+  const handleSuccessfulAuth = () => {
+    // The App.jsx component will handle the redirect based on returnUrl
+    // No need to do anything here - just let the auth state change trigger the redirect
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -67,11 +73,13 @@ const AuthForm = () => {
     try {
       if (isLogin) {
         await login(email, password);
+        handleSuccessfulAuth();
       } else {
         if (!displayName.trim()) {
           throw new Error('Display name is required');
         }
         await signup(email, password, displayName);
+        handleSuccessfulAuth();
       }
     } catch (error) {
       setError(mapFirebaseError(error));
@@ -87,6 +95,7 @@ const AuthForm = () => {
 
     try {
       await signInWithGoogle();
+      handleSuccessfulAuth();
     } catch (error) {
       setError(mapFirebaseError(error));
     } finally {
@@ -118,7 +127,7 @@ const AuthForm = () => {
       <div className="lg:hidden max-w-md w-full space-y-8 mt-8">
         <div className="text-center">
           <img 
-            src="logo-new-2.png" 
+            src="/logo-new-2.png" 
             alt="VidyaAI Logo" 
             className="mx-auto h-32 w-auto rounded-lg border-2 border-white mb-4"
           />
@@ -131,6 +140,11 @@ const AuthForm = () => {
               : 'Unlock the future of learning with artificial intelligence ✨'
             }
           </p>
+          {returnUrl && (
+            <p className="mt-2 text-sm text-indigo-400">
+              🔗 You'll be redirected back after signing in
+            </p>
+          )}
         </div>
 
         <div className="bg-gray-900 rounded-xl shadow-2xl p-8 border border-gray-800">
@@ -310,7 +324,7 @@ const AuthForm = () => {
         <div className="flex-1 flex items-center justify-center pr-8">
           <div className="text-center max-w-lg">
             <img 
-              src="logo-new-2.png" 
+              src="/logo-new-2.png" 
               alt="VidyaAI Logo" 
               className="mx-auto h-40 w-auto rounded-lg border-2 border-white mb-8"
             />

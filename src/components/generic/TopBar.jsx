@@ -20,7 +20,7 @@ const TopBar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3">
           <img 
-            src="logo-new-2.png" 
+            src="/logo-new-2.png" 
             alt="VidyaAI Logo" 
             className="h-16 w-auto rounded-lg border-2 border-white"
           />

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const TopBar = () => {
+const TopBar = ({ onNavigateToHome }) => {
   const { currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -19,11 +19,17 @@ const TopBar = () => {
     <header className="bg-gray-900 border-b border-gray-800 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3">
-          <img 
-            src="/logo-new-2.png" 
-            alt="VidyaAI Logo" 
-            className="h-16 w-auto rounded-lg border-2 border-white"
-          />
+          <button
+            onClick={onNavigateToHome}
+            className="focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded-lg transition-all duration-200 hover:opacity-80"
+            aria-label="Go to Home Page"
+          >
+            <img 
+              src="/logo-new-2.png" 
+              alt="VidyaAI Logo" 
+              className="h-16 w-auto rounded-lg border-2 border-white"
+            />
+          </button>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4 h-16">

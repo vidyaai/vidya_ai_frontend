@@ -198,7 +198,7 @@ const AppContent = () => {
         return (
         <ProtectedRoute>
           <div className="min-h-screen bg-gray-950">
-            <TopBar />
+            <TopBar onNavigateToHome={handleNavigateToHome} />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <PageHeader 
                 title={selectedVideo?.isShared ? "Chat with Shared Video" : "Chat with My Video"}
@@ -220,7 +220,7 @@ const AppContent = () => {
         return (
           <ProtectedRoute>
             <div className="min-h-screen bg-gray-950">
-              <TopBar />
+              <TopBar onNavigateToHome={handleNavigateToHome} />
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <PageHeader 
                   title="My Gallery"
@@ -238,7 +238,7 @@ const AppContent = () => {
         return (
           <ProtectedRoute>
             <div className="min-h-screen bg-gray-950">
-              <TopBar />
+              <TopBar onNavigateToHome={handleNavigateToHome} />
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <PageHeader 
                   title="Translate"
@@ -258,7 +258,7 @@ const AppContent = () => {
       case 'shared':
         return (
           <div className="min-h-screen bg-gray-950">
-            <TopBar />
+            <TopBar onNavigateToHome={handleNavigateToHome} />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <PageHeader 
                 title="Shared Resource"

@@ -40,10 +40,16 @@ try {
 // Utility function to get initial page from URL
 const getInitialPage = () => {
   const path = window.location.pathname;
+  const urlParams = new URLSearchParams(window.location.search);
+  const returnUrl = urlParams.get('returnUrl');
+  
+  // Only set to shared if we're actually on a shared URL, not just have it in returnUrl
+  // The returnUrl will be handled by the redirect logic after login
+  if (path.startsWith('/shared/')) return 'shared';
+  
   if (path === '/chat') return 'chat';
   if (path === '/gallery') return 'gallery';
   if (path === '/translate') return 'translate';
-  if (path.startsWith('/shared/')) return 'shared';
   return 'home';
 };
 
@@ -97,7 +103,8 @@ const AppContent = () => {
 
     // Set initial history state
     if (!window.history.state) {
-      window.history.replaceState({ page: getInitialPage() }, '', window.location.pathname);
+      const currentUrl = window.location.pathname + window.location.search;
+      window.history.replaceState({ page: getInitialPage() }, '', currentUrl);
     }
 
     window.addEventListener('popstate', handlePopState);
@@ -144,6 +151,29 @@ const AppContent = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const shouldShowLogin = urlParams.get('login') === 'true';
   const returnUrl = urlParams.get('returnUrl');
+  
+  
+  // Handle redirect after successful login
+  useEffect(() => {
+    if (currentUser && returnUrl && shouldShowLogin) {
+      // Clear the URL parameters and navigate to the return URL
+      const newUrl = returnUrl;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Update the current page state based on the return URL
+      if (newUrl.startsWith('/shared/')) {
+        setCurrentPage('shared');
+      } else if (newUrl === '/chat') {
+        setCurrentPage('chat');
+      } else if (newUrl === '/gallery') {
+        setCurrentPage('gallery');
+      } else if (newUrl === '/translate') {
+        setCurrentPage('translate');
+      } else {
+        setCurrentPage('home');
+      }
+    }
+  }, [currentUser, returnUrl, shouldShowLogin]);
   
   // Allow shared page access without authentication
   if (!currentUser && currentPage !== 'shared') {

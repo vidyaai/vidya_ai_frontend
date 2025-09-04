@@ -6,8 +6,15 @@ import PlayerComponent from '../Chat/PlayerComponent';
 
 const SharedChatPage = () => {
   // Extract share token from URL path
-  const shareToken = window.location.pathname.split('/shared/')[1];
-  const { currentUser } = useAuth();
+  const [shareToken, setShareToken] = useState(null);
+  const { currentUser, loading: authLoading } = useAuth();
+  
+  // Extract share token when component mounts or URL changes
+  useEffect(() => {
+    const path = window.location.pathname;
+    const token = path.split('/shared/')[1];
+    setShareToken(token);
+  }, []);
   const [sharedData, setSharedData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,9 +26,11 @@ const SharedChatPage = () => {
 
 
   useEffect(() => {
-    fetchSharedResource();
-    setPresignedUrlFetched(false); // Reset flag when share token changes
-  }, [shareToken, currentUser]);
+    if (shareToken && !authLoading) {
+      fetchSharedResource();
+      setPresignedUrlFetched(false); // Reset flag when share token changes
+    }
+  }, [shareToken, currentUser, authLoading]);
 
   // Fetch presigned URL when video data is available (only once)
   
@@ -158,6 +167,28 @@ const SharedChatPage = () => {
     }
   };
 
+  if (!shareToken) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader size={48} className="text-indigo-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading shared link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader size={48} className="text-indigo-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -179,7 +210,10 @@ const SharedChatPage = () => {
           <div className="flex gap-3 justify-center">
             {requiresAuth ? (
               <button
-                onClick={() => window.location.href = '/?login=true'}
+                onClick={() => {
+                  const currentPath = window.location.pathname;
+                  window.location.href = `/?login=true&returnUrl=${encodeURIComponent(currentPath)}`;
+                }}
                 className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 <LogIn size={16} />

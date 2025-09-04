@@ -58,13 +58,10 @@ const AuthForm = ({ returnUrl }) => {
 
   const { login, signup, signInWithGoogle, resetPassword, isFirebaseConfigured } = useAuth();
 
+
   const handleSuccessfulAuth = () => {
-    if (returnUrl) {
-      // Decode the return URL and navigate to it
-      const decodedUrl = decodeURIComponent(returnUrl);
-      window.location.href = decodedUrl;
-    }
-    // If no return URL, the default behavior will take over
+    // The App.jsx component will handle the redirect based on returnUrl
+    // No need to do anything here - just let the auth state change trigger the redirect
   };
 
   const handleSubmit = async (e) => {

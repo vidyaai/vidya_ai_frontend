@@ -13,7 +13,8 @@ const SharedChatPage = () => {
   useEffect(() => {
     const path = window.location.pathname;
     const token = path.split('/shared/')[1];
-    setShareToken(token);
+    // Remove trailing slash from token if it exists
+    setShareToken(token ? token.replace(/\/$/, '') : null);
   }, []);
   const [sharedData, setSharedData] = useState(null);
   const [loading, setLoading] = useState(true);

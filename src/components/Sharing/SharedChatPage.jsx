@@ -212,7 +212,7 @@ const SharedChatPage = () => {
             {requiresAuth ? (
               <button
                 onClick={() => {
-                  const currentPath = window.location.pathname.replace(/\/$/, '');
+                  const currentPath = window.location.pathname;
                   window.location.href = `/?login=true&returnUrl=${encodeURIComponent(currentPath)}`;
                 }}
                 className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2"

@@ -31,6 +31,24 @@ api.interceptors.request.use(async (config) => {
   } catch (e) {
     // continue without token
   }
+  
+  // Fix trailing slash issue: ensure URLs don't end with trailing slashes when query params are present
+  if (config.url) {
+    // Remove trailing slash from the URL if it exists, but only if there are query params
+    if (config.params && Object.keys(config.params).length > 0) {
+      config.url = config.url.replace(/\/$/, '');
+    }
+    
+    // Also handle cases where the URL might have been constructed with trailing slashes elsewhere
+    // This covers edge cases where the URL construction happens outside of axios
+    if (config.url.includes('?') && config.url.match(/\/\?/)) {
+      config.url = config.url.replace(/\/\?/, '?');
+    }
+    if (config.url.includes('&') && config.url.match(/\/&/)) {
+      config.url = config.url.replace(/\/&/g, '&');
+    }
+  }
+  
   return config;
 });
 

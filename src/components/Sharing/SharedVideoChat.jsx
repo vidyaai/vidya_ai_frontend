@@ -14,9 +14,14 @@ const SharedVideoChat = ({ video, shareToken, onClose }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    // Get video URL when component mounts
-    getVideoUrl();
-  }, [video.id, shareToken]);
+    // Get video URL when component mounts (only for uploaded videos)
+    if (video.source_type === 'uploaded') {
+      getVideoUrl();
+    } else if (video.source_type === 'youtube') {
+      // For YouTube videos, we don't need to fetch a URL
+      setVideoUrl(null);
+    }
+  }, [video.id, video.source_type, shareToken]);
 
   const getVideoUrl = async () => {
     try {
@@ -161,7 +166,7 @@ const SharedVideoChat = ({ video, shareToken, onClose }) => {
             <AlertCircle size={48} className="mx-auto mb-2" />
             {videoError}
           </div>
-        ) : videoUrl ? (
+        ) : (video.source_type === 'youtube' && video.youtube_id) || (video.source_type === 'uploaded' && videoUrl) ? (
           <div className="relative">
             {video.source_type === 'youtube' ? (
               <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">

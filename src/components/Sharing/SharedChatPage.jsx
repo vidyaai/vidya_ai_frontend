@@ -253,7 +253,7 @@ const SharedChatPage = () => {
     ...video,
     videoId: video.youtube_id || video.videoId, // Use youtube_id if available
     sourceType: video.source_type || video.sourceType, // Use source_type if available
-    videoUrl: video.videoUrl || null // Use the presigned URL if available
+    videoUrl: video.source_type === 'uploaded' ? (video.videoUrl || null) : null // Only use videoUrl for uploaded videos
   };
   
 
@@ -281,9 +281,9 @@ const SharedChatPage = () => {
               
               {/* Video Player */}
                <div className="aspect-video bg-gray-950 rounded-lg">
-                 {mappedVideo.videoUrl ? (
+                 {(mappedVideo.videoId && mappedVideo.sourceType === 'youtube') || (mappedVideo.videoUrl && mappedVideo.sourceType === 'uploaded') ? (
                    <PlayerComponent
-                     key={`${mappedVideo.sourceType}-${mappedVideo.videoUrl}`}
+                     key={`${mappedVideo.sourceType}-${mappedVideo.videoId || mappedVideo.videoUrl}`}
                      currentVideo={mappedVideo}
                      onPlayerReady={handlePlayerReady}
                      onTimeUpdate={handleTimeUpdate}

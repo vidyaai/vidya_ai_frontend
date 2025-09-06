@@ -232,18 +232,18 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Share2 size={20} className="text-indigo-400" />
-            <h3 className="text-lg font-semibold text-white">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Share2 size={20} className="text-indigo-400 flex-shrink-0" />
+            <h3 className="text-base sm:text-lg font-semibold text-white truncate">
               {existingLinkId && shareLink ? 'Edit' : 'Share'} {shareType === 'folder' ? 'Folder' : 'Chat'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-white rounded"
+            className="p-1 text-gray-400 hover:text-white rounded flex-shrink-0 ml-2"
           >
             <X size={20} />
           </button>
@@ -477,14 +477,17 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
                   type="text"
                   value={getShareUrl()}
                   readOnly
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm sm:text-base"
                 />
                 <button
                   onClick={() => copyToClipboard(getShareUrl())}
-                  className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-2"
+                  className="px-2 sm:px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1 sm:gap-2 whitespace-nowrap"
+                  title={copySuccess ? 'Copied!' : 'Copy to clipboard'}
                 >
                   {copySuccess ? <Check size={16} /> : <Copy size={16} />}
-                  {copySuccess ? 'Copied!' : 'Copy'}
+                  <span className="hidden sm:inline">
+                    {copySuccess ? 'Copied!' : 'Copy'}
+                  </span>
                 </button>
               </div>
             </div>

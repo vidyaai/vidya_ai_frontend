@@ -432,7 +432,7 @@ const Gallery = ({ onNavigateToChat }) => {
                     <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-600 text-sm relative">
                       {item.video.source_type === 'uploaded' ? 'Uploaded' : 'YouTube'}
                       {/* Chat button overlay */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -501,17 +501,17 @@ const Gallery = ({ onNavigateToChat }) => {
               key={f.id}
               onDragOver={allowDrop}
               onDrop={(e) => onDropFolder(e, f.id)}
-              className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 flex items-center gap-2 relative"
+              className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 relative flex flex-row items-center justify-between"
               title={f.name}
             >
               <button
                 onClick={() => setCurrentFolderId(f.id)}
-                className="flex items-center gap-2 flex-1 text-left"
+                className="flex items-center gap-2 w-full text-left pr-16"
               >
-                <FolderIcon size={18} className="text-yellow-400" />
-                <div className="text-white text-sm line-clamp-2">{f.name}</div>
+                <FolderIcon size={18} className="text-yellow-400 flex-shrink-0" />
+                <div className="text-white text-sm line-clamp-1 min-w-0 flex-1">{f.name}</div>
               </button>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="absolute right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -570,7 +570,7 @@ const Gallery = ({ onNavigateToChat }) => {
                   {section === 'uploaded' ? 'Uploaded' : 'YouTube'}
                 </div>
                 {/* Action buttons overlay */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

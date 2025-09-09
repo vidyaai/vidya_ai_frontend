@@ -8,12 +8,13 @@ import {
   Award,
   BookOpen,
   Lightbulb,
-  ArrowRight
+  ArrowRight,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import TopBar from '../generic/TopBar';
 
-const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery }) => {
+const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery, onNavigateToAssignments }) => {
   const { currentUser } = useAuth();
 
   const features = [
@@ -64,6 +65,14 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       action: "Start Courses",
       onClick: () => console.log("Navigate to courses"),
       gradient: "from-blue-500 to-green-500"
+    },
+    {
+      icon: ClipboardList,
+      title: "AI Assignment Manager",
+      description: "Create, manage, and share assignments with AI-powered generation. Build custom assignments or let AI create them from your content.",
+      action: "Manage Assignments",
+      onClick: onNavigateToAssignments,
+      gradient: "from-teal-500 to-cyan-500"
     }
   ];
 

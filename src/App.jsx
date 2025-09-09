@@ -10,6 +10,7 @@ import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
 import SharedResourceViewer from './components/Sharing/SharedResourceViewer';
 import SharedChatPage from './components/Sharing/SharedChatPage';
+import AssignmentManager from './components/Assignments/AssignmentManager';
 import './App.css';
 
 // Placeholder for TranslatePage if it doesn't exist
@@ -50,6 +51,7 @@ const getInitialPage = () => {
   if (path === '/chat') return 'chat';
   if (path === '/gallery') return 'gallery';
   if (path === '/translate') return 'translate';
+  if (path === '/assignments') return 'assignments';
   return 'home';
 };
 
@@ -90,6 +92,12 @@ const AppContent = () => {
     setCurrentPage('gallery');
     setSelectedVideo(null);
     window.history.pushState({ page: 'gallery' }, '', '/gallery');
+  };
+
+  const handleNavigateToAssignments = () => {
+    setCurrentPage('assignments');
+    setSelectedVideo(null);
+    window.history.pushState({ page: 'assignments' }, '', '/assignments');
   };
 
   // Handle browser back/forward buttons
@@ -169,6 +177,8 @@ const AppContent = () => {
         setCurrentPage('gallery');
       } else if (newUrl === '/translate') {
         setCurrentPage('translate');
+      } else if (newUrl === '/assignments') {
+        setCurrentPage('assignments');
       } else {
         setCurrentPage('home');
       }
@@ -192,6 +202,7 @@ const AppContent = () => {
             onNavigateToChat={handleNavigateToChat}
             onNavigateToTranslate={handleNavigateToTranslate}
             onNavigateToGallery={handleNavigateToGallery}
+            onNavigateToAssignments={handleNavigateToAssignments}
           />
         );
       case 'chat':
@@ -255,6 +266,12 @@ const AppContent = () => {
             </div>
           </ProtectedRoute>
         );
+      case 'assignments':
+        return (
+          <ProtectedRoute>
+            <AssignmentManager onNavigateToHome={handleNavigateToHome} />
+          </ProtectedRoute>
+        );
       case 'shared':
         return (
           <div className="min-h-screen bg-gray-950">
@@ -276,6 +293,8 @@ const AppContent = () => {
           <HomePage 
             onNavigateToChat={handleNavigateToChat}
             onNavigateToTranslate={handleNavigateToTranslate}
+            onNavigateToGallery={handleNavigateToGallery}
+            onNavigateToAssignments={handleNavigateToAssignments}
           />
         );
     }

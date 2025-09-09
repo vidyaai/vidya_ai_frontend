@@ -12,7 +12,7 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'production') {
   API_URL = 'https://api.vidyaai.co';
 } else if (NODE_ENV === 'local') {
-  API_URL = 'http://localhost:8000';
+  API_URL = ' http://192.168.1.3:8000';
 }
 console.log("API_URL", API_URL);
 export { API_URL };

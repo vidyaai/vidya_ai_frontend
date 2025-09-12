@@ -16,6 +16,7 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
   const [creating, setCreating] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -220,6 +221,29 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
+    }
+  };
+
+  const deleteShareLink = async () => {
+    if (!existingLinkId) return;
+    
+    if (!confirm('Are you sure you want to delete this share link? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await api.delete(`/api/sharing/links/${existingLinkId}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      
+      alert('Share link deleted successfully!');
+      onClose();
+    } catch (error) {
+      console.error('Error deleting share link:', error);
+      alert(error.response?.data?.detail || 'Failed to delete share link');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -430,23 +454,42 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
               >
                 Cancel
               </button>
-                             <button
-                 onClick={createShareLink}
-                 disabled={creating || (!isPublic && selectedUsers.length === 0 && existingUsers.length === 0)}
-                 className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-               >
-                 {creating ? (
-                   <>
-                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                     {existingLinkId ? 'Updating...' : 'Creating...'}
-                   </>
-                 ) : (
-                   <>
-                     <Share2 size={16} />
-                     {existingLinkId ? 'Update Share Link' : 'Create Share Link'}
-                   </>
-                 )}
-               </button>
+              {existingLinkId && (
+                <button
+                  onClick={deleteShareLink}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      Delete
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={createShareLink}
+                disabled={creating || (!isPublic && !existingLinkId && selectedUsers.length === 0)}
+                className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {creating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {existingLinkId ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} />
+                    {existingLinkId ? 'Update Share Link' : 'Create Share Link'}
+                  </>
+                )}
+              </button>
             </div>
           </div>
         ) : (
@@ -539,13 +582,32 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
 
             <div className="flex gap-3">
               {existingLinkId && (
-                <button
-                  onClick={() => setShareLink(null)}
-                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Share2 size={16} />
-                  Edit Share Link
-                </button>
+                <>
+                  <button
+                    onClick={() => setShareLink(null)}
+                    className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <Share2 size={16} />
+                    Edit Share Link
+                  </button>
+                  <button
+                    onClick={deleteShareLink}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {deleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={16} />
+                        Delete Share Link
+                      </>
+                    )}
+                  </button>
+                </>
               )}
               <button
                 onClick={onClose}

@@ -36,6 +36,8 @@ const Gallery = ({ onNavigateToChat }) => {
   const [deleting, setDeleting] = useState(null);
   const [sharingModal, setSharingModal] = useState({ isOpen: false, shareType: null, resourceId: null, resourceData: null });
   const [sharedContent, setSharedContent] = useState({ folders: [], videos: [] });
+  const [sharedContentError, setSharedContentError] = useState(null); // { type: 'video'|'folder'|'chat', message: string, sharedLink: object }
+  const [contentInfo, setContentInfo] = useState({}); // Cache for content sharing info
 
   const folderMap = useMemo(() => {
     const map = new Map();
@@ -136,11 +138,29 @@ const Gallery = ({ onNavigateToChat }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, currentFolderId, userId]);
 
-
-
   const subfolders = useMemo(() => {
     return folders.filter((f) => (f.parent_id || null) === (currentFolderId || null));
   }, [folders, currentFolderId]);
+
+  // Fetch content info when folders or videos change
+  useEffect(() => {
+    if (section !== 'shared') {
+      // Fetch folder info
+      subfolders.forEach(folder => {
+        if (!getContentInfo('folder', folder.id)) {
+          fetchContentInfo('folder', folder.id);
+        }
+      });
+      
+      // Fetch video info
+      videos.forEach(video => {
+        if (!getContentInfo('video', video.id)) {
+          fetchContentInfo('video', video.id);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subfolders, videos, section]);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -239,7 +259,19 @@ const Gallery = ({ onNavigateToChat }) => {
       setDeleteConfirm(null);
     } catch (e) {
       console.error(e);
-      setError(e.response?.data?.detail || e.message || 'Failed to delete video');
+      
+      // Check if this is a shared content error
+      if (e.response?.data?.detail?.error === 'content_is_shared') {
+        setSharedContentError({
+          type: 'video',
+          message: e.response.data.detail.message,
+          sharedLink: e.response.data.detail.shared_link,
+          resourceName: video.title || 'Untitled Video'
+        });
+        setDeleteConfirm(null);
+      } else {
+        setError(e.response?.data?.detail || e.message || 'Failed to delete video');
+      }
     } finally {
       setDeleting(null);
     }
@@ -277,7 +309,19 @@ const Gallery = ({ onNavigateToChat }) => {
       setDeleteConfirm(null);
     } catch (e) {
       console.error(e);
-      setError(e.response?.data?.detail || e.message || 'Failed to delete folder');
+      
+      // Check if this is a shared content error
+      if (e.response?.data?.detail?.error === 'content_is_shared') {
+        setSharedContentError({
+          type: 'folder',
+          message: e.response.data.detail.message,
+          sharedLink: e.response.data.detail.shared_link,
+          resourceName: folder.name
+        });
+        setDeleteConfirm(null);
+      } else {
+        setError(e.response?.data?.detail || e.message || 'Failed to delete folder');
+      }
     } finally {
       setDeleting(null);
     }
@@ -321,6 +365,32 @@ const Gallery = ({ onNavigateToChat }) => {
     } catch (error) {
       console.error('Error fetching shared content:', error);
     }
+  };
+
+  const fetchContentInfo = async (contentType, contentId) => {
+    try {
+      const endpoint = contentType === 'video' 
+        ? `/api/gallery/video/${contentId}/info`
+        : `/api/folders/${contentId}/info`;
+      
+      const response = await api.get(endpoint, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      
+      setContentInfo(prev => ({
+        ...prev,
+        [`${contentType}_${contentId}`]: response.data
+      }));
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching ${contentType} info:`, error);
+      return null;
+    }
+  };
+
+  const getContentInfo = (contentType, contentId) => {
+    return contentInfo[`${contentType}_${contentId}`] || null;
   };
 
 
@@ -496,131 +566,179 @@ const Gallery = ({ onNavigateToChat }) => {
           >
             Move to Root
           </div>
-          {subfolders.map((f) => (
-            <div
-              key={f.id}
-              onDragOver={allowDrop}
-              onDrop={(e) => onDropFolder(e, f.id)}
-              className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 relative flex flex-row items-center justify-between"
-              title={f.name}
-            >
-              <button
-                onClick={() => setCurrentFolderId(f.id)}
-                className="flex items-center gap-2 w-full text-left pr-16"
+          {subfolders.map((f) => {
+            const folderInfo = getContentInfo('folder', f.id);
+            const isShared = folderInfo?.is_shared || false;
+            
+            return (
+              <div
+                key={f.id}
+                onDragOver={allowDrop}
+                onDrop={(e) => onDropFolder(e, f.id)}
+                className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 relative flex flex-row items-center justify-between"
+                title={f.name}
               >
-                <FolderIcon size={18} className="text-yellow-400 flex-shrink-0" />
-                <div className="text-white text-sm line-clamp-1 min-w-0 flex-1">{f.name}</div>
-              </button>
-              <div className="absolute right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openFolderSharing(f);
-                  }}
-                  className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
-                  title="Share folder"
+                  onClick={() => setCurrentFolderId(f.id)}
+                  className="flex items-center gap-2 w-full text-left pr-16"
                 >
-                  <Share2 size={12} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    confirmFolderDelete(f);
-                  }}
-                  disabled={deleting === f.id}
-                  className="p-1 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50"
-                  title="Delete folder"
-                >
-                  {deleting === f.id ? (
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                  ) : (
-                    <Trash2 size={12} />
+                  <FolderIcon size={18} className="text-yellow-400 flex-shrink-0" />
+                  <div className="text-white text-sm line-clamp-1 min-w-0 flex-1">{f.name}</div>
+                  {isShared && (
+                    <div className="ml-2 px-2 py-1 bg-indigo-600 text-white text-xs rounded">
+                      Shared
+                    </div>
                   )}
                 </button>
+                <div className="absolute right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFolderSharing(f);
+                    }}
+                    className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+                    title="Share folder"
+                  >
+                    <Share2 size={12} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isShared) {
+                        setSharedContentError({
+                          type: 'folder',
+                          message: 'This folder is part of shared content and cannot be deleted. Please delete the share link first.',
+                          sharedLink: folderInfo?.shared_link,
+                          resourceName: f.name
+                        });
+                      } else {
+                        confirmFolderDelete(f);
+                      }
+                    }}
+                    disabled={deleting === f.id}
+                    className={`p-1 text-white rounded disabled:opacity-50 ${
+                      isShared 
+                        ? 'bg-yellow-600 hover:bg-yellow-700' 
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                    title={isShared ? 'Folder is shared - click to see details' : 'Delete folder'}
+                  >
+                    {deleting === f.id ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Videos */}
       {section !== 'shared' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {videos.map((v) => (
-            <div
-              key={v.id}
-              draggable
-              onDragStart={(e) => onDragStartVideo(e, v)}
-              className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left"
-              title={v.title}
-            >
-              <div className="aspect-video bg-gray-900 overflow-hidden flex items-center justify-center text-gray-600 text-sm relative">
-                {v.thumbnailUrl ? (
-                  <img 
-                    src={v.thumbnailUrl} 
-                    alt={v.title || 'Video thumbnail'} 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div className={`absolute inset-0 flex items-center justify-center ${v.thumbnailUrl ? 'hidden' : 'flex'}`}>
-                  {section === 'uploaded' ? 'Uploaded' : 'YouTube'}
+          {videos.map((v) => {
+            const videoInfo = getContentInfo('video', v.id);
+            const isShared = videoInfo?.is_shared || false;
+            
+            return (
+              <div
+                key={v.id}
+                draggable
+                onDragStart={(e) => onDragStartVideo(e, v)}
+                className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left"
+                title={v.title}
+              >
+                <div className="aspect-video bg-gray-900 overflow-hidden flex items-center justify-center text-gray-600 text-sm relative">
+                  {v.thumbnailUrl ? (
+                    <img 
+                      src={v.thumbnailUrl} 
+                      alt={v.title || 'Video thumbnail'} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`absolute inset-0 flex items-center justify-center ${v.thumbnailUrl ? 'hidden' : 'flex'}`}>
+                    {section === 'uploaded' ? 'Uploaded' : 'YouTube'}
+                  </div>
+                  {/* Action buttons overlay */}
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleVideoChat(v);
+                      }}
+                      disabled={chatLoading === v.id}
+                      className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                      title="Chat with this video"
+                    >
+                      {chatLoading === v.id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <MessageSquare size={16} />
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isShared) {
+                          setSharedContentError({
+                            type: 'video',
+                            message: 'This video is part of shared content and cannot be deleted. Please delete the share link first.',
+                            sharedLink: videoInfo?.shared_link,
+                            resourceName: v.title || 'Untitled Video'
+                          });
+                        } else {
+                          confirmVideoDelete(v);
+                        }
+                      }}
+                      disabled={deleting === v.id}
+                      className={`p-2 text-white rounded-lg disabled:opacity-50 ${
+                        isShared 
+                          ? 'bg-yellow-600 hover:bg-yellow-700' 
+                          : 'bg-red-600 hover:bg-red-700'
+                      }`}
+                      title={isShared ? 'Video is shared - click to see details' : 'Delete this video'}
+                    >
+                      {deleting === v.id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </button>
+                  </div>
                 </div>
-                {/* Action buttons overlay */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                <div className="px-2 py-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-white text-sm line-clamp-2 flex-1">{v.title || 'Untitled'}</div>
+                    {isShared && (
+                      <div className="ml-2 px-2 py-1 bg-indigo-600 text-white text-xs rounded flex-shrink-0">
+                        Shared
+                      </div>
+                    )}
+                  </div>
+                  {/* Chat button below title */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleVideoChat(v);
-                    }}
+                    onClick={() => handleVideoChat(v)}
                     disabled={chatLoading === v.id}
-                    className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
-                    title="Chat with this video"
+                    className="mt-2 w-full px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                   >
                     {chatLoading === v.id ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                     ) : (
-                      <MessageSquare size={16} />
+                      <MessageSquare size={12} />
                     )}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      confirmVideoDelete(v);
-                    }}
-                    disabled={deleting === v.id}
-                    className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
-                    title="Delete this video"
-                  >
-                    {deleting === v.id ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : (
-                      <Trash2 size={16} />
-                    )}
+                    {chatLoading === v.id ? 'Loading...' : 'Chat'}
                   </button>
                 </div>
               </div>
-              <div className="px-2 py-2">
-                <div className="text-white text-sm line-clamp-2">{v.title || 'Untitled'}</div>
-                {/* Chat button below title */}
-                <button
-                  onClick={() => handleVideoChat(v)}
-                  disabled={chatLoading === v.id}
-                  className="mt-2 w-full px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
-                >
-                  {chatLoading === v.id ? (
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                  ) : (
-                    <MessageSquare size={12} />
-                  )}
-                  {chatLoading === v.id ? 'Loading...' : 'Chat'}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {videos.length === 0 && (
             <div className="col-span-full text-gray-500 text-sm py-6 text-center">
               {isLoading ? 'Loading...' : 'No videos in this folder'}
@@ -720,6 +838,77 @@ const Gallery = ({ onNavigateToChat }) => {
         resourceId={sharingModal.resourceId}
         resourceData={sharingModal.resourceData}
       />
+
+      {/* Shared Content Error Modal */}
+      {sharedContentError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-yellow-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-lg">⚠️</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Cannot Delete {sharedContentError.type === 'video' ? 'Video' : sharedContentError.type === 'folder' ? 'Folder' : 'Chat Session'}</h3>
+                <p className="text-gray-400 text-sm">This content is part of shared content</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-700 rounded-lg p-4 mb-4">
+              <p className="text-gray-300 text-sm mb-3">
+                {sharedContentError.message}
+              </p>
+              
+              {sharedContentError.sharedLink && (
+                <div className="border-t border-gray-600 pt-3">
+                  <h4 className="text-white font-medium text-sm mb-2">Share Link Details:</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Title:</span>
+                      <span className="text-white">{sharedContentError.sharedLink.title}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Type:</span>
+                      <span className="text-white capitalize">{sharedContentError.sharedLink.share_type}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Visibility:</span>
+                      <span className="text-white">{sharedContentError.sharedLink.is_public ? 'Public' : 'Private'}</span>
+                    </div>
+                    {sharedContentError.sharedLink.created_at && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Created:</span>
+                        <span className="text-white text-xs">
+                          {new Date(sharedContentError.sharedLink.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setSharedContentError(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  // Navigate to sharing management page or open sharing modal
+                  setSharedContentError(null);
+                  // You could add navigation to sharing management here
+                  alert('Please go to the Sharing section to manage your share links and delete the one blocking this deletion.');
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+              >
+                Manage Share Links
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

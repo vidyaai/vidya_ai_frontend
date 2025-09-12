@@ -174,6 +174,7 @@ const Gallery = ({ onNavigateToChat }) => {
       }, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       setNewFolderName('');
       await fetchFolders();
+      refreshContentInfo(); // Refresh sharing status for new folder
     } catch (e) {
       console.error(e);
       setError(e.response?.data?.detail || e.message || 'Failed to create folder');
@@ -195,6 +196,7 @@ const Gallery = ({ onNavigateToChat }) => {
         target_folder_id: folderId || null
       }, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       await fetchVideos();
+      refreshContentInfo(); // Refresh sharing status after moving video
     } catch (err) {
       console.error(err);
     }
@@ -256,6 +258,7 @@ const Gallery = ({ onNavigateToChat }) => {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       await fetchVideos(); // Refresh the videos list
+      refreshContentInfo(); // Refresh sharing status
       setDeleteConfirm(null);
     } catch (e) {
       console.error(e);
@@ -306,6 +309,7 @@ const Gallery = ({ onNavigateToChat }) => {
       
       await fetchFolders(); // Refresh folders list
       await fetchVideos(); // Refresh videos list
+      refreshContentInfo(); // Refresh sharing status
       setDeleteConfirm(null);
     } catch (e) {
       console.error(e);
@@ -354,6 +358,24 @@ const Gallery = ({ onNavigateToChat }) => {
 
   const closeSharingModal = () => {
     setSharingModal({ isOpen: false, shareType: null, resourceId: null, resourceData: null });
+    // Refresh content info when sharing modal closes (in case sharing status changed)
+    refreshContentInfo();
+  };
+
+  const refreshContentInfo = () => {
+    // Clear existing content info cache
+    setContentInfo({});
+    
+    // Re-fetch info for current folders and videos
+    if (section !== 'shared') {
+      subfolders.forEach(folder => {
+        fetchContentInfo('folder', folder.id);
+      });
+      
+      videos.forEach(video => {
+        fetchContentInfo('video', video.id);
+      });
+    }
   };
 
   const fetchSharedContent = async () => {
@@ -416,6 +438,8 @@ const Gallery = ({ onNavigateToChat }) => {
               } else {
                 fetchFolders(); 
                 fetchVideos();
+                // Also refresh content info when manually refreshing
+                refreshContentInfo();
               }
             }}
             className="w-full sm:w-auto mb-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
@@ -889,7 +913,11 @@ const Gallery = ({ onNavigateToChat }) => {
             
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setSharedContentError(null)}
+                onClick={() => {
+                  setSharedContentError(null);
+                  // Refresh content info in case sharing status changed
+                  refreshContentInfo();
+                }}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
               >
                 Close
@@ -900,6 +928,8 @@ const Gallery = ({ onNavigateToChat }) => {
                   setSharedContentError(null);
                   // You could add navigation to sharing management here
                   alert('Please go to the Sharing section to manage your share links and delete the one blocking this deletion.');
+                  // Refresh content info after showing the alert
+                  setTimeout(() => refreshContentInfo(), 1000);
                 }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
               >

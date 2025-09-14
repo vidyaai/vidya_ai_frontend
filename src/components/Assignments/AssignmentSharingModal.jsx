@@ -151,10 +151,13 @@ const AssignmentSharingModal = ({ assignment, onClose }) => {
         <div className="bg-gray-800 rounded-lg p-4 mb-6">
           <h3 className="text-lg font-semibold text-white mb-2">{assignment.title}</h3>
           <p className="text-gray-400 text-sm mb-3">{assignment.description}</p>
-          <div className="flex items-center space-x-4 text-sm text-gray-400">
-            <span>{assignment.totalQuestions} questions</span>
-            <span>•</span>
-            <span>Due: {assignment.dueDate}</span>
+          <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
+            <div className="flex items-center space-x-2">
+              <span>{assignment.totalQuestions} questions</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>Due: {assignment.dueDate}</span>
+            </div>
           </div>
         </div>
 

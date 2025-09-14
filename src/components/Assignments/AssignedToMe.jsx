@@ -10,6 +10,7 @@ import {
   Upload,
   Eye
 } from 'lucide-react';
+import TopBar from '../generic/TopBar';
 import DoAssignmentModal from './DoAssignmentModal';
 
 const AssignedToMe = ({ onBack, onNavigateToHome }) => {
@@ -99,7 +100,10 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Header */}
+      {/* Top Navigation */}
+      <TopBar onNavigateToHome={onNavigateToHome} />
+      
+      {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">

@@ -9,18 +9,22 @@ import {
   Trash2,
   Calendar,
   Users,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import AssignmentBuilder from './AssignmentBuilder';
 import AIAssignmentGenerator from './AIAssignmentGenerator';
 import AssignmentSharingModal from './AssignmentSharingModal';
 import AssignmentSubmissions from './AssignmentSubmissions';
+import ParseFromDocumentModal from './ParseFromDocumentModal';
 
 const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [currentView, setCurrentView] = useState('main');
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [sharingModalOpen, setSharingModalOpen] = useState(false);
+  const [parseModalOpen, setParseModalOpen] = useState(false);
+  const [parsedAssignmentData, setParsedAssignmentData] = useState(null);
 
   // Mock data for assignments
   const [assignments] = useState([
@@ -64,6 +68,16 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
     setCurrentView('ai-generator');
   };
 
+  const handleParseFromDocument = () => {
+    setParseModalOpen(true);
+  };
+
+  const handleParsedAssignment = (assignmentData) => {
+    setParsedAssignmentData(assignmentData);
+    setParseModalOpen(false);
+    setCurrentView('assignment-builder');
+  };
+
   const handleShareAssignment = (assignment) => {
     setSelectedAssignment(assignment);
     setSharingModalOpen(true);
@@ -76,10 +90,15 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
 
   const handleBackToMain = () => {
     setCurrentView('main');
+    setParsedAssignmentData(null); // Clear parsed data when going back
   };
 
   if (currentView === 'assignment-builder') {
-    return <AssignmentBuilder onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+    return <AssignmentBuilder 
+      onBack={handleBackToMain} 
+      onNavigateToHome={onNavigateToHome} 
+      preloadedData={parsedAssignmentData}
+    />;
   }
 
   if (currentView === 'ai-generator') {
@@ -118,6 +137,13 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
               >
                 <Plus size={18} className="mr-2" />
                 Create Assignment
+              </button>
+              <button
+                onClick={handleParseFromDocument}
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+              >
+                <FileText size={18} className="mr-2" />
+                Parse from Document
               </button>
               <button
                 onClick={handleGenerateAssignment}
@@ -274,6 +300,13 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                 Create Assignment
               </button>
               <button
+                onClick={handleParseFromDocument}
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+              >
+                <FileText size={18} className="mr-2" />
+                Parse from Document
+              </button>
+              <button
                 onClick={handleGenerateAssignment}
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
               >
@@ -290,6 +323,14 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
         <AssignmentSharingModal
           assignment={selectedAssignment}
           onClose={() => setSharingModalOpen(false)}
+        />
+      )}
+
+      {/* Parse from Document Modal */}
+      {parseModalOpen && (
+        <ParseFromDocumentModal
+          onClose={() => setParseModalOpen(false)}
+          onParsed={handleParsedAssignment}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignmentBuilder.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Plus, 
@@ -14,13 +14,13 @@ import TopBar from '../generic/TopBar';
 import QuestionCard from './QuestionCard';
 import AssignmentPreview from './AssignmentPreview';
 
-const AssignmentBuilder = ({ onBack, onNavigateToHome }) => {
-  const [questions, setQuestions] = useState([]);
+const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
+  const [questions, setQuestions] = useState(preloadedData?.questions || []);
   const [showQuestionTypes, setShowQuestionTypes] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
-  const [assignmentTitle, setAssignmentTitle] = useState('');
-  const [assignmentDescription, setAssignmentDescription] = useState('');
-  const [assignmentDueDate, setAssignmentDueDate] = useState('');
+  const [assignmentTitle, setAssignmentTitle] = useState(preloadedData?.title || '');
+  const [assignmentDescription, setAssignmentDescription] = useState(preloadedData?.description || '');
+  const [assignmentDueDate, setAssignmentDueDate] = useState(preloadedData?.dueDate || '');
 
   const questionTypes = [
     { type: 'multiple-choice', label: 'Multiple Choice', icon: '○' },
@@ -30,6 +30,16 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome }) => {
     { type: 'long-answer', label: 'Long Answer', icon: '¶' },
     { type: 'true-false', label: 'True/False', icon: 'T/F' }
   ];
+
+  // Update state when preloadedData changes
+  useEffect(() => {
+    if (preloadedData) {
+      setQuestions(preloadedData.questions || []);
+      setAssignmentTitle(preloadedData.title || '');
+      setAssignmentDescription(preloadedData.description || '');
+      setAssignmentDueDate(preloadedData.dueDate || '');
+    }
+  }, [preloadedData]);
 
   const addQuestion = (type) => {
     const newQuestion = {
@@ -91,7 +101,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome }) => {
               </button>
               <div>
                 <h1 className="text-3xl font-bold text-white">Assignment Builder</h1>
-                <p className="text-gray-400 mt-2">Create your assignment manually</p>
+                <p className="text-gray-400 mt-2">
+                  {preloadedData ? 'Assignment parsed from document - review and modify as needed' : 'Create your assignment manually'}
+                </p>
               </div>
             </div>
             <div className="flex space-x-3">

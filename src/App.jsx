@@ -5,6 +5,7 @@ import AuthForm from './components/Login/AuthForm';
 import HomePage from './components/HomePage/HomePage';
 import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
 import Gallery from './components/Gallery/Gallery';
+import PricingPage from './components/PricingPage';
 import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
@@ -41,6 +42,7 @@ const getInitialPage = () => {
   if (path === '/chat') return 'chat';
   if (path === '/gallery') return 'gallery';
   if (path === '/translate') return 'translate';
+  if (path === '/pricing') return 'pricing';
   return 'home';
 };
 
@@ -83,6 +85,12 @@ const AppContent = () => {
     window.history.pushState({ page: 'gallery' }, '', '/gallery');
   };
 
+  const handleNavigateToPricing = () => {
+    setCurrentPage('pricing');
+    setSelectedVideo(null);
+    window.history.pushState({ page: 'pricing' }, '', '/pricing');
+  };
+
   // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = (event) => {
@@ -118,6 +126,7 @@ const AppContent = () => {
             onNavigateToChat={handleNavigateToChat}
             onNavigateToTranslate={handleNavigateToTranslate}
             onNavigateToGallery={handleNavigateToGallery}
+            onNavigateToPricing={handleNavigateToPricing}
           />
         );
       case 'chat':
@@ -132,6 +141,7 @@ const AppContent = () => {
                 onNavigateToGallery={handleNavigateToGallery}
                 onNavigateToTranslate={handleNavigateToTranslate}
                 onNavigateToHome={handleNavigateToHome}
+                onNavigateToPricing={handleNavigateToPricing}
               />
               <ImprovedYoutubePlayer 
                 onNavigateToHome={handleNavigateToHome}
@@ -154,6 +164,7 @@ const AppContent = () => {
                   onNavigateToGallery={handleNavigateToGallery}
                   onNavigateToTranslate={handleNavigateToTranslate}
                   onNavigateToHome={handleNavigateToHome}
+                  onNavigateToPricing={handleNavigateToPricing}
                 />
                 <Gallery onNavigateToChat={handleNavigateToChat} />
               </div>
@@ -172,6 +183,7 @@ const AppContent = () => {
                   onNavigateToGallery={handleNavigateToGallery}
                   onNavigateToTranslate={handleNavigateToTranslate}
                   onNavigateToHome={handleNavigateToHome}
+                  onNavigateToPricing={handleNavigateToPricing}
                 />
                 <TranslatePage 
                   onNavigateToHome={handleNavigateToHome}
@@ -180,6 +192,16 @@ const AppContent = () => {
               </div>
             </div>
           </ProtectedRoute>
+        );
+      case 'pricing':
+        return (
+          <PricingPage 
+            onNavigateToHome={handleNavigateToHome}
+            onNavigateToChat={handleNavigateToChat}
+            onNavigateToGallery={handleNavigateToGallery}
+            onNavigateToTranslate={handleNavigateToTranslate}
+            onNavigateToPricing={handleNavigateToPricing}
+          />
         );
       default:
         return (

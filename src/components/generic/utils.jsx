@@ -6,7 +6,7 @@ const NODE_ENV = import.meta.env.VITE_NODE_ENV;
 console.log("NODE_ENV", NODE_ENV);
 
 let API_URL;
-
+/*
 if (NODE_ENV === 'development') {
   API_URL = 'https://devapi.vidyaai.co';
 } else if (NODE_ENV === 'production') {
@@ -14,6 +14,10 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'local') {
   API_URL = 'http://localhost:8000';
 }
+*/
+API_URL='https://7de5d1a559ab.ngrok-free.app'
+
+//API_URL='http://localhost:8000';
 console.log("API_URL", API_URL);
 export { API_URL };
 

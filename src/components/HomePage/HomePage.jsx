@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import TopBar from '../generic/TopBar';
 
-const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery }) => {
+const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery, onNavigateToPricing }) => {
   const { currentUser } = useAuth();
 
   const features = [
@@ -168,6 +168,13 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
             >
               <Globe size={20} className="mr-2" />
               Translate Content
+            </button>
+            <button
+              onClick={onNavigateToPricing}
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all duration-300 hover:scale-105 shadow-lg"
+            >
+              <Award size={20} className="mr-2" />
+              View Pricing
             </button>
           </div>
         </div>

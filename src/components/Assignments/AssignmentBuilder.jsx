@@ -10,6 +10,7 @@ import {
   Edit,
   ChevronDown
 } from 'lucide-react';
+import TopBar from '../generic/TopBar';
 import QuestionCard from './QuestionCard';
 import AssignmentPreview from './AssignmentPreview';
 
@@ -19,6 +20,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome }) => {
   const [showPreview, setShowPreview] = useState(true);
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [assignmentDescription, setAssignmentDescription] = useState('');
+  const [assignmentDueDate, setAssignmentDueDate] = useState('');
 
   const questionTypes = [
     { type: 'multiple-choice', label: 'Multiple Choice', icon: '○' },
@@ -66,13 +68,17 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome }) => {
     console.log('Saving assignment:', {
       title: assignmentTitle,
       description: assignmentDescription,
+      dueDate: assignmentDueDate,
       questions
     });
   };
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Header */}
+      {/* Top Navigation */}
+      <TopBar onNavigateToHome={onNavigateToHome} />
+      
+      {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
@@ -139,6 +145,17 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome }) => {
                     placeholder="Enter assignment description..."
                     rows={3}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Due Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={assignmentDueDate}
+                    onChange={(e) => setAssignmentDueDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
               </div>

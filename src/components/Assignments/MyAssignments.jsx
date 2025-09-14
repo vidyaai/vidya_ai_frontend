@@ -11,9 +11,11 @@ import {
   Users,
   Clock
 } from 'lucide-react';
+import TopBar from '../generic/TopBar';
 import AssignmentBuilder from './AssignmentBuilder';
 import AIAssignmentGenerator from './AIAssignmentGenerator';
 import AssignmentSharingModal from './AssignmentSharingModal';
+import AssignmentSubmissions from './AssignmentSubmissions';
 
 const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [currentView, setCurrentView] = useState('main');
@@ -67,6 +69,11 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
     setSharingModalOpen(true);
   };
 
+  const handleViewSubmissions = (assignment) => {
+    setSelectedAssignment(assignment);
+    setCurrentView('submissions');
+  };
+
   const handleBackToMain = () => {
     setCurrentView('main');
   };
@@ -79,9 +86,16 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
     return <AIAssignmentGenerator onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
   }
 
+  if (currentView === 'submissions') {
+    return <AssignmentSubmissions assignment={selectedAssignment} onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Header */}
+      {/* Top Navigation */}
+      <TopBar onNavigateToHome={onNavigateToHome} />
+      
+      {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
@@ -212,21 +226,32 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                 </div>
               </div>
 
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleShareAssignment(assignment)}
-                  className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
-                >
-                  <Share2 size={16} className="mr-1" />
-                  Share
-                </button>
-                <button className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-700 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors">
-                  <Edit size={16} className="mr-1" />
-                  Edit
-                </button>
-                <button className="inline-flex items-center justify-center px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
-                  <Trash2 size={16} />
-                </button>
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleViewSubmissions(assignment)}
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-sm font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
+                  >
+                    <Users size={16} className="mr-1" />
+                    Submissions
+                  </button>
+                  <button
+                    onClick={() => handleShareAssignment(assignment)}
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+                  >
+                    <Share2 size={16} className="mr-1" />
+                    Share
+                  </button>
+                </div>
+                <div className="flex space-x-2">
+                  <button className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-700 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors">
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </button>
+                  <button className="inline-flex items-center justify-center px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

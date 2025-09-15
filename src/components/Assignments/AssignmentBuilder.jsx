@@ -23,12 +23,15 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [assignmentDueDate, setAssignmentDueDate] = useState(preloadedData?.dueDate || '');
 
   const questionTypes = [
-    { type: 'multiple-choice', label: 'Multiple Choice', icon: '○' },
-    { type: 'fill-blank', label: 'Fill in the Blank', icon: '___' },
-    { type: 'short-answer', label: 'Short Answer', icon: 'A' },
-    { type: 'numerical', label: 'Numerical', icon: '123' },
-    { type: 'long-answer', label: 'Long Answer', icon: '¶' },
-    { type: 'true-false', label: 'True/False', icon: 'T/F' }
+    { type: 'multiple-choice', label: 'Multiple Choice', icon: '○', category: 'Basic' },
+    { type: 'fill-blank', label: 'Fill in the Blank', icon: '___', category: 'Basic' },
+    { type: 'short-answer', label: 'Short Answer', icon: 'A', category: 'Basic' },
+    { type: 'numerical', label: 'Numerical', icon: '123', category: 'Basic' },
+    { type: 'long-answer', label: 'Long Answer', icon: '¶', category: 'Basic' },
+    { type: 'true-false', label: 'True/False', icon: 'T/F', category: 'Basic' },
+    { type: 'code-writing', label: 'Code Writing', icon: '</>', category: 'Engineering', color: 'purple' },
+    { type: 'diagram-analysis', label: 'Diagram Analysis', icon: '⚡', category: 'Engineering', color: 'orange' },
+    { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' }
   ];
 
   // Update state when preloadedData changes
@@ -42,7 +45,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   }, [preloadedData]);
 
   const addQuestion = (type) => {
-    const newQuestion = {
+    const baseQuestion = {
       id: Date.now(),
       type,
       question: '',
@@ -52,6 +55,32 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       rubric: '',
       order: questions.length + 1
     };
+
+    // Add type-specific default values
+    const typeSpecificDefaults = {
+      'code-writing': {
+        codeLanguage: 'python',
+        outputType: 'code',
+        starterCode: ''
+      },
+      'diagram-analysis': {
+        analysisType: 'description',
+        diagram: null
+      },
+      'multi-part': {
+        subquestions: [],
+        hasMainCode: false,
+        hasMainDiagram: false,
+        mainCodeLanguage: 'python',
+        mainDiagram: null
+      }
+    };
+
+    const newQuestion = {
+      ...baseQuestion,
+      ...typeSpecificDefaults[type]
+    };
+
     setQuestions([...questions, newQuestion]);
     setShowQuestionTypes(false);
   };
@@ -188,9 +217,13 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                   </button>
                   
                   {showQuestionTypes && (
-                    <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                    <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                       <div className="py-2">
-                        {questionTypes.map((type) => (
+                        {/* Basic Question Types */}
+                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-700">
+                          Basic Question Types
+                        </div>
+                        {questionTypes.filter(type => type.category === 'Basic').map((type) => (
                           <button
                             key={type.type}
                             onClick={() => addQuestion(type.type)}
@@ -198,6 +231,36 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                           >
                             <span className="text-lg mr-3">{type.icon}</span>
                             <span>{type.label}</span>
+                          </button>
+                        ))}
+                        
+                        {/* Engineering Question Types */}
+                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
+                          Engineering Question Types
+                        </div>
+                        {questionTypes.filter(type => type.category === 'Engineering').map((type) => (
+                          <button
+                            key={type.type}
+                            onClick={() => addQuestion(type.type)}
+                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
+                          >
+                            <span className={`text-lg mr-3 ${
+                              type.color === 'purple' ? 'group-hover:text-purple-400' :
+                              type.color === 'orange' ? 'group-hover:text-orange-400' :
+                              type.color === 'blue' ? 'group-hover:text-blue-400' :
+                              type.color === 'green' ? 'group-hover:text-green-400' :
+                              type.color === 'yellow' ? 'group-hover:text-yellow-400' : ''
+                            }`}>
+                              {type.icon}
+                            </span>
+                            <div>
+                              <div>{type.label}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {type.type === 'code-writing' && 'Programming problems with syntax highlighting'}
+                                {type.type === 'diagram-analysis' && 'Circuit diagrams and technical drawings'}
+                                {type.type === 'multi-part' && 'Complex problems with multiple sub-questions and code/diagrams'}
+                              </div>
+                            </div>
                           </button>
                         ))}
                       </div>

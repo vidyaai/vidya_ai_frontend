@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignmentPreview.jsx
-import { Eye, Clock, FileText, CheckCircle } from 'lucide-react';
+import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
 
 const AssignmentPreview = ({ title, description, questions }) => {
   const totalPoints = questions.reduce((sum, q) => sum + (q.points || 1), 0);
@@ -114,6 +114,131 @@ const AssignmentPreview = ({ title, description, questions }) => {
           </div>
         );
 
+      case 'code-writing':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-purple-500/30">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Code size={16} className="text-purple-400" />
+                <h4 className="text-white font-medium">Question {index + 1}</h4>
+              </div>
+              <span className="text-purple-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            <p className="text-gray-300 mb-3">{question.question || 'Programming question...'}</p>
+            <div className="bg-gray-900 rounded-lg p-3 border border-gray-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-purple-400 text-xs font-medium">
+                  {question.codeLanguage?.toUpperCase() || 'CODE'}
+                </span>
+                <span className="text-gray-400 text-xs">
+                  {question.outputType?.replace('-', ' ') || 'Complete Code'}
+                </span>
+              </div>
+              <div className="bg-gray-800 rounded p-2 font-mono text-sm text-gray-400">
+                {question.starterCode || '// Write your code here...'}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'diagram-analysis':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-orange-500/30">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <ImageIcon size={16} className="text-orange-400" />
+                  <h4 className="text-white font-medium">Question {index + 1}</h4>
+                </div>
+              <span className="text-orange-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            <p className="text-gray-300 mb-3">{question.question || 'Diagram analysis question...'}</p>
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+              <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
+                <div className="text-center">
+                  <ImageIcon size={24} className="text-gray-500 mx-auto mb-1" />
+                  <p className="text-gray-400 text-xs">Diagram/Image</p>
+                  {question.diagram && (
+                    <p className="text-orange-400 text-xs mt-1">{question.diagram.file}</p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3 text-xs text-orange-400">
+                Analysis Type: {question.analysisType?.replace('-', ' ') || 'General'}
+              </div>
+            </div>
+            <textarea
+              disabled
+              placeholder="Enter your analysis..."
+              rows={3}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-400 text-sm resize-none mt-3"
+            />
+          </div>
+        );
+
+      case 'multi-part':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/30">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Layers size={16} className="text-blue-400" />
+                <h4 className="text-white font-medium">Question {index + 1} - Multi-Part</h4>
+              </div>
+              <span className="text-blue-400 text-sm font-medium">{question.points || 1} pts total</span>
+            </div>
+            <p className="text-gray-300 mb-4">{question.question || 'Multi-part question...'}</p>
+            
+            {/* Main Question Code Preview */}
+            {question.hasMainCode && question.mainCode && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-purple-400 text-xs font-medium">
+                    Main Code ({question.mainCodeLanguage?.toUpperCase() || 'CODE'})
+                  </span>
+                </div>
+                <div className="bg-gray-800 rounded p-2 font-mono text-xs text-gray-400 max-h-20 overflow-hidden">
+                  {question.mainCode}
+                </div>
+              </div>
+            )}
+            
+            {/* Main Question Diagram Preview */}
+            {question.hasMainDiagram && question.mainDiagram && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-orange-500/30 mb-4">
+                <div className="text-orange-400 text-xs font-medium mb-2">Main Diagram</div>
+                  <div className="w-full h-20 bg-gray-800 rounded flex items-center justify-center border border-gray-700">
+                    <div className="text-center">
+                      <ImageIcon size={16} className="text-gray-500 mx-auto mb-1" />
+                      <p className="text-gray-400 text-xs">{question.mainDiagram.file}</p>
+                    </div>
+                  </div>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              {(question.subquestions || []).map((subq, subIndex) => (
+                <div key={subq.id || subIndex} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-blue-300 text-sm font-medium">Part {subIndex + 1}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-1 py-0.5 rounded text-xs ${
+                        subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
+                        subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
+                        'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {subq.type === 'code-writing' ? 'Code' :
+                         subq.type === 'diagram-analysis' ? 'Diagram' :
+                         subq.type?.replace('-', ' ') || 'Text'}
+                      </span>
+                      <span className="text-blue-400 text-xs">{subq.points || 1} pts</span>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-sm">{subq.question || `Part ${subIndex + 1} question...`}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
@@ -121,7 +246,7 @@ const AssignmentPreview = ({ title, description, questions }) => {
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-400 text-sm">Unknown question type</p>
+            <p className="text-gray-400 text-sm">Unknown question type: {question.type}</p>
           </div>
         );
     }

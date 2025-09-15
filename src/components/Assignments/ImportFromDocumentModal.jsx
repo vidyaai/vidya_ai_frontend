@@ -10,7 +10,7 @@ import {
   File
 } from 'lucide-react';
 
-const ParseFromDocumentModal = ({ onClose, onParsed }) => {
+const ImportFromDocumentModal = ({ onClose, onParsed }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
@@ -161,8 +161,8 @@ const ParseFromDocumentModal = ({ onClose, onParsed }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
           <div>
-            <h2 className="text-2xl font-bold text-white">Parse from Document</h2>
-            <p className="text-gray-400 mt-1">Upload a document to automatically generate assignment questions</p>
+            <h2 className="text-2xl font-bold text-white">Import from Document</h2>
+            <p className="text-gray-400 mt-1">Upload a document to automatically import assignment questions</p>
           </div>
           <button
             onClick={onClose}
@@ -250,9 +250,9 @@ const ParseFromDocumentModal = ({ onClose, onParsed }) => {
               <div className="flex items-start space-x-3">
                 <File size={20} className="text-gray-400 flex-shrink-0 mt-1" />
                 <div className="flex-1">
-                  <h4 className="text-white font-medium">Ready to Parse</h4>
+                  <h4 className="text-white font-medium">Ready to Import</h4>
                   <p className="text-gray-400 text-sm mt-1">
-                    Your document will be analyzed using AI to automatically generate relevant assignment questions.
+                    Your document will be analyzed using AI to automatically import relevant assignment questions.
                     This process may take a few moments.
                   </p>
                 </div>
@@ -307,7 +307,7 @@ const ParseFromDocumentModal = ({ onClose, onParsed }) => {
               className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-medium rounded-lg cursor-not-allowed"
             >
               <Loader2 size={18} className="mr-2 animate-spin" />
-              Parsing Document...
+              Importing Document...
             </button>
           ) : (
             <button
@@ -315,7 +315,7 @@ const ParseFromDocumentModal = ({ onClose, onParsed }) => {
               className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
             >
               <FileText size={18} className="mr-2" />
-              Parse Document
+              Import Document
             </button>
           )}
         </div>
@@ -324,4 +324,4 @@ const ParseFromDocumentModal = ({ onClose, onParsed }) => {
   );
 };
 
-export default ParseFromDocumentModal;
+export default ImportFromDocumentModal;

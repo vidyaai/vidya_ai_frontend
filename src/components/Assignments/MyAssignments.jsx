@@ -17,7 +17,7 @@ import AssignmentBuilder from './AssignmentBuilder';
 import AIAssignmentGenerator from './AIAssignmentGenerator';
 import AssignmentSharingModal from './AssignmentSharingModal';
 import AssignmentSubmissions from './AssignmentSubmissions';
-import ParseFromDocumentModal from './ParseFromDocumentModal';
+import ImportFromDocumentModal from './ImportFromDocumentModal';
 
 const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [currentView, setCurrentView] = useState('main');
@@ -143,7 +143,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                 className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
               >
                 <FileText size={18} className="mr-2" />
-                Parse from Document
+                Import from Document
               </button>
               <button
                 onClick={handleGenerateAssignment}
@@ -304,7 +304,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
               >
                 <FileText size={18} className="mr-2" />
-                Parse from Document
+                Import from Document
               </button>
               <button
                 onClick={handleGenerateAssignment}
@@ -326,9 +326,9 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
         />
       )}
 
-      {/* Parse from Document Modal */}
+      {/* Import from Document Modal */}
       {parseModalOpen && (
-        <ParseFromDocumentModal
+        <ImportFromDocumentModal
           onClose={() => setParseModalOpen(false)}
           onParsed={handleParsedAssignment}
         />

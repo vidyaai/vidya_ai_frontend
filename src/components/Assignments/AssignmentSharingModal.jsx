@@ -1,331 +1,540 @@
 // src/components/Assignments/AssignmentSharingModal.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, 
-  Upload, 
-  Users, 
-  Mail, 
   Share2, 
-  Copy,
-  CheckCircle,
-  AlertCircle
+  Users, 
+  Globe, 
+  Lock, 
+  Copy, 
+  Check, 
+  Mail, 
+  UserPlus, 
+  Trash2,
+  Calendar,
+  FileText,
+  Settings
 } from 'lucide-react';
+import { assignmentApi } from './assignmentApi';
 
-const AssignmentSharingModal = ({ assignment, onClose }) => {
-  const [shareMethod, setShareMethod] = useState('email'); // 'email' or 'csv'
-  const [emailList, setEmailList] = useState('');
-  const [csvFile, setCsvFile] = useState(null);
-  const [isSharing, setIsSharing] = useState(false);
-  const [shareSuccess, setShareSuccess] = useState(false);
-  const [shareLink, setShareLink] = useState('');
+const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
+  const [shareLink, setShareLink] = useState(null);
+  const [isPublic, setIsPublic] = useState(false);
+  const [permission, setPermission] = useState('complete');
+  const [emailQuery, setEmailQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [existingUsers, setExistingUsers] = useState([]);
+  const [existingLinkId, setExistingLinkId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const handleEmailListChange = (value) => {
-    setEmailList(value);
-  };
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (assignment) {
+      setShareLink(null);
+      setIsPublic(false);
+      setPermission('complete');
+      setEmailQuery('');
+      setSearchResults([]);
+      setSelectedUsers([]);
+      setExistingUsers([]);
+      setExistingLinkId(null);
+      setCopySuccess(false);
+      
+      // Check for existing shared link
+      checkExistingShare();
+    }
+  }, [assignment]);
 
-  const handleCsvUpload = (event) => {
-    const file = event.target.files[0];
-    if (file && file.type === 'text/csv') {
-      setCsvFile(file);
-    } else {
-      alert('Please upload a valid CSV file');
+  // Fetch user details by UIDs
+  const fetchUserDetails = async (userIds) => {
+    if (!userIds || userIds.length === 0) return [];
+    
+    try {
+      const users = await assignmentApi.getUsersByIds(userIds);
+      return users;
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      // Return fallback data with UIDs as display names
+      return userIds.map(uid => ({
+        uid: uid,
+        email: uid,
+        displayName: uid
+      }));
     }
   };
 
-  const parseEmails = (text) => {
-    return text
-      .split(/[,\n;]/)
-      .map(email => email.trim())
-      .filter(email => email && email.includes('@'));
+  // Check if this assignment is already shared
+  const checkExistingShare = async () => {
+    if (!assignment?.id) return;
+    
+    try {
+      const existingLink = await assignmentApi.getSharedAssignmentLink(assignment.id);
+      
+      if (existingLink) {
+        // Don't set shareLink here - we want to show the form with existing data
+        // setShareLink(existingLink);
+        
+        // Get user details for shared accesses
+        const userIds = existingLink.shared_accesses?.map(access => access.user_id) || [];
+        const existingUserList = await fetchUserDetails(userIds);
+        setExistingUsers(existingUserList);
+        setIsPublic(existingLink.is_public);
+        setExistingLinkId(existingLink.id);
+      }
+    } catch (error) {
+      console.error('Error checking existing share:', error);
+    }
   };
 
-  const handleShare = async () => {
-    setIsSharing(true);
-    
-    let emails = [];
-    
-    if (shareMethod === 'email') {
-      emails = parseEmails(emailList);
-    } else if (shareMethod === 'csv' && csvFile) {
-      // TODO: Parse CSV file to extract emails
-      // For now, simulate parsing
-      emails = ['student1@example.com', 'student2@example.com', 'student3@example.com'];
-    }
-    
-    if (emails.length === 0) {
-      alert('Please provide at least one valid email address');
-      setIsSharing(false);
+  // Search users by email
+  const searchUsers = async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults([]);
       return;
     }
 
-    // Simulate sharing process
-    setTimeout(() => {
-      const mockShareLink = `https://vidyaai.com/assignments/shared/${assignment.id}/token123`;
-      setShareLink(mockShareLink);
-      setShareSuccess(true);
-      setIsSharing(false);
-    }, 2000);
+    setSearchLoading(true);
+    try {
+      const results = await assignmentApi.searchUsers(query);
+      setSearchResults(results || []);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareLink);
-    // TODO: Show toast notification
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      searchUsers(emailQuery);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [emailQuery]);
+
+  const addUser = (user) => {
+    if (!selectedUsers.find(u => u.uid === user.uid) && 
+        !existingUsers.find(u => u.uid === user.uid)) {
+      setSelectedUsers(prev => [...prev, user]);
+      setEmailQuery('');
+      setSearchResults([]);
+    }
   };
 
-  if (shareSuccess) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-md w-full">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Assignment Shared Successfully!</h2>
-            <button
-              onClick={onClose}
-              className="p-1 text-gray-400 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
+  const removeUser = (userId) => {
+    setSelectedUsers(prev => prev.filter(user => user.uid !== userId));
+  };
+
+  const removeExistingUser = async (userId) => {
+    if (!existingLinkId) return;
+    
+    try {
+      await assignmentApi.removeUserFromSharedAssignment(existingLinkId, userId);
+      setExistingUsers(prev => prev.filter(user => user.uid !== userId));
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Error removing user:', error);
+      alert('Failed to remove user. Please try again.');
+    }
+  };
+
+  const createShareLink = async () => {
+    if (!assignment?.id) return;
+
+    setCreating(true);
+    try {
+      const allUsers = [...existingUsers, ...selectedUsers];
+      const shareData = {
+        assignment_id: assignment.id,
+        shared_with_user_ids: allUsers.map(u => u.uid),
+        permission: permission,
+        title: assignment.title,
+        description: assignment.description,
+        is_public: isPublic,
+        expires_at: null
+      };
+
+      let response;
+      if (existingLinkId) {
+        // Update existing share link
+        response = await assignmentApi.updateSharedAssignment(assignment.id, existingLinkId, shareData);
+      } else {
+        // Create new share link
+        response = await assignmentApi.shareAssignment(assignment.id, shareData);
+      }
+
+      setShareLink(response);
+      setCopySuccess(false);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Error creating/updating share link:', error);
+      alert(error.response?.data?.detail || 'Failed to create/update share link');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const deleteShareLink = async () => {
+    if (!existingLinkId || !assignment?.id) return;
+
+    if (!confirm('Are you sure you want to delete this shared link? This will remove access for all users.')) {
+      return;
+    }
+
+    try {
+      await assignmentApi.deleteSharedAssignment(assignment.id, existingLinkId);
+      setShareLink(null);
+      setExistingLinkId(null);
+      setExistingUsers([]);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Error deleting share link:', error);
+      alert('Failed to delete share link. Please try again.');
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  const getShareUrl = () => {
+    if (!shareLink) return '';
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/shared/${shareLink.share_token}`;
+  };
+
+  if (!assignment) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Share2 size={20} className="text-teal-400 flex-shrink-0" />
+            <h3 className="text-base sm:text-lg font-semibold text-white truncate">
+              {existingLinkId && shareLink ? 'Edit' : 'Share'} Assignment
+            </h3>
           </div>
-          
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={32} className="text-green-400" />
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-white rounded flex-shrink-0 ml-2"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {!shareLink ? (
+          // Create share link form
+          <div className="space-y-6">
+            {/* Show existing link info if editing */}
+            {existingLinkId && (
+              <div className="bg-teal-900 bg-opacity-50 border border-teal-700 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-teal-400 mb-2">
+                  <Share2 size={16} />
+                  <span className="font-medium">Editing Existing Share Link</span>
+                </div>
+                <p className="text-teal-300 text-sm">
+                  You're editing an existing share link. Changes will update the current link.
+                </p>
+              </div>
+            )}
+
+            {/* Assignment Info */}
+            <div className="bg-gray-700 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-gray-300 mb-2">
+                <FileText size={16} />
+                <span className="font-medium">Assignment Details</span>
+              </div>
+              <h4 className="text-white font-medium">{assignment.title}</h4>
+              {assignment.description && (
+                <p className="text-gray-400 text-sm mt-1">{assignment.description}</p>
+              )}
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
+                <span>{assignment.total_questions} Questions</span>
+                <span>{assignment.total_points} Points</span>
+                {assignment.due_date && (
+                  <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
+                )}
+              </div>
             </div>
-            <p className="text-gray-400">
-              Your assignment has been shared with the students successfully.
-            </p>
-          </div>
 
-          <div className="bg-gray-800 rounded-lg p-4 mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Share Link
-            </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={shareLink}
-                readOnly
-                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
-              <button
-                onClick={copyToClipboard}
-                className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+            {/* Privacy Settings */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Privacy Settings
+              </label>
+              <div className="space-y-3">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="privacy"
+                    checked={!isPublic}
+                    onChange={() => setIsPublic(false)}
+                    className="text-teal-500 focus:ring-teal-500"
+                  />
+                  <div className="ml-3">
+                    <div className="flex items-center">
+                      <Lock size={16} className="text-gray-400 mr-2" />
+                      <span className="text-white font-medium">Private</span>
+                    </div>
+                    <p className="text-gray-400 text-sm">Only invited students can access</p>
+                  </div>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="privacy"
+                    checked={isPublic}
+                    onChange={() => setIsPublic(true)}
+                    className="text-teal-500 focus:ring-teal-500"
+                  />
+                  <div className="ml-3">
+                    <div className="flex items-center">
+                      <Globe size={16} className="text-gray-400 mr-2" />
+                      <span className="text-white font-medium">Public</span>
+                    </div>
+                    <p className="text-gray-400 text-sm">Anyone with the link can access</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Permission Settings */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Student Permission
+              </label>
+              <select
+                value={permission}
+                onChange={(e) => setPermission(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <Copy size={16} className="text-white" />
+                <option value="view">View Only - Students can view but not submit</option>
+                <option value="complete">Complete - Students can view and submit</option>
+                <option value="edit">Edit - Students can view, submit, and modify</option>
+              </select>
+            </div>
+
+
+
+            {/* User Management */}
+            {!isPublic && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  <Users size={16} className="inline mr-2" />
+                  Share with Students
+                </label>
+                
+                {/* Existing Users */}
+                {existingUsers.length > 0 && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      Current Students
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {existingUsers.map(user => (
+                        <div
+                          key={user.uid}
+                          className="flex items-center gap-2 bg-gray-600 text-white px-3 py-1 rounded-full text-sm"
+                        >
+                          <span>{user.displayName || user.email}</span>
+                          <button
+                            onClick={() => removeExistingUser(user.uid)}
+                            className="text-gray-300 hover:text-white"
+                            title="Remove student"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* New Selected Users */}
+                {selectedUsers.length > 0 && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      New Students to Invite
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUsers.map(user => (
+                        <div
+                          key={user.uid}
+                          className="flex items-center gap-2 bg-teal-600 text-white px-3 py-1 rounded-full text-sm"
+                        >
+                          <span>{user.displayName || user.email}</span>
+                          <button
+                            onClick={() => removeUser(user.uid)}
+                            className="text-teal-200 hover:text-white"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Email Search */}
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={emailQuery}
+                    onChange={(e) => setEmailQuery(e.target.value)}
+                    placeholder="Search students by email..."
+                    className="w-full px-3 py-2 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                  {searchLoading && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-400"></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search Results */}
+                {searchResults.length > 0 && (
+                  <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg max-h-40 overflow-y-auto">
+                    {searchResults.map(user => (
+                      <button
+                        key={user.uid}
+                        onClick={() => addUser(user)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-600 flex items-center gap-2 border-b border-gray-600 last:border-b-0"
+                      >
+                        <UserPlus size={16} className="text-teal-400" />
+                        <div>
+                          <div className="text-white text-sm">{user.displayName || 'Unknown'}</div>
+                          <div className="text-gray-400 text-xs">{user.email}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              {existingLinkId && (
+                <button
+                  onClick={deleteShareLink}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              )}
+              <button
+                onClick={createShareLink}
+                disabled={creating || (!isPublic && selectedUsers.length === 0 && existingUsers.length === 0)}
+                className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {creating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {existingLinkId ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} />
+                    {existingLinkId ? 'Update Share Link' : 'Create Share Link'}
+                  </>
+                )}
               </button>
             </div>
           </div>
-
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={copyToClipboard}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
-            >
-              Copy Link
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Share Assignment</h2>
-          <button
-            onClick={onClose}
-            className="p-1 text-gray-400 hover:text-white transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Assignment Info */}
-        <div className="bg-gray-800 rounded-lg p-4 mb-6">
-          <h3 className="text-lg font-semibold text-white mb-2">{assignment.title}</h3>
-          <p className="text-gray-400 text-sm mb-3">{assignment.description}</p>
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
-            <div className="flex items-center space-x-2">
-              <span>{assignment.totalQuestions} questions</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span>Due: {assignment.dueDate}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Share Method Selection */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">How would you like to share?</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setShareMethod('email')}
-              className={`p-4 rounded-lg border transition-all duration-300 ${
-                shareMethod === 'email'
-                  ? 'border-teal-500 bg-teal-500/10'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Mail size={20} className={shareMethod === 'email' ? 'text-teal-400' : 'text-gray-400'} />
-                <div className="text-left">
-                  <p className={`font-medium ${shareMethod === 'email' ? 'text-teal-400' : 'text-white'}`}>
-                    Email List
-                  </p>
-                  <p className="text-gray-400 text-sm">Enter emails manually</p>
-                </div>
+        ) : (
+          // Share link created view
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-teal-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Share2 size={32} className="text-teal-400" />
               </div>
-            </button>
+              <h3 className="text-xl font-bold text-white mb-2">Assignment Shared Successfully!</h3>
+              <p className="text-gray-400">
+                Your assignment is now shared and accessible to students.
+              </p>
+            </div>
 
-            <button
-              onClick={() => setShareMethod('csv')}
-              className={`p-4 rounded-lg border transition-all duration-300 ${
-                shareMethod === 'csv'
-                  ? 'border-teal-500 bg-teal-500/10'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Upload size={20} className={shareMethod === 'csv' ? 'text-teal-400' : 'text-gray-400'} />
-                <div className="text-left">
-                  <p className={`font-medium ${shareMethod === 'csv' ? 'text-teal-400' : 'text-white'}`}>
-                    CSV Upload
-                  </p>
-                  <p className="text-gray-400 text-sm">Upload student list</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Email List Input */}
-        {shareMethod === 'email' && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Student Email Addresses
-            </label>
-            <textarea
-              value={emailList}
-              onChange={(e) => handleEmailListChange(e.target.value)}
-              placeholder="Enter email addresses separated by commas, semicolons, or new lines:&#10;student1@example.com&#10;student2@example.com&#10;student3@example.com"
-              rows={6}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-            />
-            <p className="text-gray-400 text-sm mt-2">
-              {parseEmails(emailList).length} valid email addresses detected
-            </p>
-          </div>
-        )}
-
-        {/* CSV Upload */}
-        {shareMethod === 'csv' && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Upload CSV File
-            </label>
-            <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-600 transition-colors">
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleCsvUpload}
-                className="hidden"
-                id="csv-upload"
-              />
-              <label
-                htmlFor="csv-upload"
-                className="cursor-pointer flex flex-col items-center"
-              >
-                <Upload size={32} className="text-gray-400 mb-3" />
-                <p className="text-white font-medium mb-1">Click to upload CSV file</p>
-                <p className="text-gray-400 text-sm">CSV should contain student email addresses</p>
+            {/* Share Link */}
+            <div className="bg-gray-700 rounded-lg p-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Share Link
               </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={getShareUrl()}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm"
+                />
+                <button
+                  onClick={() => copyToClipboard(getShareUrl())}
+                  className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {copySuccess ? <Check size={16} /> : <Copy size={16} />}
+                  {copySuccess ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
             </div>
-            
-            {csvFile && (
-              <div className="mt-3 bg-gray-800 rounded-lg p-3 border border-gray-700">
-                <div className="flex items-center space-x-3">
-                  <FileText size={20} className="text-green-400" />
-                  <div>
-                    <p className="text-white text-sm font-medium">{csvFile.name}</p>
-                    <p className="text-gray-400 text-xs">{(csvFile.size / 1024).toFixed(1)} KB</p>
+
+            {/* Share Info */}
+            <div className="bg-gray-700 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Privacy:</span>
+                  <div className="flex items-center gap-1 text-white mt-1">
+                    {shareLink.is_public ? <Globe size={14} /> : <Lock size={14} />}
+                    {shareLink.is_public ? 'Public' : 'Private'}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Students:</span>
+                  <div className="text-white mt-1">
+                    {shareLink.is_public ? 'Anyone with link' : `${existingUsers.length + selectedUsers.length} invited`}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShareLink(null)}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <Settings size={16} />
+                Edit Settings
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
+              >
+                Done
+              </button>
+            </div>
           </div>
         )}
-
-        {/* Share Options */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">Share Options</h3>
-          <div className="space-y-3">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="text-teal-500 focus:ring-teal-500 mr-3"
-              />
-              <span className="text-white">Send email notifications to students</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="text-teal-500 focus:ring-teal-500 mr-3"
-              />
-              <span className="text-white">Allow students to submit answers</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="text-teal-500 focus:ring-teal-500 mr-3"
-              />
-              <span className="text-white">Set deadline reminder emails</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleShare}
-            disabled={isSharing || (shareMethod === 'email' && parseEmails(emailList).length === 0) || (shareMethod === 'csv' && !csvFile)}
-            className={`flex-1 px-4 py-3 font-medium rounded-lg transition-all duration-300 ${
-              isSharing || (shareMethod === 'email' && parseEmails(emailList).length === 0) || (shareMethod === 'csv' && !csvFile)
-                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
-            }`}
-          >
-            {isSharing ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Sharing...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <Share2 size={18} className="mr-2" />
-                Share Assignment
-              </div>
-            )}
-          </button>
-        </div>
       </div>
     </div>
   );
 };
 
 export default AssignmentSharingModal;
-

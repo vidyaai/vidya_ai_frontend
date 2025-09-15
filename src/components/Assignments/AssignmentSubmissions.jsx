@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignmentSubmissions.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   FileText, 
@@ -13,9 +13,11 @@ import {
   Brain,
   Send,
   Filter,
-  Search
+  Search,
+  Loader2
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
+import { assignmentApi } from './assignmentApi';
 
 const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -23,9 +25,28 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [gradingModalOpen, setGradingModalOpen] = useState(false);
   const [selectedForGrading, setSelectedForGrading] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock submission data
-  const [submissions] = useState([
+  // Load submissions from API
+  useEffect(() => {
+    if (assignment?.id) {
+      loadSubmissions();
+    }
+  }, [assignment?.id]);
+
+  const loadSubmissions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await assignmentApi.getAssignmentSubmissions(assignment.id);
+      setSubmissions(data);
+    } catch (err) {
+      console.error('Failed to load submissions:', err);
+      setError('Failed to load submissions. Please try again.');
+      // Fallback to mock data for development
+      setSubmissions([
     {
       id: 1,
       studentName: "Alice Johnson",
@@ -80,18 +101,21 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       status: "submitted", 
       score: 92,
       pdfUrl: "/submissions/david_wilson_assignment.pdf",
-      gradingStatus: "graded"
+        gradingStatus: "graded"
+      }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const filteredSubmissions = submissions.filter(submission => {
     const matchesStatus = filterStatus === 'all' || 
       (filterStatus === 'submitted' && submission.status === 'submitted') ||
-      (filterStatus === 'graded' && submission.gradingStatus === 'graded') ||
-      (filterStatus === 'pending' && submission.gradingStatus === 'pending');
+      (filterStatus === 'graded' && submission.status === 'graded') ||
+      (filterStatus === 'pending' && submission.status === 'submitted' && !submission.score);
     
-    const matchesSearch = submission.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      submission.studentEmail.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (submission.user_id || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesStatus && matchesSearch;
   });
@@ -177,7 +201,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   <Calendar size={16} className="text-teal-400" />
                   <span className="text-gray-300 text-sm">Submitted</span>
                 </div>
-                <p className="text-white font-medium">{formatDate(submission.submittedAt)}</p>
+                <p className="text-white font-medium">{submission.submitted_at ? formatDate(submission.submitted_at) : 'Not submitted'}</p>
               </div>
               
               <div className="bg-gray-800 rounded-lg p-4">
@@ -185,7 +209,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   <FileText size={16} className="text-teal-400" />
                   <span className="text-gray-300 text-sm">Type</span>
                 </div>
-                <p className="text-white font-medium capitalize">{submission.submissionType}</p>
+                <p className="text-white font-medium capitalize">{submission.submission_method || 'in-app'}</p>
               </div>
               
               <div className="bg-gray-800 rounded-lg p-4">
@@ -200,7 +224,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             </div>
 
             {/* Submission Content */}
-            {submission.submissionType === 'in-app' ? (
+            {submission.submission_method === 'in-app' || !submission.submission_method ? (
               <div className="space-y-6">
                 <h3 className="text-xl font-bold text-white">Answers</h3>
                 {Object.entries(submission.answers).map(([questionId, answer]) => (
@@ -406,13 +430,45 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           </div>
         </div>
 
-        {/* Submissions List */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div className="p-6 border-b border-gray-800">
-            <h2 className="text-xl font-bold text-white">Submissions</h2>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={32} className="text-teal-500 animate-spin" />
+            <span className="ml-3 text-gray-300">Loading submissions...</span>
           </div>
-          
-          <div className="overflow-x-auto">
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6 mb-8">
+            <div className="text-red-400 font-medium mb-2">Error Loading Submissions</div>
+            <p className="text-red-300 text-sm mb-4">{error}</p>
+            <button
+              onClick={loadSubmissions}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && submissions.length === 0 && (
+          <div className="text-center py-12">
+            <FileText size={48} className="text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Submissions Yet</h3>
+            <p className="text-gray-400 mb-6">Students haven't submitted this assignment yet.</p>
+          </div>
+        )}
+
+        {/* Submissions List */}
+        {!loading && !error && submissions.length > 0 && (
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <div className="p-6 border-b border-gray-800">
+              <h2 className="text-xl font-bold text-white">Submissions</h2>
+            </div>
+            
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-800">
                 <tr>
@@ -421,7 +477,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       type="checkbox"
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedForGrading(filteredSubmissions.filter(s => s.gradingStatus === 'pending').map(s => s.id));
+                          setSelectedForGrading(filteredSubmissions.filter(s => s.status === 'submitted' && !s.score).map(s => s.id));
                         } else {
                           setSelectedForGrading([]);
                         }
@@ -457,32 +513,38 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         type="checkbox"
                         checked={selectedForGrading.includes(submission.id)}
                         onChange={() => handleSelectForGrading(submission.id)}
-                        disabled={submission.gradingStatus === 'graded'}
+                        disabled={submission.status === 'graded' || submission.score}
                         className="text-teal-500 focus:ring-teal-500"
                       />
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-white font-medium">{submission.studentName}</p>
-                        <p className="text-gray-400 text-sm">{submission.studentEmail}</p>
+                        <p className="text-white font-medium">{submission.user_id || 'Unknown User'}</p>
+                        <p className="text-gray-400 text-sm">User ID: {submission.user_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-300 text-sm">
-                      {formatDate(submission.submittedAt)}
+                      {submission.submitted_at ? formatDate(submission.submitted_at) : 'Not submitted'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <FileText size={16} className="text-gray-400 mr-2" />
-                        <span className="text-gray-300 text-sm capitalize">{submission.submissionType}</span>
+                        <span className="text-gray-300 text-sm capitalize">{submission.submission_method || 'in-app'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(submission.gradingStatus)}`}>
-                        {submission.gradingStatus}
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                        submission.status === 'graded' || submission.score
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                          : submission.status === 'submitted'
+                          ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                          : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                      }`}>
+                        {submission.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-300">
-                      {submission.score ? `${submission.score}/100` : '-'}
+                      {submission.score ? `${submission.score}${submission.percentage ? ` (${submission.percentage}%)` : ''}` : '-'}
                     </td>
                     <td className="px-6 py-4">
                       <button
@@ -509,6 +571,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             </div>
           )}
         </div>
+        )}
       </main>
 
       {/* Modals */}

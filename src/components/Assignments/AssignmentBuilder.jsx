@@ -13,6 +13,7 @@ import {
 import TopBar from '../generic/TopBar';
 import QuestionCard from './QuestionCard';
 import AssignmentPreview from './AssignmentPreview';
+import { assignmentApi } from './assignmentApi';
 
 const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [questions, setQuestions] = useState(preloadedData?.questions || []);
@@ -20,7 +21,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [showPreview, setShowPreview] = useState(true);
   const [assignmentTitle, setAssignmentTitle] = useState(preloadedData?.title || '');
   const [assignmentDescription, setAssignmentDescription] = useState(preloadedData?.description || '');
-  const [assignmentDueDate, setAssignmentDueDate] = useState(preloadedData?.dueDate || '');
+  const [assignmentDueDate, setAssignmentDueDate] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const questionTypes = [
     { type: 'multiple-choice', label: 'Multiple Choice', icon: '○', category: 'Basic' },
@@ -37,10 +40,38 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   // Update state when preloadedData changes
   useEffect(() => {
     if (preloadedData) {
-      setQuestions(preloadedData.questions || []);
+      console.log('AssignmentBuilder: Loading preloaded data:', preloadedData);
+      
+      // Process questions to ensure they have proper IDs for the frontend
+      const processedQuestions = (preloadedData.questions || []).map((question, index) => ({
+        ...question,
+        // Ensure each question has a unique ID that works with the frontend
+        id: question.id || Date.now() + index,
+        // Ensure order is set
+        order: question.order || index + 1
+      }));
+      
+      console.log('AssignmentBuilder: Processed questions:', processedQuestions);
+      
+      setQuestions(processedQuestions);
       setAssignmentTitle(preloadedData.title || '');
       setAssignmentDescription(preloadedData.description || '');
-      setAssignmentDueDate(preloadedData.dueDate || '');
+      // Handle both dueDate (from parsed docs) and due_date (from API)
+      const dueDate = preloadedData.due_date || preloadedData.dueDate || '';
+      // Convert ISO date to datetime-local format if needed
+      if (dueDate) {
+        try {
+          const date = new Date(dueDate);
+          // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+          const localDateTime = date.toISOString().slice(0, 16);
+          setAssignmentDueDate(localDateTime);
+        } catch (e) {
+          console.error('Error parsing due date:', e);
+          setAssignmentDueDate(dueDate);
+        }
+      } else {
+        setAssignmentDueDate('');
+      }
     }
   }, [preloadedData]);
 
@@ -102,14 +133,48 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     setQuestions(newQuestions);
   };
 
-  const saveAssignment = () => {
-    // TODO: Implement save functionality
-    console.log('Saving assignment:', {
-      title: assignmentTitle,
-      description: assignmentDescription,
-      dueDate: assignmentDueDate,
-      questions
-    });
+  const saveAssignment = async (status = 'draft') => {
+    if (!assignmentTitle.trim()) {
+      alert('Please enter a title for the assignment');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      const assignmentData = {
+        title: assignmentTitle.trim(),
+        description: assignmentDescription.trim() || null,
+        due_date: assignmentDueDate ? new Date(assignmentDueDate).toISOString() : null,
+        questions: questions,
+        status: status,
+        engineering_level: preloadedData?.engineering_level || 'undergraduate',
+        engineering_discipline: preloadedData?.engineering_discipline || 'general',
+        question_types: [...new Set(questions.map(q => q.type))],
+        linked_videos: preloadedData?.linked_videos || preloadedData?.linkedVideos || null,
+        uploaded_files: preloadedData?.uploaded_files || preloadedData?.uploadedFiles || null,
+        generation_prompt: preloadedData?.generation_prompt || null,
+        generation_options: preloadedData?.generation_options || null
+      };
+
+      if (preloadedData?.id) {
+        // Update existing assignment
+        await assignmentApi.updateAssignment(preloadedData.id, assignmentData);
+        alert('Assignment updated successfully!');
+      } else {
+        // Create new assignment
+        await assignmentApi.createAssignment(assignmentData);
+        alert('Assignment saved successfully!');
+      }
+      
+      // Don't automatically go back - let user continue editing or manually go back
+    } catch (error) {
+      console.error('Failed to save assignment:', error);
+      setSaveError('Failed to save assignment. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -131,7 +196,10 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
               <div>
                 <h1 className="text-3xl font-bold text-white">Assignment Builder</h1>
                 <p className="text-gray-400 mt-2">
-                  {preloadedData ? 'Assignment parsed from document - review and modify as needed' : 'Create your assignment manually'}
+                  {preloadedData ? 
+                    (preloadedData.id ? 'Editing assignment - modify as needed' : 'Assignment parsed from document - review and modify as needed') : 
+                    'Create your assignment manually'
+                  }
                 </p>
               </div>
             </div>
@@ -143,13 +211,24 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 <Eye size={18} className="mr-2" />
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
-              <button
-                onClick={saveAssignment}
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
-              >
-                <Save size={18} className="mr-2" />
-                Save Assignment
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => saveAssignment('draft')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Save size={18} className="mr-2" />
+                  {saving ? 'Saving...' : 'Save Draft'}
+                </button>
+                <button
+                  onClick={() => saveAssignment('published')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50"
+                >
+                  <Save size={18} className="mr-2" />
+                  {saving ? 'Publishing...' : 'Save & Publish'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

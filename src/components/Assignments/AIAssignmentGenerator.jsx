@@ -16,6 +16,7 @@ import {
 import TopBar from '../generic/TopBar';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
+import { assignmentApi } from './assignmentApi';
 
 const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
   const { currentUser } = useAuth();
@@ -384,8 +385,31 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
 
     setIsGenerating(true);
     
-    // Simulate AI generation process
-    setTimeout(() => {
+    try {
+      // Prepare generation request
+      const generateData = {
+        linked_videos: linkedVideos,
+        uploaded_files: uploadedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })),
+        generation_prompt: prompt.trim() || null,
+        generation_options: generationOptions,
+        title: `${generationOptions.engineeringLevel === 'graduate' ? 'Graduate' : 'Undergraduate'} ${generationOptions.engineeringDiscipline === 'general' ? 'Engineering' : generationOptions.engineeringDiscipline.charAt(0).toUpperCase() + generationOptions.engineeringDiscipline.slice(1) + ' Engineering'} Assignment`,
+        description: `Advanced ${generationOptions.engineeringLevel}-level assignment generated using AI. 
+        ${linkedVideos.length > 0 ? `Includes ${linkedVideos.length} linked video(s). ` : ''}
+        ${uploadedFiles.length > 0 ? `Based on ${uploadedFiles.length} uploaded document(s). ` : ''}
+        Features ${Object.entries(generationOptions.questionTypes).filter(([_, enabled]) => enabled).map(([type, _]) => type.replace('-', ' ')).join(', ')} question types.`
+      };
+
+      // Call API to generate assignment
+      const generatedAssignment = await assignmentApi.generateAssignment(generateData);
+      
+      setGeneratedAssignment(generatedAssignment);
+      setIsGenerating(false);
+    } catch (error) {
+      console.error('Failed to generate assignment:', error);
+      setIsGenerating(false);
+      
+      // Fallback to mock generation for development
+      setTimeout(() => {
       const difficulties = ['easy', 'medium', 'hard'];
       const enabledQuestionTypes = Object.keys(generationOptions.questionTypes).filter(
         type => generationOptions.questionTypes[type]
@@ -500,9 +524,10 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, type: f.type }))
       };
       
-      setGeneratedAssignment(mockAssignment);
-      setIsGenerating(false);
-    }, 3000);
+        setGeneratedAssignment(mockAssignment);
+        setIsGenerating(false);
+      }, 3000);
+    }
   };
 
   const handleContinueToBuilder = () => {

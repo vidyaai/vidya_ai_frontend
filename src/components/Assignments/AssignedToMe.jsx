@@ -21,36 +21,45 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   const [assignments] = useState([
     {
       id: 1,
-      title: "Mathematics Problem Set",
-      description: "Advanced calculus problems covering derivatives and integrals",
+      title: "Control Systems Design",
+      description: "Temperature regulation system with MATLAB implementation, block diagrams, and multi-part analysis including PID controller design and stability analysis",
       instructor: "Dr. Sarah Johnson",
       dueDate: "2024-02-01",
-      totalQuestions: 15,
+      totalQuestions: 4,
+      totalParts: 15,
       status: "due", // due, draft, completed
       timeRemaining: "5 days",
-      progress: 0
+      progress: 0,
+      questionTypes: ["Multiple Choice", "Code Writing", "Diagram Analysis", "Multi-Part"],
+      engineeringLevel: "undergraduate"
     },
     {
       id: 2,
-      title: "Physics Lab Report",
-      description: "Analysis of pendulum motion and energy conservation",
+      title: "Digital Signal Processing",
+      description: "Audio filter design with Python implementation, frequency analysis, and nested multi-part questions covering filter theory and practical implementation",
       instructor: "Prof. Michael Chen",
       dueDate: "2024-01-25",
-      totalQuestions: 8,
+      totalQuestions: 5,
+      totalParts: 12,
       status: "draft",
       timeRemaining: "2 days",
-      progress: 60
+      progress: 60,
+      questionTypes: ["Code Writing", "Multi-Part", "Numerical"],
+      engineeringLevel: "graduate"
     },
     {
       id: 3,
-      title: "Literature Analysis",
-      description: "Critical analysis of Shakespeare's Hamlet",
+      title: "Circuit Analysis & Design",
+      description: "Comprehensive electrical engineering assignment with circuit diagrams, impedance calculations, and design challenges",
       instructor: "Dr. Emily Rodriguez",
       dueDate: "2024-01-20",
-      totalQuestions: 12,
+      totalQuestions: 6,
+      totalParts: 8,
       status: "completed",
       timeRemaining: "Completed",
-      progress: 100
+      progress: 100,
+      questionTypes: ["Diagram Analysis", "Multiple Choice", "Numerical"],
+      engineeringLevel: "undergraduate"
     }
   ]);
 
@@ -215,7 +224,21 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
                   <FileText size={16} className="mr-2" />
-                  <span>{assignment.totalQuestions} questions</span>
+                  <span>{assignment.totalQuestions} questions ({assignment.totalParts} parts)</span>
+                </div>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    assignment.engineeringLevel === 'graduate' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
+                  }`}>
+                    {assignment.engineeringLevel === 'graduate' ? 'Graduate' : 'Undergraduate'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {assignment.questionTypes.map((type, index) => (
+                    <span key={index} className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">
+                      {type}
+                    </span>
+                  ))}
                 </div>
               </div>
 

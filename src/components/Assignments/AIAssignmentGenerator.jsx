@@ -34,6 +34,20 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     perQuestionDifficulty: false,
     setCustomPoints: false,
     pointsVariation: 'constant', // 'constant' or 'varying'
+    engineeringLevel: 'undergraduate', // 'undergraduate' or 'graduate'
+    questionTypes: {
+      'multiple-choice': true,
+      'short-answer': true,
+      'true-false': true,
+      'numerical': true,
+      'code-writing': false,
+      'diagram-analysis': false,
+      'multi-part': false
+    },
+    engineeringDiscipline: 'general', // 'general', 'electrical', 'mechanical', 'civil', 'computer', 'chemical'
+    includeCode: false,
+    includeDiagrams: false,
+    includeCalculations: false,
     difficultyDistribution: {
       easy: { 
         count: 0, 
@@ -269,8 +283,101 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     return getTotalAssignedQuestions() === parseInt(generationOptions.numQuestions);
   };
 
+  const hasSelectedQuestionTypes = () => {
+    return Object.values(generationOptions.questionTypes).some(enabled => enabled);
+  };
+
   const canGenerate = (uploadedFiles.length > 0 || linkedVideos.length > 0 || prompt.trim().length > 0) && 
-    (!generationOptions.perQuestionDifficulty || isDistributionValid());
+    (!generationOptions.perQuestionDifficulty || isDistributionValid()) &&
+    hasSelectedQuestionTypes();
+
+  const generateEngineeringQuestion = (questionType, questionId, difficulty) => {
+    const level = generationOptions.engineeringLevel;
+    const discipline = generationOptions.engineeringDiscipline;
+    
+    const questionTemplates = {
+      'code-writing': {
+        undergraduate: {
+          easy: `Write a simple ${discipline === 'computer' ? 'Python' : 'MATLAB'} function to calculate the area of a circle given its radius.`,
+          medium: `Implement a ${discipline === 'computer' ? 'sorting algorithm' : 'numerical integration method'} in ${discipline === 'computer' ? 'Java' : 'MATLAB'}.`,
+          hard: `Design and implement a ${discipline === 'computer' ? 'data structure for a priority queue' : 'control system simulation'}.`
+        },
+        graduate: {
+          easy: `Implement a finite element analysis routine for 1D heat transfer.`,
+          medium: `Design a machine learning algorithm for predictive maintenance in engineering systems.`,
+          hard: `Develop a parallel computing solution for large-scale CFD simulations.`
+        }
+      },
+      'diagram-analysis': {
+        undergraduate: {
+          easy: `Analyze the given circuit diagram and identify the components.`,
+          medium: `Calculate the voltage across each resistor in the given circuit.`,
+          hard: `Design a filter circuit that meets the specified frequency response requirements.`
+        },
+        graduate: {
+          easy: `Analyze the stability of the control system shown in the block diagram.`,
+          medium: `Optimize the given structural design for minimum weight while maintaining safety factors.`,
+          hard: `Perform modal analysis on the given mechanical system and identify critical frequencies.`
+        }
+      },
+      'multi-part': {
+        undergraduate: {
+          easy: `For the given engineering problem: a) Identify the governing equations, b) Apply boundary conditions, c) Solve for the unknown variable.`,
+          medium: `Design project: a) Define system requirements, b) Create preliminary design, c) Perform basic analysis, d) Identify potential issues.`,
+          hard: `Complex system analysis: a) Model the system mathematically, b) Validate with experimental data, c) Optimize performance, d) Recommend improvements.`
+        },
+        graduate: {
+          easy: `Research problem: a) Literature review summary, b) Problem formulation, c) Methodology selection, d) Expected outcomes.`,
+          medium: `Advanced analysis: a) Theoretical framework, b) Numerical implementation, c) Sensitivity analysis, d) Results interpretation.`,
+          hard: `Innovation project: a) State-of-the-art review, b) Novel approach development, c) Proof of concept, d) Commercialization potential.`
+        }
+      },
+    };
+
+    const basicQuestions = {
+      'multiple-choice': `Question ${questionId}: What is the primary consideration in ${discipline} engineering design? (${difficulty} difficulty)`,
+      'short-answer': `Question ${questionId}: Explain the key principles of ${discipline} engineering. (${difficulty} difficulty)`,
+      'true-false': `Question ${questionId}: ${discipline} engineering always requires complex mathematical modeling. (${difficulty} difficulty)`,
+      'numerical': `Question ${questionId}: Calculate the value for the given ${discipline} engineering problem. (${difficulty} difficulty)`
+    };
+
+    const question = questionTemplates[questionType]?.[level]?.[difficulty] || basicQuestions[questionType] || `Question ${questionId}: Engineering question (${difficulty} difficulty)`;
+    
+    const result = {
+      question,
+      options: questionType === 'multiple-choice' ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
+      correctAnswer: questionType === 'multiple-choice' ? '0' : 'Sample engineering solution...'
+    };
+
+    // Add type-specific properties
+    if (questionType === 'code-writing') {
+      result.codeLanguage = discipline === 'computer' ? 'python' : 'matlab';
+      result.outputType = 'code';
+      result.starterCode = '// Starter code template';
+    } else if (questionType === 'diagram-analysis') {
+      result.analysisType = 'technical';
+      result.diagram = null;
+    } else if (questionType === 'multi-part') {
+      result.subquestions = [
+        { id: 1, question: 'Part A: Theoretical Analysis', points: 4, type: 'multiple-choice', options: ['Option A', 'Option B', 'Option C', 'Option D'] },
+        { id: 2, question: 'Part B: Implementation', points: 6, type: 'code-writing', codeLanguage: discipline === 'computer' ? 'python' : 'matlab', hasSubCode: true, subCode: '// Starter code template' },
+        { id: 3, question: 'Part C: System Verification', points: 5, type: 'multi-part', subquestions: [
+          { id: 1, question: 'Calculate the system response time', points: 2, type: 'numerical' },
+          { id: 2, question: 'True or False: The system is stable', points: 2, type: 'true-false' },
+          { id: 3, question: 'The gain margin is ___ dB', points: 1, type: 'fill-blank' }
+        ]}
+      ];
+      result.hasMainCode = true;
+      result.hasMainDiagram = true;
+      result.mainCodeLanguage = discipline === 'computer' ? 'python' : 'matlab';
+      result.mainCode = discipline === 'computer' 
+        ? '# Sample system model\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# System parameters\nK = 2.5\ntau = 300\n\n# Transfer function implementation\ndef system_response(t):\n    return K * (1 - np.exp(-t/tau))'
+        : '% System transfer function\ns = tf(\'s\');\nK = 2.5;\ntau = 300;\nG = K / (tau*s + 1);\n\n% Display system properties\nstep(G);\ngrid on;';
+      result.mainDiagram = { file: 'system_diagram.png', url: '/mock-system-diagram.png' };
+    }
+
+    return result;
+  };
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -280,7 +387,9 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     // Simulate AI generation process
     setTimeout(() => {
       const difficulties = ['easy', 'medium', 'hard'];
-      const questionTypes = ['multiple-choice', 'short-answer', 'true-false', 'essay'];
+      const enabledQuestionTypes = Object.keys(generationOptions.questionTypes).filter(
+        type => generationOptions.questionTypes[type]
+      );
       
       const generateQuestions = () => {
         const questions = [];
@@ -294,17 +403,17 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
               // Use varying points distribution
               config.varyingPoints.forEach(vPoint => {
                 for (let i = 0; i < vPoint.count; i++) {
-                  const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+                  const questionType = enabledQuestionTypes[Math.floor(Math.random() * enabledQuestionTypes.length)];
                   
-                  questions.push({
+                  const baseQuestion = {
                     id: questionId,
                     type: questionType,
-                    question: `Question ${questionId}: What is the main topic discussed in the content? (${difficulty} difficulty)`,
-                    options: questionType === 'multiple-choice' ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-                    correctAnswer: questionType === 'multiple-choice' ? '0' : 'Sample answer...',
                     points: vPoint.points,
                     difficulty: difficulty
-                  });
+                  };
+
+                  const engineeringQuestions = generateEngineeringQuestion(questionType, questionId, difficulty);
+                  questions.push({ ...baseQuestion, ...engineeringQuestions });
                   
                   questionId++;
                 }
@@ -312,17 +421,17 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
             } else {
               // Use constant points for this difficulty level
               for (let i = 0; i < config.count; i++) {
-                const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+                const questionType = enabledQuestionTypes[Math.floor(Math.random() * enabledQuestionTypes.length)];
                 
-                questions.push({
+                const baseQuestion = {
                   id: questionId,
                   type: questionType,
-                  question: `Question ${questionId}: What is the main topic discussed in the content? (${difficulty} difficulty)`,
-                  options: questionType === 'multiple-choice' ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-                  correctAnswer: questionType === 'multiple-choice' ? '0' : 'Sample answer...',
                   points: config.pointsEach,
                   difficulty: difficulty
-                });
+                };
+
+                const engineeringQuestions = generateEngineeringQuestion(questionType, questionId, difficulty);
+                questions.push({ ...baseQuestion, ...engineeringQuestions });
                 
                 questionId++;
               }
@@ -357,17 +466,17 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
               points = pointsPerQuestion;
             }
             
-            const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+            const questionType = enabledQuestionTypes[Math.floor(Math.random() * enabledQuestionTypes.length)];
             
-            questions.push({
+            const baseQuestion = {
               id: i,
               type: questionType,
-              question: `Question ${i}: What is the main topic discussed in the content? (${difficulty} difficulty)`,
-              options: questionType === 'multiple-choice' ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-              correctAnswer: questionType === 'multiple-choice' ? '0' : 'Sample answer...',
               points: points,
               difficulty: difficulty
-            });
+            };
+
+            const engineeringQuestions = generateEngineeringQuestion(questionType, i, difficulty);
+            questions.push({ ...baseQuestion, ...engineeringQuestions });
           }
         }
         
@@ -379,13 +488,13 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
         : generationOptions.totalPoints;
       
       const mockAssignment = {
-        title: "AI Generated Assignment",
-        description: `This assignment was generated using AI based on your uploaded content and prompt. 
-        ${linkedVideos.length > 0 ? `Linked ${linkedVideos.length} video(s) from gallery. ` : ''}
-        ${uploadedFiles.length > 0 ? `Uploaded ${uploadedFiles.length} document(s). ` : ''}
+        title: `${generationOptions.engineeringLevel === 'graduate' ? 'Graduate' : 'Undergraduate'} ${generationOptions.engineeringDiscipline === 'general' ? 'Engineering' : generationOptions.engineeringDiscipline.charAt(0).toUpperCase() + generationOptions.engineeringDiscipline.slice(1) + ' Engineering'} Assignment`,
+        description: `Advanced ${generationOptions.engineeringLevel}-level assignment generated using AI. 
+        ${linkedVideos.length > 0 ? `Includes ${linkedVideos.length} linked video(s). ` : ''}
+        ${uploadedFiles.length > 0 ? `Based on ${uploadedFiles.length} uploaded document(s). ` : ''}
+        Features ${Object.entries(generationOptions.questionTypes).filter(([_, enabled]) => enabled).map(([type, _]) => type.replace('-', ' ')).join(', ')} question types.
         Total Points: ${totalPoints}. 
-        ${generationOptions.perQuestionDifficulty ? 'Custom difficulty distribution applied.' : `All questions are ${generationOptions.difficultyLevel} difficulty.`}
-        ${generationOptions.setCustomPoints ? ' Custom point values applied.' : ''}`,
+        ${generationOptions.perQuestionDifficulty ? 'Custom difficulty distribution applied.' : `Difficulty level: ${generationOptions.difficultyLevel}.`}`,
         questions: generateQuestions(),
         linkedVideos: linkedVideos,
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, type: f.type }))
@@ -555,6 +664,77 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
             {/* Generation Options */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
               <h2 className="text-xl font-bold text-white mb-4">Generation Options</h2>
+              
+              {/* Engineering Level and Discipline */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Engineering Level
+                  </label>
+                  <select 
+                    value={generationOptions.engineeringLevel}
+                    onChange={(e) => setGenerationOptions({...generationOptions, engineeringLevel: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="undergraduate">Undergraduate Level</option>
+                    <option value="graduate">Graduate Level</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Engineering Discipline
+                  </label>
+                  <select 
+                    value={generationOptions.engineeringDiscipline}
+                    onChange={(e) => setGenerationOptions({...generationOptions, engineeringDiscipline: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="general">General Engineering</option>
+                    <option value="electrical">Electrical Engineering</option>
+                    <option value="mechanical">Mechanical Engineering</option>
+                    <option value="civil">Civil Engineering</option>
+                    <option value="computer">Computer Engineering</option>
+                    <option value="chemical">Chemical Engineering</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* Question Types Selection */}
+              <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <h3 className="text-lg font-medium text-white mb-4">Question Types</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Object.entries(generationOptions.questionTypes).map(([type, enabled]) => {
+                    const isEngineering = ['code-writing', 'diagram-analysis', 'multi-part'].includes(type);
+                    return (
+                      <label key={type} className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
+                        enabled 
+                          ? isEngineering 
+                            ? 'bg-purple-500/20 border-purple-500/50' 
+                            : 'bg-teal-500/20 border-teal-500/50'
+                          : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={(e) => setGenerationOptions({
+                            ...generationOptions,
+                            questionTypes: {
+                              ...generationOptions.questionTypes,
+                              [type]: e.target.checked
+                            }
+                          })}
+                          className={`${isEngineering ? 'text-purple-600 focus:ring-purple-500' : 'text-teal-600 focus:ring-teal-500'} bg-gray-800 border-gray-700 rounded`}
+                        />
+                        <span className={`text-sm font-medium ${enabled ? 'text-white' : 'text-gray-400'}`}>
+                          {type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {isEngineering && <span className="text-xs text-purple-400 ml-1">(Engineering)</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               
               {/* Basic Options */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -1131,6 +1311,8 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
                   <AlertCircle size={16} className="mr-1" />
                   {!uploadedFiles.length && !linkedVideos.length && !prompt.trim().length 
                     ? "Please upload at least one file, link a video, or provide a text prompt"
+                    : !hasSelectedQuestionTypes()
+                    ? "Please select at least one question type"
                     : "Please ensure all questions are properly configured in the difficulty distribution"
                   }
                 </p>

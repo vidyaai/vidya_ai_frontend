@@ -163,6 +163,34 @@ export const assignmentApi = {
       headers: { 'ngrok-skip-browser-warning': 'true' }
     });
     return response.data;
+  },
+
+  // Save assignment draft
+  async saveDraft(assignmentId, draftData) {
+    const response = await api.post(`/api/assignments/${assignmentId}/save-draft`, draftData, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+  // Get assignment status for current user (includes submission status)
+  async getAssignmentStatus(assignmentId) {
+    try {
+      const response = await api.get(`/api/assignments/${assignmentId}/status`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // No submission yet - return default status
+        return {
+          status: 'not_started',
+          submission: null,
+          progress: 0
+        };
+      }
+      throw error;
+    }
   }
 };
 

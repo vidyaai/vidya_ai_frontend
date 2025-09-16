@@ -1,5 +1,5 @@
 // src/components/Assignments/DoAssignmentModal.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, 
   Save, 
@@ -11,16 +11,25 @@ import {
   Download,
   Image as ImageIcon
 } from 'lucide-react';
+import { assignmentApi } from './assignmentApi';
 
-const DoAssignmentModal = ({ assignment, onClose }) => {
+const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [answers, setAnswers] = useState({});
   const [submissionMethod, setSubmissionMethod] = useState('in-app'); // 'in-app' or 'pdf'
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
 
-  // Mock questions for the assignment - including engineering types
-  const questions = [
+  // Extract the actual assignment data from the shared assignment
+  const actualAssignment = assignment.assignment || assignment;
+  
+  // Use actual assignment questions or fallback to mock data for development
+  const questions = actualAssignment.questions && actualAssignment.questions.length > 0 
+    ? actualAssignment.questions 
+    : [
     {
       id: 1,
       type: 'multiple-choice',
@@ -132,6 +141,28 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
     }
   ];
 
+  // Load existing draft/submission on component mount
+  useEffect(() => {
+    loadExistingSubmission();
+  }, []);
+
+  const loadExistingSubmission = async () => {
+    try {
+      const submission = await assignmentApi.getMySubmission(actualAssignment.id);
+      if (submission && submission.answers) {
+        setAnswers(submission.answers);
+        setSubmissionMethod(submission.submission_method || 'in-app');
+        // Check if assignment is already submitted
+        if (submission.status === 'submitted') {
+          setIsAlreadySubmitted(true);
+        }
+      }
+    } catch (error) {
+      // No existing submission - this is fine for new assignments
+      console.log('No existing submission found');
+    }
+  };
+
   const handleAnswerChange = (questionId, answer) => {
     setAnswers(prev => ({
       ...prev,
@@ -139,14 +170,53 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
     }));
   };
 
+  const handleSaveDraft = async () => {
+    try {
+      setIsSaving(true);
+      
+      const draftData = {
+        answers,
+        submission_method: submissionMethod,
+        time_spent: "0" // Could track actual time spent
+      };
+
+      await assignmentApi.saveDraft(actualAssignment.id, draftData);
+      setLastSaved(new Date());
+      
+      // Notify parent component to refresh assignment status
+      if (onAssignmentUpdate) {
+        onAssignmentUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+      alert('Failed to save draft. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    
-    // Simulate submission process
-    setTimeout(() => {
+    try {
+      setIsSubmitting(true);
+      
+      const submissionData = {
+        answers,
+        submission_method: submissionMethod,
+        time_spent: "0" // Could track actual time spent
+      };
+
+      await assignmentApi.submitAssignment(actualAssignment.id, submissionData);
       setSubmitted(true);
+      
+      // Notify parent component to refresh assignment status
+      if (onAssignmentUpdate) {
+        onAssignmentUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to submit assignment:', error);
+      alert('Failed to submit assignment. Please try again.');
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const renderQuestion = (question, index) => {
@@ -169,8 +239,9 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
                     name={`question-${question.id}`}
                     value={optionIndex}
                     checked={currentAnswer === optionIndex.toString()}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    className="text-teal-500 focus:ring-teal-500"
+                    onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+                    disabled={isAlreadySubmitted}
+                    className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                   />
                   <span className="text-white">{option}</span>
                 </label>
@@ -194,8 +265,9 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
                   name={`question-${question.id}`}
                   value="true"
                   checked={currentAnswer === 'true'}
-                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                  className="text-teal-500 focus:ring-teal-500"
+                  onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+                  disabled={isAlreadySubmitted}
+                  className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                 />
                 <span className="text-white text-lg">True</span>
               </label>
@@ -205,8 +277,9 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
                   name={`question-${question.id}`}
                   value="false"
                   checked={currentAnswer === 'false'}
-                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                  className="text-teal-500 focus:ring-teal-500"
+                  onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+                  disabled={isAlreadySubmitted}
+                  className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                 />
                 <span className="text-white text-lg">False</span>
               </label>
@@ -224,10 +297,13 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
             <p className="text-gray-300 text-lg">{question.question}</p>
             <textarea
               value={currentAnswer}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              placeholder="Enter your answer here..."
+              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
               rows={4}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+              readOnly={isAlreadySubmitted}
+              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
+                isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+              }`}
             />
           </div>
         );
@@ -243,9 +319,12 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
             <input
               type="number"
               value={currentAnswer}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              placeholder="Enter your numerical answer..."
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your numerical answer..."}
+              readOnly={isAlreadySubmitted}
+              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+              }`}
             />
           </div>
         );
@@ -260,10 +339,13 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
             <p className="text-gray-300 text-lg">{question.question}</p>
             <textarea
               value={currentAnswer}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              placeholder="Enter your detailed answer here..."
+              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your detailed answer here..."}
               rows={8}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+              readOnly={isAlreadySubmitted}
+              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
+                isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+              }`}
             />
           </div>
         );
@@ -287,10 +369,13 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
               </div>
               <textarea
                 value={currentAnswer}
-                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                placeholder="// Write your code here..."
+                onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+                placeholder={isAlreadySubmitted ? "// Submitted code" : "// Write your code here..."}
                 rows={12}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                readOnly={isAlreadySubmitted}
+                className={`w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm ${
+                  isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+                }`}
               />
             </div>
           </div>
@@ -327,10 +412,13 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
             
             <textarea
               value={currentAnswer}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              placeholder="Enter your analysis here..."
+              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              placeholder={isAlreadySubmitted ? "Submitted analysis" : "Enter your analysis here..."}
               rows={8}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+              readOnly={isAlreadySubmitted}
+              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none ${
+                isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+              }`}
             />
           </div>
         );
@@ -807,14 +895,28 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
       <div className="bg-gray-900 rounded-xl border border-gray-800 w-full max-w-6xl h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
-          <div>
-            <h2 className="text-2xl font-bold text-white">{assignment.title}</h2>
-            <p className="text-gray-400 mt-1">by {assignment.instructor}</p>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-white">{actualAssignment.title}</h2>
+            <p className="text-gray-400 mt-1">
+              {assignment.owner_name ? `by ${assignment.owner_name}` : 
+               assignment.owner_email ? `by ${assignment.owner_email}` : 
+               'Assignment'}
+            </p>
+            {actualAssignment.description && (
+              <p className="text-gray-300 mt-2 text-sm max-w-2xl">
+                {actualAssignment.description}
+              </p>
+            )}
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-gray-400">
               <Clock size={16} />
-              <span className="text-sm">{assignment.timeRemaining}</span>
+              <span className="text-sm">
+                {actualAssignment.due_date ? 
+                  `Due: ${new Date(actualAssignment.due_date).toLocaleDateString()}` : 
+                  'No due date'
+                }
+              </span>
             </div>
             <button
               onClick={onClose}
@@ -936,27 +1038,56 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
                 <select
                   value={submissionMethod}
                   onChange={(e) => setSubmissionMethod(e.target.value)}
-                  className="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  disabled={isAlreadySubmitted}
+                  className={`px-3 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    isAlreadySubmitted ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   <option value="in-app">Answer In-App</option>
                   <option value="pdf">Upload PDF</option>
                 </select>
               </div>
               <div className="text-sm text-gray-400">
-                {Object.keys(answers).length} of {questions.length} questions answered
+                {isAlreadySubmitted ? (
+                  <span className="text-green-400 font-medium">✓ Assignment submitted - viewing submission</span>
+                ) : (
+                  <>
+                    {Object.keys(answers).length} of {questions.length} questions answered
+                    {actualAssignment.total_points && (
+                      <span className="ml-2">
+                        • {actualAssignment.total_points} total points
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
             </div>
             
             <div className="flex space-x-3">
-              <button className="px-4 py-2 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors">
-                <Save size={16} className="mr-2 inline" />
-                Save Draft
-              </button>
+              <div className="flex flex-col items-end">
+                <button 
+                  onClick={handleSaveDraft}
+                  disabled={isSaving || isAlreadySubmitted}
+                  className={`px-4 py-2 font-medium rounded-lg transition-colors ${
+                    isSaving || isAlreadySubmitted
+                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                      : 'bg-gray-700 text-white hover:bg-gray-600'
+                  }`}
+                >
+                  <Save size={16} className="mr-2 inline" />
+                  {isSaving ? 'Saving...' : isAlreadySubmitted ? 'Submitted' : 'Save Draft'}
+                </button>
+                {lastSaved && (
+                  <span className="text-xs text-gray-400 mt-1">
+                    Saved {lastSaved.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isAlreadySubmitted}
                 className={`px-6 py-2 font-medium rounded-lg transition-all duration-300 ${
-                  isSubmitting
+                  isSubmitting || isAlreadySubmitted
                     ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
                 }`}
@@ -966,6 +1097,8 @@ const DoAssignmentModal = ({ assignment, onClose }) => {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Submitting...
                   </div>
+                ) : isAlreadySubmitted ? (
+                  'Already Submitted'
                 ) : (
                   'Submit Assignment'
                 )}

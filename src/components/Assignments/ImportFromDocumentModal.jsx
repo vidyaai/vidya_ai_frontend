@@ -1,4 +1,4 @@
-// src/components/Assignments/ParseFromDocumentModal.jsx
+// src/components/Assignments/ImportFromDocumentModal.jsx
 import { useState, useRef } from 'react';
 import { 
   X, 
@@ -9,10 +9,10 @@ import {
   CheckCircle,
   File
 } from 'lucide-react';
+import { assignmentApi } from './assignmentApi';
 
 const ImportFromDocumentModal = ({ onClose, onParsed }) => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
@@ -76,17 +76,6 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
     }
   };
 
-  const handleUpload = () => {
-    if (!selectedFile) return;
-    
-    setUploading(true);
-    
-    // Simulate file upload
-    setTimeout(() => {
-      setUploading(false);
-      // File is now "uploaded", ready for parsing
-    }, 1500);
-  };
 
   const handleParse = async () => {
     if (!selectedFile) return;
@@ -95,56 +84,53 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
     setError('');
 
     try {
-      // Simulate parsing with OpenAI API
-      // In real implementation, this would send the file to your backend
-      // which would then use OpenAI's API to parse the document
+      // Convert file to base64
+      const fileContent = await fileToBase64(selectedFile);
       
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API call
-      
-      // Mock parsed assignment data
-      const mockParsedData = {
-        title: "Parsed Assignment from " + selectedFile.name.replace(/\.[^/.]+$/, ""),
-        description: "This assignment was automatically parsed from the uploaded document. Review and modify as needed.",
-        questions: [
-          {
-            id: Date.now(),
-            type: 'multiple-choice',
-            question: 'What is the main topic covered in this document?',
-            options: ['Topic A', 'Topic B', 'Topic C', 'Topic D'],
-            correctAnswer: 'Topic A',
-            points: 2,
-            rubric: 'Automatically generated from document content',
-            order: 1
-          },
-          {
-            id: Date.now() + 1,
-            type: 'short-answer',
-            question: 'Explain the key concept discussed in section 2.',
-            options: [],
-            correctAnswer: '',
-            points: 5,
-            rubric: 'Look for understanding of main concepts',
-            order: 2
-          },
-          {
-            id: Date.now() + 2,
-            type: 'long-answer',
-            question: 'Analyze the implications of the findings presented in the document.',
-            options: [],
-            correctAnswer: '',
-            points: 10,
-            rubric: 'Evaluate critical thinking and analysis skills',
-            order: 3
-          }
-        ]
+      // Call the backend API to extract questions from the document
+      const parsedData = await assignmentApi.importFromDocument(
+        fileContent,
+        selectedFile.name,
+        selectedFile.type,
+        null  // No generation options needed for extraction
+      );
+
+      // Transform the API response to match the expected format
+      const assignmentData = {
+        title: parsedData.title,
+        description: parsedData.description,
+        questions: parsedData.questions || []
       };
 
       setParsing(false);
-      onParsed(mockParsedData);
+      onParsed(assignmentData);
     } catch (err) {
       setParsing(false);
-      setError('Failed to parse document. Please try again or contact support.');
+      console.error('Error parsing document:', err);
+      
+      // Provide more specific error messages
+      if (err.response?.status === 400) {
+        setError(err.response.data.detail || 'Invalid document format or content.');
+      } else if (err.response?.status === 500) {
+        setError('Server error while processing document. Please try again.');
+      } else {
+        setError('Failed to extract assignment questions from document. Please ensure the document contains assignment questions, exercises, or problems.');
+      }
     }
+  };
+
+  // Helper function to convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Remove the data:mime/type;base64, prefix
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
   };
 
   const formatFileSize = (bytes) => {
@@ -162,7 +148,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
           <div>
             <h2 className="text-2xl font-bold text-white">Import from Document</h2>
-            <p className="text-gray-400 mt-1">Upload a document to automatically import assignment questions</p>
+            <p className="text-gray-400 mt-1">Upload an assignment document to extract and import existing questions</p>
           </div>
           <button
             onClick={onClose}
@@ -252,7 +238,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
                 <div className="flex-1">
                   <h4 className="text-white font-medium">Ready to Import</h4>
                   <p className="text-gray-400 text-sm mt-1">
-                    Your document will be analyzed using AI to automatically import relevant assignment questions.
+                    Your document will be analyzed using AI to extract existing assignment questions and import them into the Assignment Builder.
                     This process may take a few moments.
                   </p>
                 </div>
@@ -280,7 +266,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            disabled={uploading || parsing}
+            disabled={parsing}
           >
             Cancel
           </button>
@@ -292,14 +278,6 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
             >
               <Upload size={18} className="mr-2" />
               Choose File
-            </button>
-          ) : uploading ? (
-            <button
-              disabled
-              className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-medium rounded-lg cursor-not-allowed"
-            >
-              <Loader2 size={18} className="mr-2 animate-spin" />
-              Uploading...
             </button>
           ) : parsing ? (
             <button

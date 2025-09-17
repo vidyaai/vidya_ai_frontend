@@ -206,15 +206,15 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             <p className="text-gray-300 mb-4">{question.question || 'Multi-part question...'}</p>
             
             {/* Main Question Code Preview */}
-            {question.hasMainCode && question.mainCode && (
+            {((question.hasMainCode && question.mainCode) || (question.hasCode && question.code)) && (
               <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-purple-400 text-xs font-medium">
-                    Main Code ({question.mainCodeLanguage?.toUpperCase() || 'CODE'})
+                    Main Code ({(question.mainCodeLanguage || question.codeLanguage)?.toUpperCase() || 'CODE'})
                   </span>
                 </div>
                 <div className="bg-gray-800 rounded p-2 font-mono text-xs text-gray-400 max-h-20 overflow-hidden">
-                  {question.mainCode}
+                  {question.mainCode || question.code}
                 </div>
               </div>
             )}
@@ -259,6 +259,18 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                   </div>
                   <p className="text-gray-300 text-sm">{subq.question || `Part ${subIndex + 1} question...`}</p>
                   
+                  {/* Sub-question Code */}
+                  {((subq.hasSubCode && subq.subCode) || (subq.hasCode && subq.code)) && (
+                    <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mb-3">
+                      <div className="text-purple-400 text-xs font-medium mb-2">
+                        Code ({(subq.codeLanguage)?.toUpperCase() || 'CODE'})
+                      </div>
+                      <div className="bg-gray-800 rounded p-2 font-mono text-xs text-gray-300 overflow-x-auto max-h-20">
+                        {subq.subCode || subq.code}
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Show nested sub-questions for multi-part sub-questions */}
                   {subq.type === 'multi-part' && (subq.subquestions || []).length > 0 && (
                     <div className="mt-2 ml-3 space-y-1 border-l-2 border-blue-400/30 pl-3">
@@ -280,6 +292,18 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                             </div>
                           </div>
                           <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
+                          
+                          {/* Nested sub-question code */}
+                          {((nestedSubq.hasCode && nestedSubq.code)) && (
+                            <div className="mt-2 bg-gray-700 rounded p-2 border border-purple-500/30">
+                              <div className="text-purple-300 text-xs font-medium mb-1">
+                                Code ({(nestedSubq.codeLanguage)?.toUpperCase() || 'CODE'})
+                              </div>
+                              <div className="bg-gray-800 rounded p-1 font-mono text-xs text-gray-300 overflow-x-auto max-h-16">
+                                {nestedSubq.code}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

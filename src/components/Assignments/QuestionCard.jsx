@@ -993,19 +993,19 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasMainCode || false}
-                    onChange={(e) => onUpdate({ hasMainCode: e.target.checked })}
+                    checked={question.hasMainCode || question.hasCode || false}
+                    onChange={(e) => onUpdate({ hasMainCode: e.target.checked, hasCode: e.target.checked })}
                     className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
                     Include Code in Main Question
                   </span>
                 </label>
-                {question.hasMainCode && (
+                {(question.hasMainCode || question.hasCode) && (
                   <div className="mt-3 space-y-2">
                     <select
-                      value={question.mainCodeLanguage || 'python'}
-                      onChange={(e) => onUpdate({ mainCodeLanguage: e.target.value })}
+                      value={question.mainCodeLanguage || question.codeLanguage || 'python'}
+                      onChange={(e) => onUpdate({ mainCodeLanguage: e.target.value, codeLanguage: e.target.value })}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
@@ -1016,8 +1016,8 @@ const QuestionCard = ({
                       <option value="matlab">MATLAB</option>
                     </select>
                     <textarea
-                      value={question.mainCode || ''}
-                      onChange={(e) => onUpdate({ mainCode: e.target.value })}
+                      value={question.mainCode || question.code || ''}
+                      onChange={(e) => onUpdate({ mainCode: e.target.value, code: e.target.value })}
                       placeholder="// Main question code here..."
                       rows={4}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
@@ -1162,8 +1162,11 @@ const QuestionCard = ({
                         <label className="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={subq.hasSubCode || false}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'hasSubCode', e.target.checked)}
+                            checked={subq.hasSubCode || subq.hasCode || false}
+                            onChange={(e) => {
+                              handleSubquestionChange(subIndex, 'hasSubCode', e.target.checked);
+                              handleSubquestionChange(subIndex, 'hasCode', e.target.checked);
+                            }}
                             className="text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           />
                           <span className="text-sm text-gray-300">Include Code</span>
@@ -1181,14 +1184,17 @@ const QuestionCard = ({
                       </div>
 
                       {/* Sub-question code editor */}
-                      {subq.hasSubCode && (
+                      {(subq.hasSubCode || subq.hasCode) && (
                         <div className="mt-3">
                           <label className="block text-xs font-medium text-purple-300 mb-2">
                             Sub-question Code
                           </label>
                           <textarea
-                            value={subq.subCode || ''}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'subCode', e.target.value)}
+                            value={subq.subCode || subq.code || ''}
+                            onChange={(e) => {
+                              handleSubquestionChange(subIndex, 'subCode', e.target.value);
+                              handleSubquestionChange(subIndex, 'code', e.target.value);
+                            }}
                             placeholder="// Enter starter code for this sub-question..."
                             rows={4}
                             className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"

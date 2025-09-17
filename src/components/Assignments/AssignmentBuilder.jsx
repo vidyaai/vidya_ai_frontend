@@ -389,6 +389,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 title={assignmentTitle}
                 description={assignmentDescription}
                 questions={questions}
+                onSave={saveAssignment}
+                saving={saving}
               />
             </div>
           )}

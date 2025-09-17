@@ -1,8 +1,26 @@
 // src/components/Assignments/AssignmentPreview.jsx
 import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
 
-const AssignmentPreview = ({ title, description, questions }) => {
-  const totalPoints = questions.reduce((sum, q) => sum + (q.points || 1), 0);
+const AssignmentPreview = ({ title, description, questions, onSave, saving = false }) => {
+  const calculateQuestionPoints = (question) => {
+    if (question.type === 'multi-part') {
+      // For multi-part questions, sum up all sub-question points
+      const subQuestionPoints = (question.subquestions || []).reduce((sum, subq) => {
+        if (subq.type === 'multi-part') {
+          // Handle nested multi-part questions
+          const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
+            return nestedSum + (nestedSubq.points || 1);
+          }, 0);
+          return sum + nestedPoints;
+        }
+        return sum + (subq.points || 1);
+      }, 0);
+      return subQuestionPoints;
+    }
+    return question.points || 1;
+  };
+
+  const totalPoints = questions.reduce((sum, q) => sum + calculateQuestionPoints(q), 0);
   const estimatedTime = questions.length * 2; // 2 minutes per question estimate
 
   const renderQuestionPreview = (question, index) => {
@@ -183,7 +201,7 @@ const AssignmentPreview = ({ title, description, questions }) => {
                 <Layers size={16} className="text-blue-400" />
                 <h4 className="text-white font-medium">Question {index + 1} - Multi-Part</h4>
               </div>
-              <span className="text-blue-400 text-sm font-medium">{question.points || 1} pts total</span>
+              <span className="text-blue-400 text-sm font-medium">{calculateQuestionPoints(question)} pts total</span>
             </div>
             <p className="text-gray-300 mb-4">{question.question || 'Multi-part question...'}</p>
             
@@ -223,16 +241,49 @@ const AssignmentPreview = ({ title, description, questions }) => {
                       <span className={`px-1 py-0.5 rounded text-xs ${
                         subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                         subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
+                        subq.type === 'multi-part' ? 'bg-blue-500/20 text-blue-300' :
                         'bg-gray-500/20 text-gray-300'
                       }`}>
                         {subq.type === 'code-writing' ? 'Code' :
                          subq.type === 'diagram-analysis' ? 'Diagram' :
+                         subq.type === 'multi-part' ? 'Multi-Part' :
                          subq.type?.replace('-', ' ') || 'Text'}
                       </span>
-                      <span className="text-blue-400 text-xs">{subq.points || 1} pts</span>
+                      <span className="text-blue-400 text-xs">
+                        {subq.type === 'multi-part' 
+                          ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                          : subq.points || 1
+                        } pts
+                      </span>
                     </div>
                   </div>
                   <p className="text-gray-300 text-sm">{subq.question || `Part ${subIndex + 1} question...`}</p>
+                  
+                  {/* Show nested sub-questions for multi-part sub-questions */}
+                  {subq.type === 'multi-part' && (subq.subquestions || []).length > 0 && (
+                    <div className="mt-2 ml-3 space-y-1 border-l-2 border-blue-400/30 pl-3">
+                      {subq.subquestions.map((nestedSubq, nestedIndex) => (
+                        <div key={nestedSubq.id || nestedIndex} className="bg-gray-600 rounded p-2 border border-gray-500">
+                          <div className="flex items-center justify-between">
+                            <span className="text-blue-200 text-xs font-medium">Part {subIndex + 1}.{nestedIndex + 1}</span>
+                            <div className="flex items-center space-x-1">
+                              <span className={`px-1 py-0.5 rounded text-xs ${
+                                nestedSubq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
+                                nestedSubq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
+                                'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {nestedSubq.type === 'code-writing' ? 'Code' :
+                                 nestedSubq.type === 'diagram-analysis' ? 'Diagram' :
+                                 nestedSubq.type?.replace('-', ' ') || 'Text'}
+                              </span>
+                              <span className="text-blue-400 text-xs">{nestedSubq.points || 1} pts</span>
+                            </div>
+                          </div>
+                          <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -313,10 +364,21 @@ const AssignmentPreview = ({ title, description, questions }) => {
       </div>
 
       {/* Preview Actions */}
-      {questions.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-700">
-          <button className="w-full px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300">
-            Save Assignment
+      {questions.length > 0 && onSave && (
+        <div className="mt-6 pt-4 border-t border-gray-700 space-y-2">
+          <button 
+            onClick={() => onSave('draft')}
+            disabled={saving}
+            className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving...' : 'Save as Draft'}
+          </button>
+          <button 
+            onClick={() => onSave('published')}
+            disabled={saving}
+            className="w-full px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Publishing...' : 'Save & Publish'}
           </button>
         </div>
       )}

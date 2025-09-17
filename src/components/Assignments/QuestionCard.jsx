@@ -135,6 +135,93 @@ const QuestionCard = ({
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
+
+            {/* Enhanced options for multiple choice */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasCode || false}
+                    onChange={(e) => onUpdate({ hasCode: e.target.checked })}
+                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Code
+                  </span>
+                </label>
+                {question.hasCode && (
+                  <div className="mt-3 space-y-2">
+                    <select
+                      value={question.codeLanguage || 'python'}
+                      onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                      <option value="c">C</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="matlab">MATLAB</option>
+                      <option value="verilog">Verilog</option>
+                      <option value="vhdl">VHDL</option>
+                    </select>
+                    <textarea
+                      value={question.code || ''}
+                      onChange={(e) => onUpdate({ code: e.target.value })}
+                      placeholder="// Enter code for this question..."
+                      rows={4}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasDiagram || false}
+                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Diagram
+                  </span>
+                </label>
+                {question.hasDiagram && (
+                  <div className="mt-3">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.svg"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                          }
+                        }}
+                        className="hidden"
+                        id={`diagram-upload-${question.id}`}
+                      />
+                      <label
+                        htmlFor={`diagram-upload-${question.id}`}
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
+                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                      </label>
+                      {question.diagram && (
+                        <div className="mt-2 text-orange-400 text-xs">
+                          📎 {question.diagram.file}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -194,6 +281,93 @@ const QuestionCard = ({
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
+
+            {/* Enhanced options for true/false */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasCode || false}
+                    onChange={(e) => onUpdate({ hasCode: e.target.checked })}
+                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Code
+                  </span>
+                </label>
+                {question.hasCode && (
+                  <div className="mt-3 space-y-2">
+                    <select
+                      value={question.codeLanguage || 'python'}
+                      onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                      <option value="c">C</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="matlab">MATLAB</option>
+                      <option value="verilog">Verilog</option>
+                      <option value="vhdl">VHDL</option>
+                    </select>
+                    <textarea
+                      value={question.code || ''}
+                      onChange={(e) => onUpdate({ code: e.target.value })}
+                      placeholder="// Enter code for this question..."
+                      rows={4}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasDiagram || false}
+                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Diagram
+                  </span>
+                </label>
+                {question.hasDiagram && (
+                  <div className="mt-3">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.svg"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                          }
+                        }}
+                        className="hidden"
+                        id={`diagram-upload-${question.id}`}
+                      />
+                      <label
+                        htmlFor={`diagram-upload-${question.id}`}
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
+                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                      </label>
+                      {question.diagram && (
+                        <div className="mt-2 text-orange-400 text-xs">
+                          📎 {question.diagram.file}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -240,6 +414,93 @@ const QuestionCard = ({
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
+
+            {/* Enhanced options for fill-blank */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasCode || false}
+                    onChange={(e) => onUpdate({ hasCode: e.target.checked })}
+                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Code
+                  </span>
+                </label>
+                {question.hasCode && (
+                  <div className="mt-3 space-y-2">
+                    <select
+                      value={question.codeLanguage || 'python'}
+                      onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                      <option value="c">C</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="matlab">MATLAB</option>
+                      <option value="verilog">Verilog</option>
+                      <option value="vhdl">VHDL</option>
+                    </select>
+                    <textarea
+                      value={question.code || ''}
+                      onChange={(e) => onUpdate({ code: e.target.value })}
+                      placeholder="// Enter code for this question..."
+                      rows={4}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasDiagram || false}
+                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Diagram
+                  </span>
+                </label>
+                {question.hasDiagram && (
+                  <div className="mt-3">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.svg"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                          }
+                        }}
+                        className="hidden"
+                        id={`diagram-upload-${question.id}`}
+                      />
+                      <label
+                        htmlFor={`diagram-upload-${question.id}`}
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
+                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                      </label>
+                      {question.diagram && (
+                        <div className="mt-2 text-orange-400 text-xs">
+                          📎 {question.diagram.file}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -270,6 +531,93 @@ const QuestionCard = ({
                 rows={2}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
+            </div>
+
+            {/* Enhanced options for numerical */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasCode || false}
+                    onChange={(e) => onUpdate({ hasCode: e.target.checked })}
+                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Code
+                  </span>
+                </label>
+                {question.hasCode && (
+                  <div className="mt-3 space-y-2">
+                    <select
+                      value={question.codeLanguage || 'python'}
+                      onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                      <option value="c">C</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="matlab">MATLAB</option>
+                      <option value="verilog">Verilog</option>
+                      <option value="vhdl">VHDL</option>
+                    </select>
+                    <textarea
+                      value={question.code || ''}
+                      onChange={(e) => onUpdate({ code: e.target.value })}
+                      placeholder="// Enter code for this question..."
+                      rows={4}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasDiagram || false}
+                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Diagram
+                  </span>
+                </label>
+                {question.hasDiagram && (
+                  <div className="mt-3">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.svg"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                          }
+                        }}
+                        className="hidden"
+                        id={`diagram-upload-${question.id}`}
+                      />
+                      <label
+                        htmlFor={`diagram-upload-${question.id}`}
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
+                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                      </label>
+                      {question.diagram && (
+                        <div className="mt-2 text-orange-400 text-xs">
+                          📎 {question.diagram.file}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div>
@@ -302,6 +650,93 @@ const QuestionCard = ({
                 rows={question.type === 'long-answer' ? 3 : 2}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
+            </div>
+
+            {/* Enhanced options for basic questions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasCode || false}
+                    onChange={(e) => onUpdate({ hasCode: e.target.checked })}
+                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Code
+                  </span>
+                </label>
+                {question.hasCode && (
+                  <div className="mt-3 space-y-2">
+                    <select
+                      value={question.codeLanguage || 'python'}
+                      onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="python">Python</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                      <option value="c">C</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="matlab">MATLAB</option>
+                      <option value="verilog">Verilog</option>
+                      <option value="vhdl">VHDL</option>
+                    </select>
+                    <textarea
+                      value={question.code || ''}
+                      onChange={(e) => onUpdate({ code: e.target.value })}
+                      placeholder="// Enter code for this question..."
+                      rows={4}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={question.hasDiagram || false}
+                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    Include Diagram
+                  </span>
+                </label>
+                {question.hasDiagram && (
+                  <div className="mt-3">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.svg"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                          }
+                        }}
+                        className="hidden"
+                        id={`diagram-upload-${question.id}`}
+                      />
+                      <label
+                        htmlFor={`diagram-upload-${question.id}`}
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
+                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                      </label>
+                      {question.diagram && (
+                        <div className="mt-2 text-orange-400 text-xs">
+                          📎 {question.diagram.file}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div>
@@ -499,6 +934,59 @@ const QuestionCard = ({
               />
             </div>
 
+            {/* Rubric Configuration for Multi-part Questions */}
+            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Rubric Configuration
+              </label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name={`rubric-type-${question.id}`}
+                      checked={question.rubricType === 'overall' || !question.rubricType}
+                      onChange={() => onUpdate({ rubricType: 'overall' })}
+                      className="text-blue-500 focus:ring-blue-500 mr-2"
+                    />
+                    <span className="text-white text-sm">Overall Rubric</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name={`rubric-type-${question.id}`}
+                      checked={question.rubricType === 'per-subquestion'}
+                      onChange={() => onUpdate({ rubricType: 'per-subquestion' })}
+                      className="text-blue-500 focus:ring-blue-500 mr-2"
+                    />
+                    <span className="text-white text-sm">Per Sub-question Rubric</span>
+                  </label>
+                </div>
+                
+                {(question.rubricType === 'overall' || !question.rubricType) && (
+                  <div>
+                    <label className="block text-xs font-medium text-blue-300 mb-2">
+                      Overall Rubric for Entire Question
+                    </label>
+                    <textarea
+                      value={question.rubric || ''}
+                      onChange={(e) => onUpdate({ rubric: e.target.value })}
+                      placeholder="Enter overall grading criteria for this multi-part question..."
+                      rows={3}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                    />
+                  </div>
+                )}
+                
+                {question.rubricType === 'per-subquestion' && (
+                  <div className="text-blue-300 text-sm bg-blue-900/20 p-3 rounded-lg border border-blue-700/30">
+                    <p className="font-medium mb-1">Per Sub-question Rubrics</p>
+                    <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-question below.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Main Question Enhancements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
               <div>
@@ -606,12 +1094,19 @@ const QuestionCard = ({
                       <div className="flex items-center space-x-2">
                         <input
                           type="number"
-                          value={subq.points || 1}
+                          value={subq.type === 'multi-part' 
+                            ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                            : subq.points || 1
+                          }
                           onChange={(e) => handleSubquestionChange(subIndex, 'points', parseInt(e.target.value) || 1)}
                           min="1"
-                          className="w-16 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={subq.type === 'multi-part'}
+                          className="w-16 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         <span className="text-gray-400 text-sm">pts</span>
+                        {subq.type === 'multi-part' && (
+                          <span className="text-xs text-gray-500">(auto-calc)</span>
+                        )}
                         <button
                           onClick={() => removeSubquestion(subIndex)}
                           className="p-1 text-red-400 hover:text-red-300 transition-colors"
@@ -745,26 +1240,150 @@ const QuestionCard = ({
                           </label>
                           <div className="space-y-2">
                             {(subq.options || ['', '', '', '']).map((option, optionIndex) => (
-                              <input
-                                key={optionIndex}
-                                type="text"
-                                value={option}
-                                onChange={(e) => {
-                                  const newOptions = [...(subq.options || ['', '', '', ''])];
-                                  newOptions[optionIndex] = e.target.value;
-                                  handleSubquestionChange(subIndex, 'options', newOptions);
-                                }}
-                                placeholder={`Option ${optionIndex + 1}`}
-                                className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                              />
+                              <div key={optionIndex} className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  name={`correct-sub-${question.id}-${subIndex}`}
+                                  checked={subq.correctAnswer === optionIndex.toString()}
+                                  onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
+                                  className="text-teal-500 focus:ring-teal-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={option}
+                                  onChange={(e) => {
+                                    const newOptions = [...(subq.options || ['', '', '', ''])];
+                                    newOptions[optionIndex] = e.target.value;
+                                    handleSubquestionChange(subIndex, 'options', newOptions);
+                                  }}
+                                  placeholder={`Option ${optionIndex + 1}`}
+                                  className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                                />
+                              </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {/* True/False correct answer for sub-questions */}
+                      {subq.type === 'true-false' && (
+                        <div className="mt-3">
+                          <label className="block text-xs font-medium text-teal-300 mb-2">
+                            Correct Answer
+                          </label>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name={`tf-sub-${question.id}-${subIndex}`}
+                                checked={subq.correctAnswer === 'true'}
+                                onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'true')}
+                                className="text-teal-500 focus:ring-teal-500 mr-2"
+                              />
+                              <span className="text-white text-sm">True</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name={`tf-sub-${question.id}-${subIndex}`}
+                                checked={subq.correctAnswer === 'false'}
+                                onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'false')}
+                                className="text-teal-500 focus:ring-teal-500 mr-2"
+                              />
+                              <span className="text-white text-sm">False</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Correct answer for other sub-question types */}
+                      {!['multiple-choice', 'true-false'].includes(subq.type) && (
+                        <div className="mt-3">
+                          <label className="block text-xs font-medium text-teal-300 mb-2">
+                            {subq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Optional)'}
+                          </label>
+                          <textarea
+                            value={subq.correctAnswer || ''}
+                            onChange={(e) => handleSubquestionChange(subIndex, 'correctAnswer', e.target.value)}
+                            placeholder={subq.type === 'numerical' ? 'Enter the correct numerical answer...' : 'Enter sample answer or key points...'}
+                            rows={2}
+                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none text-sm"
+                          />
+                        </div>
+                      )}
+
+                      {/* Per sub-question rubric */}
+                      {question.rubricType === 'per-subquestion' && (
+                        <div className="mt-3">
+                          <label className="block text-xs font-medium text-blue-300 mb-2">
+                            Rubric for Part {subIndex + 1}
+                          </label>
+                          <textarea
+                            value={subq.rubric || ''}
+                            onChange={(e) => handleSubquestionChange(subIndex, 'rubric', e.target.value)}
+                            placeholder={`Enter grading criteria for part ${subIndex + 1}...`}
+                            rows={2}
+                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                          />
                         </div>
                       )}
 
                       {/* Nested multi-part sub-questions */}
                       {subq.type === 'multi-part' && (
                         <div className="mt-3 border-l-2 border-blue-400/30 pl-4 ml-2">
+                          {/* Rubric Configuration for Nested Multi-part Sub-questions */}
+                          <div className="bg-gray-700 rounded-lg p-3 border border-gray-600 mb-3">
+                            <label className="block text-xs font-medium text-blue-300 mb-2">
+                              Rubric Configuration for Part {subIndex + 1}
+                            </label>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-3">
+                                <label className="flex items-center">
+                                  <input
+                                    type="radio"
+                                    name={`nested-rubric-type-${question.id}-${subIndex}`}
+                                    checked={subq.rubricType === 'overall' || !subq.rubricType}
+                                    onChange={() => handleSubquestionChange(subIndex, 'rubricType', 'overall')}
+                                    className="text-blue-500 focus:ring-blue-500 mr-2"
+                                  />
+                                  <span className="text-white text-xs">Overall Rubric</span>
+                                </label>
+                                <label className="flex items-center">
+                                  <input
+                                    type="radio"
+                                    name={`nested-rubric-type-${question.id}-${subIndex}`}
+                                    checked={subq.rubricType === 'per-subquestion'}
+                                    onChange={() => handleSubquestionChange(subIndex, 'rubricType', 'per-subquestion')}
+                                    className="text-blue-500 focus:ring-blue-500 mr-2"
+                                  />
+                                  <span className="text-white text-xs">Per Sub-part Rubric</span>
+                                </label>
+                              </div>
+                              
+                              {(subq.rubricType === 'overall' || !subq.rubricType) && (
+                                <div>
+                                  <label className="block text-xs font-medium text-blue-300 mb-1">
+                                    Overall Rubric for Part {subIndex + 1}
+                                  </label>
+                                  <textarea
+                                    value={subq.rubric || ''}
+                                    onChange={(e) => handleSubquestionChange(subIndex, 'rubric', e.target.value)}
+                                    placeholder={`Enter overall grading criteria for part ${subIndex + 1}...`}
+                                    rows={2}
+                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                  />
+                                </div>
+                              )}
+                              
+                              {subq.rubricType === 'per-subquestion' && (
+                                <div className="text-blue-300 text-xs bg-blue-900/20 p-2 rounded border border-blue-700/30">
+                                  <p className="font-medium mb-1">Per Sub-part Rubrics</p>
+                                  <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-part below.</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
                           <div className="flex items-center justify-between mb-2">
                             <label className="block text-xs font-medium text-blue-300">
                               Sub-sub-questions
@@ -848,21 +1467,112 @@ const QuestionCard = ({
                                 {subSubq.type === 'multiple-choice' && (
                                   <div className="mt-2 space-y-1">
                                     {(subSubq.options || ['', '', '']).map((option, optionIndex) => (
-                                      <input
-                                        key={optionIndex}
-                                        type="text"
-                                        value={option}
-                                        onChange={(e) => {
-                                          const newSubSubquestions = [...(subq.subquestions || [])];
-                                          const newOptions = [...(newSubSubquestions[subSubIndex].options || ['', '', ''])];
-                                          newOptions[optionIndex] = e.target.value;
-                                          newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], options: newOptions };
-                                          handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
-                                        }}
-                                        placeholder={`Option ${optionIndex + 1}`}
-                                        className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs"
-                                      />
+                                      <div key={optionIndex} className="flex items-center space-x-2">
+                                        <input
+                                          type="radio"
+                                          name={`correct-subsub-${question.id}-${subIndex}-${subSubIndex}`}
+                                          checked={subSubq.correctAnswer === optionIndex.toString()}
+                                          onChange={() => {
+                                            const newSubSubquestions = [...(subq.subquestions || [])];
+                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: optionIndex.toString() };
+                                            handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                          }}
+                                          className="text-teal-500 focus:ring-teal-500"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={option}
+                                          onChange={(e) => {
+                                            const newSubSubquestions = [...(subq.subquestions || [])];
+                                            const newOptions = [...(newSubSubquestions[subSubIndex].options || ['', '', ''])];
+                                            newOptions[optionIndex] = e.target.value;
+                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], options: newOptions };
+                                            handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                          }}
+                                          placeholder={`Option ${optionIndex + 1}`}
+                                          className="flex-1 px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs"
+                                        />
+                                      </div>
                                     ))}
+                                  </div>
+                                )}
+
+                                {/* True/False correct answer for sub-sub-questions */}
+                                {subSubq.type === 'true-false' && (
+                                  <div className="mt-2">
+                                    <label className="block text-xs font-medium text-teal-300 mb-1">
+                                      Correct Answer
+                                    </label>
+                                    <div className="flex space-x-3">
+                                      <label className="flex items-center">
+                                        <input
+                                          type="radio"
+                                          name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
+                                          checked={subSubq.correctAnswer === 'true'}
+                                          onChange={() => {
+                                            const newSubSubquestions = [...(subq.subquestions || [])];
+                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'true' };
+                                            handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                          }}
+                                          className="text-teal-500 focus:ring-teal-500 mr-1"
+                                        />
+                                        <span className="text-white text-xs">True</span>
+                                      </label>
+                                      <label className="flex items-center">
+                                        <input
+                                          type="radio"
+                                          name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
+                                          checked={subSubq.correctAnswer === 'false'}
+                                          onChange={() => {
+                                            const newSubSubquestions = [...(subq.subquestions || [])];
+                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'false' };
+                                            handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                          }}
+                                          className="text-teal-500 focus:ring-teal-500 mr-1"
+                                        />
+                                        <span className="text-white text-xs">False</span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Correct answer for other sub-sub-question types */}
+                                {!['multiple-choice', 'true-false'].includes(subSubq.type) && (
+                                  <div className="mt-2">
+                                    <label className="block text-xs font-medium text-teal-300 mb-1">
+                                      {subSubq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Optional)'}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={subSubq.correctAnswer || ''}
+                                      onChange={(e) => {
+                                        const newSubSubquestions = [...(subq.subquestions || [])];
+                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: e.target.value };
+                                        handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                      }}
+                                      placeholder={subSubq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
+                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Per sub-sub-question rubric for nested multi-part */}
+                                {subq.rubricType === 'per-subquestion' && (
+                                  <div className="mt-2">
+                                    <label className="block text-xs font-medium text-blue-300 mb-1">
+                                      Rubric for Part {subIndex + 1}.{subSubIndex + 1}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={subSubq.rubric || ''}
+                                      onChange={(e) => {
+                                        const newSubSubquestions = [...(subq.subquestions || [])];
+                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], rubric: e.target.value };
+                                        handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                      }}
+                                      placeholder={`Enter grading criteria for part ${subIndex + 1}.${subSubIndex + 1}...`}
+                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -919,7 +1629,16 @@ const QuestionCard = ({
             <input
               type="number"
               value={question.type === 'multi-part' 
-                ? (question.subquestions || []).reduce((sum, subq) => sum + (subq.points || 1), 0)
+                ? (question.subquestions || []).reduce((sum, subq) => {
+                    if (subq.type === 'multi-part') {
+                      // Handle nested multi-part questions - sum their sub-questions
+                      const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
+                        return nestedSum + (nestedSubq.points || 1);
+                      }, 0);
+                      return sum + nestedPoints;
+                    }
+                    return sum + (subq.points || 1);
+                  }, 0)
                 : question.points
               }
               onChange={(e) => handlePointsChange(e.target.value)}
@@ -973,19 +1692,21 @@ const QuestionCard = ({
         <div className="p-4 space-y-4">
           {renderQuestionInput()}
           
-          {/* Rubric Section */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Rubric (Optional)
-            </label>
-            <textarea
-              value={question.rubric}
-              onChange={(e) => handleRubricChange(e.target.value)}
-              placeholder="Enter grading criteria or rubric..."
-              rows={2}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-            />
-          </div>
+          {/* Rubric Section - Only show for non-multi-part questions */}
+          {question.type !== 'multi-part' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Rubric (Optional)
+              </label>
+              <textarea
+                value={question.rubric}
+                onChange={(e) => handleRubricChange(e.target.value)}
+                placeholder="Enter grading criteria or rubric..."
+                rows={2}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

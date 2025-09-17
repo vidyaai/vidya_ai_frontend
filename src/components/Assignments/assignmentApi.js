@@ -191,6 +191,21 @@ export const assignmentApi = {
       }
       throw error;
     }
+  },
+
+  // Import assignment from document
+  async importFromDocument(fileContent, fileName, fileType, generationOptions = null) {
+    const importData = {
+      file_content: fileContent,  // Base64 encoded file content
+      file_name: fileName,
+      file_type: fileType,
+      generation_options: generationOptions
+    };
+
+    const response = await api.post('/api/assignments/import-document', importData, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
   }
 };
 

@@ -455,15 +455,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             <p className="text-gray-300 text-lg">{question.question}</p>
             
             {/* Main Question Code */}
-            {question.hasMainCode && question.mainCode && (
+            {((question.hasMainCode && question.mainCode) || (question.hasCode && question.code)) && (
               <div className="bg-gray-800 rounded-lg p-4 border border-purple-500/30">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-purple-400 text-sm font-medium">
-                    Main Code ({question.mainCodeLanguage?.toUpperCase() || 'CODE'})
+                    Main Code ({(question.mainCodeLanguage || question.codeLanguage)?.toUpperCase() || 'CODE'})
                   </span>
                 </div>
                 <pre className="bg-gray-900 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto font-mono border border-gray-700">
-                  <code>{question.mainCode}</code>
+                  <code>{question.mainCode || question.code}</code>
                 </pre>
               </div>
             )}
@@ -514,13 +514,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                   
                   {/* Sub-question Code */}
-                  {subq.hasSubCode && subq.subCode && (
+                  {((subq.hasSubCode && subq.subCode) || (subq.hasCode && subq.code)) && (
                     <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mb-3">
                       <div className="text-purple-400 text-xs font-medium mb-2">
-                        Starter Code ({subq.codeLanguage?.toUpperCase() || 'CODE'})
+                        Code ({(subq.codeLanguage)?.toUpperCase() || 'CODE'})
                       </div>
                       <pre className="bg-gray-800 rounded p-2 text-xs text-gray-300 overflow-x-auto font-mono">
-                        <code>{subq.subCode}</code>
+                        <code>{subq.subCode || subq.code}</code>
                       </pre>
                     </div>
                   )}

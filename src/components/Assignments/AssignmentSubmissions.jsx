@@ -331,6 +331,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           </div>
         );
 
+      case 'multi_part':
+      case 'multi-part':
+        // Recursively render nested multi-part questions
+        return (
+          <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
+            {renderMultiPartAnswer(subQuestion, subAnswer)}
+          </div>
+        );
+
       default:
         return (
           <div className="bg-gray-800 rounded p-3">
@@ -376,6 +385,25 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     }
 
     return answer;
+  };
+
+  // Helper function to get nested answer for multi-part sub-questions
+  const getNestedAnswer = (answer, subQuestionId) => {
+    if (typeof answer === 'string') {
+      try {
+        answer = JSON.parse(answer);
+      } catch (e) {
+        return undefined;
+      }
+    }
+
+    // If answer has subAnswers structure, look for the specific sub-question
+    if (answer && typeof answer === 'object' && answer.subAnswers) {
+      const subAnswer = answer.subAnswers[subQuestionId];
+      return subAnswer;
+    }
+
+    return undefined;
   };
 
   // Helper function to find sub-question by various ID formats
@@ -463,11 +491,23 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         {/* Sub-questions and answers */}
         <div className="space-y-4">
           {question.subquestions.map((subQuestion, index) => {
-            // Try multiple strategies to find the answer
-            let subAnswer = parsedAnswers[subQuestion.id] || 
-                           parsedAnswers[index + 1] || 
-                           parsedAnswers[index] ||
-                           parsedAnswers[String(subQuestion.id)];
+            let subAnswer;
+
+            // For multi-part sub-questions, try to get the nested structure
+            if (subQuestion.type === 'multi-part' || subQuestion.type === 'multi_part') {
+              subAnswer = getNestedAnswer(answer, subQuestion.id) || 
+                         getNestedAnswer(answer, String(subQuestion.id)) ||
+                         getNestedAnswer(answer, index + 1) ||
+                         getNestedAnswer(answer, index);
+            }
+            
+            // If not found or not multi-part, use the flattened approach
+            if (subAnswer === undefined) {
+              subAnswer = parsedAnswers[subQuestion.id] || 
+                         parsedAnswers[index + 1] || 
+                         parsedAnswers[index] ||
+                         parsedAnswers[String(subQuestion.id)];
+            }
             
             // If still not found, search through all parsed answers
             if (subAnswer === undefined) {

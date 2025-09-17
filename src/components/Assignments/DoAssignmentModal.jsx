@@ -250,6 +250,27 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'fill-blank':
+        return (
+          <div key={question.id} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
+              <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
+            </div>
+            <p className="text-gray-300 text-lg">{question.question}</p>
+            <input
+              type="text"
+              value={currentAnswer}
+              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
+              readOnly={isAlreadySubmitted}
+              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+              }`}
+            />
+          </div>
+        );
+
       case 'true-false':
         return (
           <div key={question.id} className="space-y-4">

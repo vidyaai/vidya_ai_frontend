@@ -1265,8 +1265,29 @@ const QuestionCard = ({
                                   placeholder={`Option ${optionIndex + 1}`}
                                   className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                                 />
+                                {(subq.options || ['', '', '', '']).length > 2 && (
+                                  <button
+                                    onClick={() => {
+                                      const newOptions = (subq.options || ['', '', '', '']).filter((_, i) => i !== optionIndex);
+                                      handleSubquestionChange(subIndex, 'options', newOptions);
+                                    }}
+                                    className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
                               </div>
                             ))}
+                            <button
+                              onClick={() => {
+                                const newOptions = [...(subq.options || ['', '', '', '']), ''];
+                                handleSubquestionChange(subIndex, 'options', newOptions);
+                              }}
+                              className="inline-flex items-center px-2 py-1 text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                            >
+                              <Plus size={12} className="mr-1" />
+                              Add Option
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1498,8 +1519,33 @@ const QuestionCard = ({
                                           placeholder={`Option ${optionIndex + 1}`}
                                           className="flex-1 px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs"
                                         />
+                                        {(subSubq.options || ['', '', '']).length > 2 && (
+                                          <button
+                                            onClick={() => {
+                                              const newSubSubquestions = [...(subq.subquestions || [])];
+                                              const newOptions = (newSubSubquestions[subSubIndex].options || ['', '', '']).filter((_, i) => i !== optionIndex);
+                                              newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], options: newOptions };
+                                              handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                            }}
+                                            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                                          >
+                                            <X size={10} />
+                                          </button>
+                                        )}
                                       </div>
                                     ))}
+                                    <button
+                                      onClick={() => {
+                                        const newSubSubquestions = [...(subq.subquestions || [])];
+                                        const newOptions = [...(newSubSubquestions[subSubIndex].options || ['', '', '']), ''];
+                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], options: newOptions };
+                                        handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                      }}
+                                      className="inline-flex items-center px-2 py-1 text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                                    >
+                                      <Plus size={10} className="mr-1" />
+                                      Add Option
+                                    </button>
                                   </div>
                                 )}
 

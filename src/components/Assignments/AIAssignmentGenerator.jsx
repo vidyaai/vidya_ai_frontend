@@ -68,7 +68,7 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     }
   });
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const files = Array.from(event.target.files);
     const supportedTypes = [
       'application/pdf',
@@ -94,14 +94,42 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       file.name.endsWith('.xml')
     );
     
-    const newFiles = validFiles.map(file => ({
-      id: Date.now() + Math.random(),
-      file,
-      type: file.type,
-      name: file.name,
-      size: file.size
+    // Read file content for each file
+    const newFiles = await Promise.all(validFiles.map(async (file) => {
+      try {
+        const content = await readFileAsText(file);
+        return {
+          id: Date.now() + Math.random(),
+          file,
+          type: file.type,
+          name: file.name,
+          size: file.size,
+          content: content
+        };
+      } catch (error) {
+        console.error('Error reading file:', error);
+        return {
+          id: Date.now() + Math.random(),
+          file,
+          type: file.type,
+          name: file.name,
+          size: file.size,
+          content: null
+        };
+      }
     }));
+    
     setUploadedFiles([...uploadedFiles, ...newFiles]);
+  };
+
+  // Helper function to read file as text
+  const readFileAsText = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = (e) => reject(e);
+      reader.readAsText(file);
+    });
   };
 
   // Fetch available videos from gallery
@@ -110,13 +138,12 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     
     setIsLoadingVideos(true);
     try {
-      const response = await api.get('/api/gallery', {
-        params: { source_type: 'uploaded' },
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      });
-      setAvailableVideos(response.data || []);
+      const response = await assignmentApi.getAvailableVideos();
+      setAvailableVideos(response.videos || []);
     } catch (error) {
       console.error('Failed to fetch videos:', error);
+      // Fallback to empty array
+      setAvailableVideos([]);
     } finally {
       setIsLoadingVideos(false);
     }
@@ -128,8 +155,9 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       id: video.id,
       title: video.title || 'Untitled',
       source_type: video.source_type,
-      video_url: video.video_url,
-      thumbnailUrl: video.thumbnailUrl
+      youtube_id: video.youtube_id,
+      youtube_url: video.youtube_url,
+      transcript_text: video.transcript_text
     };
     
     if (!linkedVideos.find(v => v.id === video.id)) {
@@ -380,18 +408,47 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     return result;
   };
 
+  // Helper function to prepare generation options for API
+  const prepareGenerationOptions = (options) => {
+    const preparedOptions = { ...options };
+    
+    // If varying points is selected, remove pointsEach from difficultyDistribution
+    if (options.perQuestionDifficulty && options.setCustomPoints && options.pointsVariation === 'varying') {
+      const cleanedDistribution = {};
+      Object.keys(options.difficultyDistribution).forEach(difficulty => {
+        const config = options.difficultyDistribution[difficulty];
+        cleanedDistribution[difficulty] = {
+          count: config.count,
+          varyingPoints: config.varyingPoints
+          // pointsEach is excluded when using varying points
+        };
+      });
+      preparedOptions.difficultyDistribution = cleanedDistribution;
+    }
+    
+    return preparedOptions;
+  };
+
   const handleGenerate = async () => {
     if (!canGenerate) return;
 
     setIsGenerating(true);
     
     try {
+      // Prepare generation options (clean up difficultyDistribution if needed)
+      const preparedGenerationOptions = prepareGenerationOptions(generationOptions);
+      
       // Prepare generation request
       const generateData = {
         linked_videos: linkedVideos,
-        uploaded_files: uploadedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })),
+        uploaded_files: uploadedFiles.map(f => ({ 
+          name: f.name, 
+          type: f.type, 
+          size: f.size,
+          content: f.content || null // Include file content if available
+        })),
         generation_prompt: prompt.trim() || null,
-        generation_options: generationOptions,
+        generation_options: preparedGenerationOptions,
         title: `${generationOptions.engineeringLevel === 'graduate' ? 'Graduate' : 'Undergraduate'} ${generationOptions.engineeringDiscipline === 'general' ? 'Engineering' : generationOptions.engineeringDiscipline.charAt(0).toUpperCase() + generationOptions.engineeringDiscipline.slice(1) + ' Engineering'} Assignment`,
         description: `Advanced ${generationOptions.engineeringLevel}-level assignment generated using AI. 
         ${linkedVideos.length > 0 ? `Includes ${linkedVideos.length} linked video(s). ` : ''}
@@ -400,12 +457,16 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       };
 
       // Call API to generate assignment
+      console.log('Calling API with data:', generateData);
+      console.log('Generation options difficultyDistribution:', preparedGenerationOptions.difficultyDistribution);
       const generatedAssignment = await assignmentApi.generateAssignment(generateData);
+      console.log('API response:', generatedAssignment);
       
       setGeneratedAssignment(generatedAssignment);
       setIsGenerating(false);
     } catch (error) {
       console.error('Failed to generate assignment:', error);
+      console.error('Error details:', error.response?.data || error.message);
       setIsGenerating(false);
       
       // Fallback to mock generation for development

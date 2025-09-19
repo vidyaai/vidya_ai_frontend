@@ -206,6 +206,14 @@ export const assignmentApi = {
       headers: { 'ngrok-skip-browser-warning': 'true' }
     });
     return response.data;
+  },
+
+  // Get available videos for assignment generation
+  async getAvailableVideos() {
+    const response = await api.get('/api/assignments/available-videos', {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
   }
 };
 

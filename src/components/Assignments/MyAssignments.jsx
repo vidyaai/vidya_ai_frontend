@@ -202,7 +202,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleParseFromDocument}
-                className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
               >
                 <FileText size={20} className="mr-2" />
                 Import from Document
@@ -216,10 +216,9 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
               </button>
               <button
                 onClick={handleCreateAssignment}
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
+                className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
-                <Plus size={20} className="mr-2" />
-                Create Assignment
+                <Plus size={20}/>
               </button>
             </div>
           </div>

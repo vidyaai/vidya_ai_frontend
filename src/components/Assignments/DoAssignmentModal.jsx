@@ -170,6 +170,119 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }));
   };
 
+  const handleMultipleChoiceChange = (questionId, optionIndex, isChecked, allowMultiple) => {
+    if (allowMultiple) {
+      // Handle multiple correct answers
+      const currentAnswers = answers[questionId] || [];
+      const answerArray = Array.isArray(currentAnswers) ? currentAnswers : [];
+      const optionValue = optionIndex.toString();
+      
+      let newAnswers;
+      if (isChecked) {
+        newAnswers = [...answerArray, optionValue];
+      } else {
+        newAnswers = answerArray.filter(ans => ans !== optionValue);
+      }
+      
+      setAnswers(prev => ({
+        ...prev,
+        [questionId]: newAnswers
+      }));
+    } else {
+      // Handle single correct answer (existing behavior)
+      handleAnswerChange(questionId, optionIndex.toString());
+    }
+  };
+
+  const handleSubquestionMultipleChoiceChange = (questionId, subqId, optionIndex, isChecked, allowMultiple) => {
+    const currentAnswer = answers[questionId] || {};
+    const currentSubAnswers = currentAnswer.subAnswers || {};
+    
+    if (allowMultiple) {
+      // Handle multiple correct answers for subquestion
+      const currentSubAnswers = currentAnswer.subAnswers || {};
+      const subAnswerArray = Array.isArray(currentSubAnswers[subqId]) ? currentSubAnswers[subqId] : [];
+      const optionValue = optionIndex.toString();
+      
+      let newSubAnswers;
+      if (isChecked) {
+        newSubAnswers = [...subAnswerArray, optionValue];
+      } else {
+        newSubAnswers = subAnswerArray.filter(ans => ans !== optionValue);
+      }
+      
+      const newAnswer = {
+        ...currentAnswer,
+        subAnswers: {
+          ...currentSubAnswers,
+          [subqId]: newSubAnswers
+        }
+      };
+      
+      handleAnswerChange(questionId, newAnswer);
+    } else {
+      // Handle single correct answer for subquestion (existing behavior)
+      const newAnswer = {
+        ...currentAnswer,
+        subAnswers: {
+          ...currentSubAnswers,
+          [subqId]: optionIndex.toString()
+        }
+      };
+      handleAnswerChange(questionId, newAnswer);
+    }
+  };
+
+  const handleNestedSubquestionMultipleChoiceChange = (questionId, subqId, subSubqId, optionIndex, isChecked, allowMultiple) => {
+    const currentAnswer = answers[questionId] || {};
+    
+    if (allowMultiple) {
+      // Handle multiple correct answers for nested subquestion
+      const currentNestedSubAnswers = currentAnswer?.subAnswers?.[subqId]?.subAnswers || {};
+      const nestedSubAnswerArray = Array.isArray(currentNestedSubAnswers[subSubqId]) ? currentNestedSubAnswers[subSubqId] : [];
+      const optionValue = optionIndex.toString();
+      
+      let newNestedSubAnswers;
+      if (isChecked) {
+        newNestedSubAnswers = [...nestedSubAnswerArray, optionValue];
+      } else {
+        newNestedSubAnswers = nestedSubAnswerArray.filter(ans => ans !== optionValue);
+      }
+      
+      const newAnswer = {
+        ...currentAnswer,
+        subAnswers: {
+          ...(currentAnswer?.subAnswers || {}),
+          [subqId]: {
+            ...(currentAnswer?.subAnswers?.[subqId] || {}),
+            subAnswers: {
+              ...currentNestedSubAnswers,
+              [subSubqId]: newNestedSubAnswers
+            }
+          }
+        }
+      };
+      
+      handleAnswerChange(questionId, newAnswer);
+    } else {
+      // Handle single correct answer for nested subquestion (existing behavior)
+      const newAnswer = {
+        ...currentAnswer,
+        subAnswers: {
+          ...(currentAnswer?.subAnswers || {}),
+          [subqId]: {
+            ...(currentAnswer?.subAnswers?.[subqId] || {}),
+            subAnswers: {
+              ...(currentAnswer?.subAnswers?.[subqId]?.subAnswers || {}),
+              [subSubqId]: optionIndex.toString()
+            }
+          }
+        }
+      };
+      handleAnswerChange(questionId, newAnswer);
+    }
+  };
+
   const handleSaveDraft = async () => {
     try {
       setIsSaving(true);
@@ -232,14 +345,28 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
             <div className="space-y-3">
+              {question.allowMultipleCorrect && (
+                <div className="text-sm text-gray-400 mb-2">
+                  Select all correct answers
+                </div>
+              )}
               {question.options.map((option, optionIndex) => (
                 <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
                   <input
-                    type="radio"
-                    name={`question-${question.id}`}
+                    type={question.allowMultipleCorrect ? "checkbox" : "radio"}
+                    name={question.allowMultipleCorrect ? undefined : `question-${question.id}`}
                     value={optionIndex}
-                    checked={currentAnswer === optionIndex.toString()}
-                    onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+                    checked={
+                      question.allowMultipleCorrect 
+                        ? (Array.isArray(currentAnswer) ? currentAnswer : []).includes(optionIndex.toString())
+                        : currentAnswer === optionIndex.toString()
+                    }
+                    onChange={(e) => !isAlreadySubmitted && handleMultipleChoiceChange(
+                      question.id, 
+                      optionIndex, 
+                      e.target.checked, 
+                      question.allowMultipleCorrect
+                    )}
                     disabled={isAlreadySubmitted}
                     className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                   />
@@ -541,24 +668,33 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   {/* Render different sub-question types */}
                   {subq.type === 'multiple-choice' ? (
                     <div className="space-y-2">
+                      {subq.allowMultipleCorrect && (
+                        <div className="text-sm text-gray-400 mb-2">
+                          Select all correct answers
+                        </div>
+                      )}
                       {(subq.options || []).map((option, optionIndex) => (
                         <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
                           <input
-                            type="radio"
-                            name={`subq-${question.id}-${subq.id}`}
+                            type={subq.allowMultipleCorrect ? "checkbox" : "radio"}
+                            name={subq.allowMultipleCorrect ? undefined : `subq-${question.id}-${subq.id}`}
                             value={optionIndex}
-                            checked={(currentAnswer?.subAnswers || {})[subq.id] === optionIndex.toString()}
-                            onChange={(e) => {
-                              const newAnswer = {
-                                ...currentAnswer,
-                                subAnswers: {
-                                  ...(currentAnswer?.subAnswers || {}),
-                                  [subq.id]: e.target.value
-                                }
-                              };
-                              handleAnswerChange(question.id, newAnswer);
-                            }}
-                            className="text-teal-500 focus:ring-teal-500"
+                            checked={
+                              subq.allowMultipleCorrect 
+                                ? (Array.isArray((currentAnswer?.subAnswers || {})[subq.id]) 
+                                   ? (currentAnswer?.subAnswers || {})[subq.id] 
+                                   : []).includes(optionIndex.toString())
+                                : (currentAnswer?.subAnswers || {})[subq.id] === optionIndex.toString()
+                            }
+                            onChange={(e) => !isAlreadySubmitted && handleSubquestionMultipleChoiceChange(
+                              question.id,
+                              subq.id,
+                              optionIndex,
+                              e.target.checked,
+                              subq.allowMultipleCorrect
+                            )}
+                            disabled={isAlreadySubmitted}
+                            className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                           />
                           <span className="text-white text-sm">{option}</span>
                         </label>
@@ -697,30 +833,34 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           {/* Render sub-sub-questions */}
                           {subSubq.type === 'multiple-choice' ? (
                             <div className="space-y-1">
+                              {subSubq.allowMultipleCorrect && (
+                                <div className="text-xs text-gray-400 mb-1">
+                                  Select all correct answers
+                                </div>
+                              )}
                               {(subSubq.options || []).map((option, optionIndex) => (
                                 <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
                                   <input
-                                    type="radio"
-                                    name={`subsubq-${question.id}-${subq.id}-${subSubq.id}`}
+                                    type={subSubq.allowMultipleCorrect ? "checkbox" : "radio"}
+                                    name={subSubq.allowMultipleCorrect ? undefined : `subsubq-${question.id}-${subq.id}-${subSubq.id}`}
                                     value={optionIndex}
-                                    checked={(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] === optionIndex.toString()}
-                                    onChange={(e) => {
-                                      const newAnswer = {
-                                        ...currentAnswer,
-                                        subAnswers: {
-                                          ...(currentAnswer?.subAnswers || {}),
-                                          [subq.id]: {
-                                            ...(currentAnswer?.subAnswers?.[subq.id] || {}),
-                                            subAnswers: {
-                                              ...(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {}),
-                                              [subSubq.id]: e.target.value
-                                            }
-                                          }
-                                        }
-                                      };
-                                      handleAnswerChange(question.id, newAnswer);
-                                    }}
-                                    className="text-teal-500 focus:ring-teal-500"
+                                    checked={
+                                      subSubq.allowMultipleCorrect 
+                                        ? (Array.isArray((currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]) 
+                                           ? (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] 
+                                           : []).includes(optionIndex.toString())
+                                        : (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] === optionIndex.toString()
+                                    }
+                                    onChange={(e) => !isAlreadySubmitted && handleNestedSubquestionMultipleChoiceChange(
+                                      question.id,
+                                      subq.id,
+                                      subSubq.id,
+                                      optionIndex,
+                                      e.target.checked,
+                                      subSubq.allowMultipleCorrect
+                                    )}
+                                    disabled={isAlreadySubmitted}
+                                    className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                                   />
                                   <span className="text-white text-sm">{option}</span>
                                 </label>

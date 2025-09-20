@@ -375,7 +375,9 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     const result = {
       question,
       options: questionType === 'multiple-choice' ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-      correctAnswer: questionType === 'multiple-choice' ? '0' : 'Sample engineering solution...'
+      correctAnswer: questionType === 'multiple-choice' ? '0' : 'Sample engineering solution...',
+      allowMultipleCorrect: questionType === 'multiple-choice' ? (Math.random() > 0.7) : false,
+      multipleCorrectAnswers: questionType === 'multiple-choice' && (Math.random() > 0.7) ? ['0', '1'] : []
     };
 
     // Add type-specific properties
@@ -388,7 +390,7 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       result.diagram = null;
     } else if (questionType === 'multi-part') {
       result.subquestions = [
-        { id: 1, question: 'Part A: Theoretical Analysis', points: 4, type: 'multiple-choice', options: ['Option A', 'Option B', 'Option C', 'Option D'] },
+        { id: 1, question: 'Part A: Theoretical Analysis', points: 4, type: 'multiple-choice', options: ['Option A', 'Option B', 'Option C', 'Option D'], allowMultipleCorrect: false, multipleCorrectAnswers: [] },
         { id: 2, question: 'Part B: Implementation', points: 6, type: 'code-writing', codeLanguage: discipline === 'computer' ? 'python' : 'matlab', hasSubCode: true, subCode: '// Starter code template' },
         { id: 3, question: 'Part C: System Verification', points: 5, type: 'multi-part', subquestions: [
           { id: 1, question: 'Calculate the system response time', points: 2, type: 'numerical' },

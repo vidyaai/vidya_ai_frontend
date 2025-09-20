@@ -50,6 +50,29 @@ const QuestionCard = ({
     onUpdate({ correctAnswer: value });
   };
 
+  const handleMultipleCorrectToggle = () => {
+    const newAllowMultiple = !question.allowMultipleCorrect;
+    onUpdate({ 
+      allowMultipleCorrect: newAllowMultiple,
+      multipleCorrectAnswers: newAllowMultiple ? [] : undefined,
+      correctAnswer: newAllowMultiple ? '' : question.correctAnswer
+    });
+  };
+
+  const handleMultipleCorrectChange = (optionIndex, isChecked) => {
+    const currentAnswers = question.multipleCorrectAnswers || [];
+    const optionValue = optionIndex.toString();
+    
+    let newAnswers;
+    if (isChecked) {
+      newAnswers = [...currentAnswers, optionValue];
+    } else {
+      newAnswers = currentAnswers.filter(ans => ans !== optionValue);
+    }
+    
+    onUpdate({ multipleCorrectAnswers: newAnswers });
+  };
+
   const handlePointsChange = (value) => {
     onUpdate({ points: parseInt(value) || 1 });
   };
@@ -64,6 +87,67 @@ const QuestionCard = ({
     onUpdate({ subquestions: newSubquestions });
   };
 
+  const handleSubquestionMultipleCorrectToggle = (subIndex) => {
+    const subq = question.subquestions[subIndex];
+    const newAllowMultiple = !subq.allowMultipleCorrect;
+    handleSubquestionChange(subIndex, 'allowMultipleCorrect', newAllowMultiple);
+    handleSubquestionChange(subIndex, 'multipleCorrectAnswers', newAllowMultiple ? [] : undefined);
+    if (newAllowMultiple) {
+      handleSubquestionChange(subIndex, 'correctAnswer', '');
+    }
+  };
+
+  const handleSubquestionMultipleCorrectChange = (subIndex, optionIndex, isChecked) => {
+    const subq = question.subquestions[subIndex];
+    const currentAnswers = subq.multipleCorrectAnswers || [];
+    const optionValue = optionIndex.toString();
+    
+    let newAnswers;
+    if (isChecked) {
+      newAnswers = [...currentAnswers, optionValue];
+    } else {
+      newAnswers = currentAnswers.filter(ans => ans !== optionValue);
+    }
+    
+    handleSubquestionChange(subIndex, 'multipleCorrectAnswers', newAnswers);
+  };
+
+  const handleNestedSubquestionMultipleCorrectToggle = (subIndex, subSubIndex) => {
+    const subq = question.subquestions[subIndex];
+    const subSubq = subq.subquestions[subSubIndex];
+    const newAllowMultiple = !subSubq.allowMultipleCorrect;
+    
+    const newSubSubquestions = [...(subq.subquestions || [])];
+    newSubSubquestions[subSubIndex] = { 
+      ...newSubSubquestions[subSubIndex], 
+      allowMultipleCorrect: newAllowMultiple,
+      multipleCorrectAnswers: newAllowMultiple ? [] : undefined,
+      correctAnswer: newAllowMultiple ? '' : newSubSubquestions[subSubIndex].correctAnswer
+    };
+    handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+  };
+
+  const handleNestedSubquestionMultipleCorrectChange = (subIndex, subSubIndex, optionIndex, isChecked) => {
+    const subq = question.subquestions[subIndex];
+    const subSubq = subq.subquestions[subSubIndex];
+    const currentAnswers = subSubq.multipleCorrectAnswers || [];
+    const optionValue = optionIndex.toString();
+    
+    let newAnswers;
+    if (isChecked) {
+      newAnswers = [...currentAnswers, optionValue];
+    } else {
+      newAnswers = currentAnswers.filter(ans => ans !== optionValue);
+    }
+    
+    const newSubSubquestions = [...(subq.subquestions || [])];
+    newSubSubquestions[subSubIndex] = { 
+      ...newSubSubquestions[subSubIndex], 
+      multipleCorrectAnswers: newAnswers 
+    };
+    handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+  };
+
   const addSubquestion = () => {
     const newSubquestions = [...(question.subquestions || []), {
       id: Date.now(),
@@ -75,6 +159,8 @@ const QuestionCard = ({
       subCode: '',
       subDiagram: null,
       options: ['', '', '', ''], // for multiple choice
+      allowMultipleCorrect: false,
+      multipleCorrectAnswers: [],
       subquestions: [] // for nested multi-part
     }];
     onUpdate({ subquestions: newSubquestions });
@@ -224,19 +310,39 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Options
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-300">
+                  Options
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={question.allowMultipleCorrect || false}
+                    onChange={handleMultipleCorrectToggle}
+                    className="text-teal-500 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-gray-300">Allow multiple correct answers</span>
+                </label>
+              </div>
               <div className="space-y-2">
                 {question.options.map((option, optionIndex) => (
                   <div key={optionIndex} className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name={`correct-${question.id}`}
-                      checked={question.correctAnswer === optionIndex.toString()}
-                      onChange={() => handleCorrectAnswerChange(optionIndex.toString())}
-                      className="text-teal-500 focus:ring-teal-500"
-                    />
+                    {question.allowMultipleCorrect ? (
+                      <input
+                        type="checkbox"
+                        checked={(question.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                        onChange={(e) => handleMultipleCorrectChange(optionIndex, e.target.checked)}
+                        className="text-teal-500 focus:ring-teal-500"
+                      />
+                    ) : (
+                      <input
+                        type="radio"
+                        name={`correct-${question.id}`}
+                        checked={question.correctAnswer === optionIndex.toString()}
+                        onChange={() => handleCorrectAnswerChange(optionIndex.toString())}
+                        className="text-teal-500 focus:ring-teal-500"
+                      />
+                    )}
                     <input
                       type="text"
                       value={option}
@@ -1241,19 +1347,39 @@ const QuestionCard = ({
                       {/* Multiple choice options for sub-questions */}
                       {subq.type === 'multiple-choice' && (
                         <div className="mt-3">
-                          <label className="block text-xs font-medium text-teal-300 mb-2">
-                            Multiple Choice Options
-                          </label>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="block text-xs font-medium text-teal-300">
+                              Multiple Choice Options
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={subq.allowMultipleCorrect || false}
+                                onChange={() => handleSubquestionMultipleCorrectToggle(subIndex)}
+                                className="text-teal-500 focus:ring-teal-500"
+                              />
+                              <span className="text-xs text-gray-300">Multiple correct</span>
+                            </label>
+                          </div>
                           <div className="space-y-2">
                             {(subq.options || ['', '', '', '']).map((option, optionIndex) => (
                               <div key={optionIndex} className="flex items-center space-x-2">
-                                <input
-                                  type="radio"
-                                  name={`correct-sub-${question.id}-${subIndex}`}
-                                  checked={subq.correctAnswer === optionIndex.toString()}
-                                  onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
-                                  className="text-teal-500 focus:ring-teal-500"
-                                />
+                                {subq.allowMultipleCorrect ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={(subq.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                                    onChange={(e) => handleSubquestionMultipleCorrectChange(subIndex, optionIndex, e.target.checked)}
+                                    className="text-teal-500 focus:ring-teal-500"
+                                  />
+                                ) : (
+                                  <input
+                                    type="radio"
+                                    name={`correct-sub-${question.id}-${subIndex}`}
+                                    checked={subq.correctAnswer === optionIndex.toString()}
+                                    onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
+                                    className="text-teal-500 focus:ring-teal-500"
+                                  />
+                                )}
                                 <input
                                   type="text"
                                   value={option}
@@ -1492,20 +1618,42 @@ const QuestionCard = ({
                                 
                                 {/* Add options for MC questions in sub-sub-questions */}
                                 {subSubq.type === 'multiple-choice' && (
-                                  <div className="mt-2 space-y-1">
-                                    {(subSubq.options || ['', '', '']).map((option, optionIndex) => (
-                                      <div key={optionIndex} className="flex items-center space-x-2">
+                                  <div className="mt-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs text-gray-400">Options</span>
+                                      <label className="flex items-center space-x-1">
                                         <input
-                                          type="radio"
-                                          name={`correct-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={subSubq.correctAnswer === optionIndex.toString()}
-                                          onChange={() => {
-                                            const newSubSubquestions = [...(subq.subquestions || [])];
-                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: optionIndex.toString() };
-                                            handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
-                                          }}
+                                          type="checkbox"
+                                          checked={subSubq.allowMultipleCorrect || false}
+                                          onChange={() => handleNestedSubquestionMultipleCorrectToggle(subIndex, subSubIndex)}
                                           className="text-teal-500 focus:ring-teal-500"
                                         />
+                                        <span className="text-xs text-gray-400">Multiple</span>
+                                      </label>
+                                    </div>
+                                    <div className="space-y-1">
+                                    {(subSubq.options || ['', '', '']).map((option, optionIndex) => (
+                                      <div key={optionIndex} className="flex items-center space-x-2">
+                                        {subSubq.allowMultipleCorrect ? (
+                                          <input
+                                            type="checkbox"
+                                            checked={(subSubq.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                                            onChange={(e) => handleNestedSubquestionMultipleCorrectChange(subIndex, subSubIndex, optionIndex, e.target.checked)}
+                                            className="text-teal-500 focus:ring-teal-500"
+                                          />
+                                        ) : (
+                                          <input
+                                            type="radio"
+                                            name={`correct-subsub-${question.id}-${subIndex}-${subSubIndex}`}
+                                            checked={subSubq.correctAnswer === optionIndex.toString()}
+                                            onChange={() => {
+                                              const newSubSubquestions = [...(subq.subquestions || [])];
+                                              newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: optionIndex.toString() };
+                                              handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                            }}
+                                            className="text-teal-500 focus:ring-teal-500"
+                                          />
+                                        )}
                                         <input
                                           type="text"
                                           value={option}
@@ -1541,11 +1689,12 @@ const QuestionCard = ({
                                         newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], options: newOptions };
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
-                                      className="inline-flex items-center px-2 py-1 text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                                      className="inline-flex items-center px-1 py-0.5 text-xs text-teal-400 hover:text-teal-300 transition-colors"
                                     >
                                       <Plus size={10} className="mr-1" />
                                       Add Option
                                     </button>
+                                    </div>
                                   </div>
                                 )}
 

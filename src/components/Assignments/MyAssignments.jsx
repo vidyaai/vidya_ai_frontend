@@ -316,15 +316,15 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
             <p className="text-gray-400 mb-6">Create your first assignment to get started</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={handleCreateAssignment}
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
+                onClick={handleParseFromDocument}
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
               >
-                <Plus size={20} className="mr-2" />
-                Create Assignment
+                <FileText size={20} className="mr-2" />
+                Import from Document
               </button>
               <button
                 onClick={handleGenerateAssignment}
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
               >
                 <Sparkles size={20} className="mr-2" />
                 Generate with AI

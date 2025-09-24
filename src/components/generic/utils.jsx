@@ -3,22 +3,15 @@ import { auth } from '../../firebase/config';
 import axios from 'axios';
 
 const NODE_ENV = import.meta.env.VITE_NODE_ENV;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 console.log("NODE_ENV", NODE_ENV);
+console.log("API_BASE_URL from env", API_BASE_URL);
 
-let API_URL;
-/*
-if (NODE_ENV === 'development') {
-  API_URL = 'https://devapi.vidyaai.co';
-} else if (NODE_ENV === 'production') {
-  API_URL = 'https://api.vidyaai.co';
-} else if (NODE_ENV === 'local') {
-  API_URL = 'http://localhost:8000';
-}
-*/
-API_URL='https://7de5d1a559ab.ngrok-free.app'
+// Use environment variable or fallback to hardcoded for backward compatibility
+const API_URL = API_BASE_URL || 'https://7de5d1a559ab.ngrok-free.app';
 
-//API_URL='http://localhost:8000';
-console.log("API_URL", API_URL);
+console.log("Final API_URL", API_URL);
 export { API_URL };
 
 // Shared axios instance with Firebase ID token attached when available

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import TopBar from './generic/TopBar';
 import PageHeader from './generic/PageHeader';
+import { auth } from '../firebase/config';
 
 const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToPricing }) => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -41,7 +42,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
     {
       name: "Vidya Plus",
       icon: Zap,
-      price: { monthly: 12.99, annual: 9.99 },
+      price: { monthly: 9.99, annual: 100.0 },
       description: "Ideal for students and regular learners",
       features: [
         { text: "100 video uploads per month", icon: Upload },
@@ -60,14 +61,14 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
     {
       name: "Vidya Pro",
       icon: Crown,
-      price: { monthly: 29.99, annual: 22.99 },
+      price: { monthly: 14.99, annual: 150.0 },
       description: "Best for educators, professionals, and power users",
       features: [
-        { text: "Unlimited video uploads", icon: Upload },
+        { text: "20 video uploads per month", icon: Upload },
         { text: "Unlimited YouTube video chats", icon: MessageSquare },
-        { text: "Unlimited translation", icon: Globe },
+        { text: "120 minutes translation per month", icon: Globe },
         { text: "Premium AI models & features", icon: Clock },
-        { text: "Unlimited everything", icon: TrendingUp },
+        { text: "Unlimited interactive quizzes", icon: TrendingUp },
         { text: "24/7 priority support", icon: Headphones },
         { text: "Team collaboration (up to 5 users)", icon: Users },
         { text: "Advanced analytics & insights", icon: Shield },
@@ -104,14 +105,54 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
   ];
 
   const [openFaq, setOpenFaq] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handlePlanClick = (planName) => {
+  const handlePlanClick = async (planName) => {
     if (planName === "Free") {
       if (onNavigateToChat) {
         onNavigateToChat();
       }
-    } else {
-      console.log(`Navigate to payment for ${planName}`);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get Firebase auth token
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Please log in to subscribe");
+      }
+      
+      const token = await user.getIdToken();
+      
+      // Create checkout session
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          plan_type: planName,
+          billing_period: isAnnual ? 'annual' : 'monthly'
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Payment creation failed');
+      }
+
+      const { checkout_url } = await response.json();
+      
+      // Redirect to Stripe Checkout
+      window.location.href = checkout_url;
+      
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert(`Payment failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -164,7 +205,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
             </span>
             {isAnnual && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300">
-                Save 23%
+                Save 17%
               </span>
             )}
           </div>
@@ -241,9 +282,10 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
 
                 <button
                   onClick={() => handlePlanClick(plan.name)}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${plan.buttonStyle}`}
+                  disabled={isLoading}
+                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${plan.buttonStyle} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {plan.buttonText}
+                  {isLoading ? 'Processing...' : plan.buttonText}
                 </button>
               </div>
             );
@@ -272,7 +314,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
                     <td className="px-6 py-4 text-sm text-gray-300">Video Uploads/month</td>
                     <td className="px-6 py-4 text-center text-sm text-gray-400">10</td>
                     <td className="px-6 py-4 text-center text-sm text-gray-400">100</td>
-                    <td className="px-6 py-4 text-center text-sm text-green-400">Unlimited</td>
+                    <td className="px-6 py-4 text-center text-sm text-gray-400">20</td>
                   </tr>
                   <tr>
                     <td className="px-6 py-4 text-sm text-gray-300">YouTube Video Chats</td>
@@ -284,7 +326,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
                     <td className="px-6 py-4 text-sm text-gray-300">Translation Minutes</td>
                     <td className="px-6 py-4 text-center text-sm text-gray-400">60/month</td>
                     <td className="px-6 py-4 text-center text-sm text-gray-400">500/month</td>
-                    <td className="px-6 py-4 text-center text-sm text-green-400">Unlimited</td>
+                    <td className="px-6 py-4 text-center text-sm text-gray-400">120/month</td>
                   </tr>
                   <tr>
                     <td className="px-6 py-4 text-sm text-gray-300">AI Model Quality</td>

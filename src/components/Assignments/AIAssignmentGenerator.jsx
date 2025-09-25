@@ -386,7 +386,6 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       result.outputType = 'code';
       result.starterCode = '// Starter code template';
     } else if (questionType === 'diagram-analysis') {
-      result.analysisType = 'technical';
       result.diagram = null;
     } else if (questionType === 'multi-part') {
       result.subquestions = [

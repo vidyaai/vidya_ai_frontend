@@ -406,13 +406,16 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                         <Edit size={16} />
                       )}
                     </button>
-                    <button
-                      onClick={() => handleShareAssignment(assignment)}
-                      className="p-2 text-gray-400 hover:text-green-400 transition-colors"
-                      title="Share Assignment"
-                    >
-                      <Share2 size={16} />
-                    </button>
+                    {/* Only show Share button for published assignments */}
+                    {assignment.status === 'published' && (
+                      <button
+                        onClick={() => handleShareAssignment(assignment)}
+                        className="p-2 text-gray-400 hover:text-green-400 transition-colors"
+                        title="Share Assignment"
+                      >
+                        <Share2 size={16} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeleteAssignment(assignment.id)}
                       className="p-2 text-gray-400 hover:text-red-400 transition-colors"
@@ -421,12 +424,15 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                       <Trash2 size={16} />
                     </button>
                   </div>
-                  <button
-                    onClick={() => handleViewSubmissions(assignment)}
-                    className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded transition-colors"
-                  >
-                    View Submissions
-                  </button>
+                  {/* Only show View Submissions button for published assignments */}
+                  {assignment.status === 'published' && (
+                    <button
+                      onClick={() => handleViewSubmissions(assignment)}
+                      className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded transition-colors"
+                    >
+                      View Submissions
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

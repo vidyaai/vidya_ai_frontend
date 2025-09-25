@@ -49,7 +49,6 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       id: 3,
       type: 'diagram-analysis',
       question: 'Analyze the given circuit diagram and calculate the total impedance.',
-      analysisType: 'calculation',
       diagram: { file: 'circuit_diagram.png', url: '/mock-circuit.png' },
       points: 8
     },

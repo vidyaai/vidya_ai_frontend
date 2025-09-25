@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 
-const AssignmentPreview = ({ title, description, questions, onSave, saving = false }) => {
+const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
   const calculateQuestionPoints = (question) => {
     if (question.type === 'multi-part') {
       // For multi-part questions, sum up all sub-question points
@@ -23,7 +23,6 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
   };
 
   const totalPoints = questions.reduce((sum, q) => sum + calculateQuestionPoints(q), 0);
-  const estimatedTime = questions.length * 2; // 2 minutes per question estimate
 
   // Component for handling diagram images with URL fetching in preview
   const DiagramPreviewImage = ({ diagramData, displayName }) => {
@@ -33,7 +32,14 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
 
     useEffect(() => {
       const loadImageUrl = async () => {
-        if (!diagramData.file_id || imageUrl) return;
+        // If we already have a URL (either direct or cached), use it
+        if (imageUrl) return;
+        
+        // If no file_id, we can't fetch from server
+        if (!diagramData.file_id) {
+          setError(true);
+          return;
+        }
 
         try {
           setLoading(true);
@@ -49,7 +55,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
       };
 
       loadImageUrl();
-    }, [diagramData.file_id, imageUrl]);
+    }, [diagramData.file_id, diagramData.url, imageUrl]);
 
     if (loading) {
       return (
@@ -85,20 +91,10 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
   const renderDiagramPreview = (diagramData, assignmentId = null) => {
     if (!diagramData) return null;
 
-    const isServerDiagram = diagramData.file_id;
     const displayName = diagramData.filename || diagramData.file || 'diagram';
     
-    if (isServerDiagram) {
-      return <DiagramPreviewImage diagramData={diagramData} displayName={displayName} />;
-    }
-    
-    // Fallback for old format or no image
-    return (
-      <div className="mt-2 p-2 bg-gray-700 rounded border text-center">
-        <ImageIcon size={20} className="text-gray-500 mx-auto mb-1" />
-        <p className="text-gray-400 text-xs">{displayName}</p>
-      </div>
-    );
+    // Always try to render with DiagramPreviewImage - it handles all cases internally
+    return <DiagramPreviewImage diagramData={diagramData} displayName={displayName} />;
   };
 
   const renderQuestionPreview = (question, index) => {
@@ -111,6 +107,10 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
+            
             <div className="space-y-2">
               {question.options?.map((option, optionIndex) => (
                 <div key={optionIndex} className="flex items-center space-x-2">
@@ -130,6 +130,10 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
+            
             <div className="flex space-x-4">
               <label className="flex items-center">
                 <input type="radio" disabled className="text-teal-500 mr-2" />
@@ -153,6 +157,10 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             <p className="text-gray-300 mb-3">
               {question.question || 'Question with blanks...'}
             </p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
+            
             <div className="bg-gray-700 rounded p-2">
               <span className="text-gray-400 text-sm">Fill in the blanks</span>
             </div>
@@ -167,12 +175,9 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
-            <input
-              type="number"
-              disabled
-              placeholder="Enter numerical answer..."
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-400 text-sm"
-            />
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
           </div>
         );
 
@@ -184,12 +189,9 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
-            <textarea
-              disabled
-              placeholder="Enter your answer..."
-              rows={2}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-400 text-sm resize-none"
-            />
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
           </div>
         );
 
@@ -201,12 +203,9 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
-            <textarea
-              disabled
-              placeholder="Enter your detailed answer..."
-              rows={4}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-400 text-sm resize-none"
-            />
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
           </div>
         );
 
@@ -221,6 +220,10 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <span className="text-purple-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Programming question...'}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
+            
             <div className="bg-gray-900 rounded-lg p-3 border border-gray-700">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-purple-400 text-xs font-medium">
@@ -257,16 +260,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                   </div>
                 </div>
               )}
-              <div className="mt-3 text-xs text-orange-400">
-                Analysis Type: {question.analysisType?.replace('-', ' ') || 'General'}
-              </div>
             </div>
-            <textarea
-              disabled
-              placeholder="Enter your analysis..."
-              rows={3}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-400 text-sm resize-none mt-3"
-            />
           </div>
         );
 
@@ -297,15 +291,18 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             )}
             
             {/* Main Question Diagram Preview */}
-            {question.hasMainDiagram && question.mainDiagram && (
+            {((question.hasMainDiagram && question.mainDiagram) || question.diagram) && (
               <div className="bg-gray-900 rounded-lg p-3 border border-orange-500/30 mb-4">
                 <div className="text-orange-400 text-xs font-medium mb-2">Main Diagram</div>
+                {question.mainDiagram ? renderDiagramPreview(question.mainDiagram) : 
+                 question.diagram ? renderDiagramPreview(question.diagram) : (
                   <div className="w-full h-20 bg-gray-800 rounded flex items-center justify-center border border-gray-700">
                     <div className="text-center">
                       <ImageIcon size={16} className="text-gray-500 mx-auto mb-1" />
-                      <p className="text-gray-400 text-xs">{question.mainDiagram.file}</p>
+                      <p className="text-gray-400 text-xs">No diagram</p>
                     </div>
                   </div>
+                )}
               </div>
             )}
             
@@ -336,9 +333,18 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                   </div>
                   <p className="text-gray-300 text-sm">{subq.question || `Part ${subIndex + 1} question...`}</p>
                   
+                  {/* Sub-question Diagram */}
+                  {(subq.subDiagram || subq.diagram) && (
+                    <div className="bg-gray-900 rounded-lg p-3 border border-orange-500/30 mt-2">
+                      <div className="text-orange-400 text-xs font-medium mb-2">Sub-question Diagram</div>
+                      {subq.subDiagram ? renderDiagramPreview(subq.subDiagram) : 
+                       subq.diagram ? renderDiagramPreview(subq.diagram) : null}
+                    </div>
+                  )}
+                  
                   {/* Sub-question Code */}
                   {((subq.hasSubCode && subq.subCode) || (subq.hasCode && subq.code)) && (
-                    <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mb-3">
+                    <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mt-2">
                       <div className="text-purple-400 text-xs font-medium mb-2">
                         Code ({(subq.codeLanguage)?.toUpperCase() || 'CODE'})
                       </div>
@@ -370,6 +376,16 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                           </div>
                           <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
                           
+                          {/* Nested sub-question diagram */}
+                          {nestedSubq.diagram && (
+                            <div className="mt-2 bg-gray-700 rounded p-2 border border-orange-500/30">
+                              <div className="text-orange-300 text-xs font-medium mb-1">Diagram</div>
+                              <div className="max-h-16 overflow-hidden">
+                                {renderDiagramPreview(nestedSubq.diagram)}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Nested sub-question code */}
                           {((nestedSubq.hasCode && nestedSubq.code)) && (
                             <div className="mt-2 bg-gray-700 rounded p-2 border border-purple-500/30">
@@ -398,6 +414,11 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
+            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagramPreview(question.diagram)}
+            
             <p className="text-gray-400 text-sm">Unknown question type: {question.type}</p>
           </div>
         );
@@ -437,14 +458,6 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             <p className="text-gray-400 text-xs">Total Points</p>
           </div>
         </div>
-        
-        <div className="mt-4 bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center space-x-2">
-            <Clock size={16} className="text-teal-400" />
-            <span className="text-white text-sm font-medium">{estimatedTime} min</span>
-          </div>
-          <p className="text-gray-400 text-xs">Estimated Time</p>
-        </div>
       </div>
 
       {/* Questions Preview */}
@@ -474,13 +487,41 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
           >
             {saving ? 'Saving...' : 'Save as Draft'}
           </button>
-          <button 
-            onClick={() => onSave('published')}
-            disabled={saving}
-            className="w-full px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Publishing...' : 'Save & Publish'}
-          </button>
+          <div className="relative group">
+            <button 
+              onClick={() => onSave('published')}
+              disabled={saving || (validationStatus && !validationStatus.isValid)}
+              className={`w-full px-4 py-2 font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                (!validationStatus || validationStatus.isValid) 
+                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700' 
+                  : 'bg-gray-600 text-gray-300'
+              }`}
+              title={(!validationStatus || validationStatus.isValid) ? 'Ready to publish' : `Cannot publish: ${validationStatus.errors.length} validation error(s)`}
+            >
+              {saving ? 'Publishing...' : 'Save & Publish'}
+              {validationStatus && !validationStatus.isValid && (
+                <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+                  {validationStatus.errors.length}
+                </span>
+              )}
+            </button>
+            {validationStatus && !validationStatus.isValid && validationStatus.errors.length > 0 && (
+              <div className="absolute left-0 top-full mt-2 w-full bg-red-900/90 border border-red-500/30 rounded-lg p-3 text-sm text-red-200 z-20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                <div className="font-medium text-red-100 mb-2">Cannot publish - Fix these issues:</div>
+                <ul className="space-y-1 text-xs">
+                  {validationStatus.errors.slice(0, 3).map((error, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-red-400 mr-1 flex-shrink-0">•</span>
+                      <span>{error}</span>
+                    </li>
+                  ))}
+                  {validationStatus.errors.length > 3 && (
+                    <li className="text-red-300 italic">...and {validationStatus.errors.length - 3} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

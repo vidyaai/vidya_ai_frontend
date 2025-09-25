@@ -1,5 +1,7 @@
 // src/components/Assignments/AssignmentPreview.jsx
+import { useState, useEffect } from 'react';
 import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
+import { assignmentApi } from './assignmentApi';
 
 const AssignmentPreview = ({ title, description, questions, onSave, saving = false }) => {
   const calculateQuestionPoints = (question) => {
@@ -22,6 +24,82 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
 
   const totalPoints = questions.reduce((sum, q) => sum + calculateQuestionPoints(q), 0);
   const estimatedTime = questions.length * 2; // 2 minutes per question estimate
+
+  // Component for handling diagram images with URL fetching in preview
+  const DiagramPreviewImage = ({ diagramData, displayName }) => {
+    const [imageUrl, setImageUrl] = useState(diagramData.url || null);
+    const [loading, setLoading] = useState(!diagramData.url && diagramData.file_id);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        if (!diagramData.file_id || imageUrl) return;
+
+        try {
+          setLoading(true);
+          setError(false);
+          const url = await assignmentApi.getDiagramUrl(diagramData.file_id);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('Failed to load diagram URL in preview:', error);
+          setError(true);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.file_id, imageUrl]);
+
+    if (loading) {
+      return (
+        <div className="mt-2 p-4 bg-gray-700 rounded border text-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-400 mx-auto mb-2"></div>
+          <p className="text-gray-300 text-xs">Loading...</p>
+        </div>
+      );
+    }
+
+    if (error || !imageUrl) {
+      return (
+        <div className="mt-2 p-2 bg-gray-700 rounded border text-center">
+          <ImageIcon size={20} className="text-gray-500 mx-auto mb-1" />
+          <p className="text-gray-400 text-xs">{displayName}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-2 p-2 bg-gray-700 rounded border">
+        <img 
+          src={imageUrl}
+          alt={displayName}
+          className="w-full max-h-32 object-contain bg-gray-800 rounded"
+          onError={() => setError(true)}
+        />
+      </div>
+    );
+  };
+
+  // Helper function to render diagrams in preview
+  const renderDiagramPreview = (diagramData, assignmentId = null) => {
+    if (!diagramData) return null;
+
+    const isServerDiagram = diagramData.file_id;
+    const displayName = diagramData.filename || diagramData.file || 'diagram';
+    
+    if (isServerDiagram) {
+      return <DiagramPreviewImage diagramData={diagramData} displayName={displayName} />;
+    }
+    
+    // Fallback for old format or no image
+    return (
+      <div className="mt-2 p-2 bg-gray-700 rounded border text-center">
+        <ImageIcon size={20} className="text-gray-500 mx-auto mb-1" />
+        <p className="text-gray-400 text-xs">{displayName}</p>
+      </div>
+    );
+  };
 
   const renderQuestionPreview = (question, index) => {
     switch (question.type) {
@@ -171,15 +249,14 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             </div>
             <p className="text-gray-300 mb-3">{question.question || 'Diagram analysis question...'}</p>
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-              <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
-                <div className="text-center">
-                  <ImageIcon size={24} className="text-gray-500 mx-auto mb-1" />
-                  <p className="text-gray-400 text-xs">Diagram/Image</p>
-                  {question.diagram && (
-                    <p className="text-orange-400 text-xs mt-1">{question.diagram.file}</p>
-                  )}
+              {question.diagram ? renderDiagramPreview(question.diagram) : (
+                <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
+                  <div className="text-center">
+                    <ImageIcon size={24} className="text-gray-500 mx-auto mb-1" />
+                    <p className="text-gray-400 text-xs">No diagram uploaded</p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="mt-3 text-xs text-orange-400">
                 Analysis Type: {question.analysisType?.replace('-', ' ') || 'General'}
               </div>

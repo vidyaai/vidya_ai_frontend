@@ -170,6 +170,101 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }));
   };
 
+  // Component for handling diagram images with URL fetching
+  const DiagramImage = ({ diagramData, displayName }) => {
+    const [imageUrl, setImageUrl] = useState(diagramData.url || null);
+    const [loading, setLoading] = useState(!diagramData.url && diagramData.file_id);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        if (!diagramData.file_id || imageUrl) return;
+
+        try {
+          setLoading(true);
+          setError(false);
+          const url = await assignmentApi.getDiagramUrl(diagramData.file_id, assignment?.id);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('Failed to load diagram URL:', error);
+          setError(true);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.file_id, imageUrl]);
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto mb-2"></div>
+            <p className="text-gray-300 text-sm">Loading image...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (error || !imageUrl) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+          <div className="text-center">
+            <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">Failed to load image</p>
+            <p className="text-gray-500 text-xs">{displayName}</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={imageUrl} 
+        alt={displayName}
+        className="w-full max-h-64 object-contain bg-gray-900"
+        onError={() => setError(true)}
+      />
+    );
+  };
+
+  // Helper function to render diagrams
+  const renderDiagram = (diagramData, label = "Diagram") => {
+    if (!diagramData) return null;
+
+    const isServerDiagram = diagramData.file_id;
+    const displayName = diagramData.filename || diagramData.file || label;
+
+    return (
+      <div className="bg-gray-800 rounded-lg p-4 border border-orange-500/30">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-orange-400 text-sm font-medium">{label}</span>
+          <span className="text-gray-400 text-sm">
+            {diagramData.content_type || 'Image'}
+          </span>
+        </div>
+        <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+          {isServerDiagram ? (
+            <DiagramImage diagramData={diagramData} displayName={displayName} />
+          ) : (
+            <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+              <div className="text-center">
+                <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+                <p className="text-gray-400 text-sm">{label}</p>
+                <p className="text-gray-500 text-xs">{displayName}</p>
+              </div>
+            </div>
+          )}
+          {/* Show filename at bottom */}
+          <div className="px-3 py-2 bg-gray-700 border-t border-gray-600">
+            <span className="text-orange-400 text-xs">📎 {displayName}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleMultipleChoiceChange = (questionId, optionIndex, isChecked, allowMultiple) => {
     if (allowMultiple) {
       // Handle multiple correct answers
@@ -538,25 +633,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
             
-            {question.diagram && (
-              <div className="bg-gray-800 rounded-lg p-4 border border-orange-500/30">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-orange-400 text-sm font-medium">Circuit Diagram</span>
-                  <span className="text-gray-400 text-sm">
-                    Analysis Type: {question.analysisType?.replace('-', ' ') || 'General'}
-                  </span>
-                </div>
-                <div className="bg-gray-900 rounded-lg p-8 text-center border border-gray-700">
-                  <div className="w-full h-48 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
-                    <div className="text-center">
-                      <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">Circuit Diagram</p>
-                      <p className="text-gray-500 text-xs">{question.diagram.file}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {question.diagram && renderDiagram(question.diagram, "Circuit Diagram")}
             
             <textarea
               value={currentAnswer}

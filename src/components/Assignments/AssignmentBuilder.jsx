@@ -122,8 +122,31 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     ));
   };
 
-  const deleteQuestion = (id) => {
-    setQuestions(questions.filter(q => q.id !== id));
+  const deleteQuestion = async (id) => {
+    const questionToDelete = questions.find(q => q.id === id);
+    const newQuestions = questions.filter(q => q.id !== id);
+    
+    // Update state immediately for responsive UI
+    setQuestions(newQuestions);
+    
+    // Clean up orphaned diagrams if we have an assignment ID
+    if (preloadedData?.id && questionToDelete) {
+      try {
+        const cleanup = await assignmentApi.cleanupOrphanedDiagrams(
+          [questionToDelete], 
+          [], 
+          preloadedData.id
+        );
+        if (cleanup.cleaned > 0) {
+          console.log(`Cleaned up ${cleanup.cleaned} orphaned diagrams from deleted question`);
+        }
+        if (cleanup.errors.length > 0) {
+          console.warn('Some diagram cleanup failures:', cleanup.errors);
+        }
+      } catch (error) {
+        console.error('Failed to cleanup diagrams for deleted question:', error);
+      }
+    }
   };
 
   const moveQuestion = (fromIndex, toIndex) => {
@@ -371,6 +394,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                       key={question.id}
                       question={question}
                       index={index}
+                      assignmentId={preloadedData?.id || null}
                       onUpdate={(updates) => updateQuestion(question.id, updates)}
                       onDelete={() => deleteQuestion(question.id)}
                       onMoveUp={index > 0 ? () => moveQuestion(index, index - 1) : null}

@@ -36,31 +36,6 @@ const QuestionCard = ({
   const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '', subIndex: null });
   const [imageUrls, setImageUrls] = useState({}); // Cache for presigned URLs
 
-  // Fetch presigned URL for a diagram
-  const fetchDiagramUrl = async (fileId) => {
-    if (!fileId) return null;
-    
-    // Return cached URL if available
-    if (imageUrls[fileId]) {
-      return imageUrls[fileId];
-    }
-
-    try {
-      const presignedUrl = await assignmentApi.getDiagramUrl(fileId, assignmentId);
-      
-      // Cache the URL
-      setImageUrls(prev => ({
-        ...prev,
-        [fileId]: presignedUrl
-      }));
-      
-      return presignedUrl;
-    } catch (error) {
-      console.error('Failed to fetch diagram URL:', error);
-      return null;
-    }
-  };
-
   // Enhanced file validation
   const validateFile = (file) => {
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'application/pdf'];
@@ -218,7 +193,7 @@ const QuestionCard = ({
       points: 1,
       type: 'short-answer',
       hasSubCode: false,
-      hasSubDiagram: false,
+      hasDiagram: false,
       subCode: '',
       subDiagram: null,
       options: ['', '', '', ''], // for multiple choice
@@ -258,17 +233,17 @@ const QuestionCard = ({
       
       console.log('Upload successful:', uploadResult);
       
-      // Create diagram object with server data
+      // Create diagram object with server data (store s3_key, not url)
       const diagramData = {
         file_id: uploadResult.file_id,
         filename: uploadResult.filename,
-        url: uploadResult.url, // Use the presigned URL from upload response
+        s3_key: uploadResult.s3_key, // Store S3 key instead of URL
         size: uploadResult.size,
         content_type: uploadResult.content_type,
         uploaded_at: uploadResult.uploaded_at
       };
 
-      // Cache the presigned URL
+      // Cache the presigned URL for immediate use
       setImageUrls(prev => ({
         ...prev,
         [uploadResult.file_id]: uploadResult.url
@@ -338,17 +313,17 @@ const QuestionCard = ({
       console.log('Replacing diagram:', file.name);
       const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
       
-      // Create new diagram object with server data
+      // Create new diagram object with server data (store s3_key, not url)
       const newDiagramData = {
         file_id: uploadResult.file_id,
         filename: uploadResult.filename,
-        url: uploadResult.url, // Use the presigned URL from upload response
+        s3_key: uploadResult.s3_key, // Store S3 key instead of URL
         size: uploadResult.size,
         content_type: uploadResult.content_type,
         uploaded_at: uploadResult.uploaded_at
       };
 
-      // Cache the presigned URL
+      // Cache the presigned URL for immediate use
       setImageUrls(prev => ({
         ...prev,
         [uploadResult.file_id]: uploadResult.url
@@ -393,17 +368,17 @@ const QuestionCard = ({
       console.log('Uploading subquestion diagram:', file.name);
       const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
       
-      // Create diagram object with server data
+      // Create diagram object with server data (store s3_key, not url)
       const diagramData = {
         file_id: uploadResult.file_id,
         filename: uploadResult.filename,
-        url: uploadResult.url, // Use the presigned URL from upload response
+        s3_key: uploadResult.s3_key, // Store S3 key instead of URL
         size: uploadResult.size,
         content_type: uploadResult.content_type,
         uploaded_at: uploadResult.uploaded_at
       };
 
-      // Cache the presigned URL
+      // Cache the presigned URL for immediate use
       setImageUrls(prev => ({
         ...prev,
         [uploadResult.file_id]: uploadResult.url
@@ -474,17 +449,17 @@ const QuestionCard = ({
       console.log('Replacing subquestion diagram:', file.name);
       const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
       
-      // Create new diagram object with server data
+      // Create new diagram object with server data (store s3_key, not url)
       const newDiagramData = {
         file_id: uploadResult.file_id,
         filename: uploadResult.filename,
-        url: uploadResult.url, // Use the presigned URL from upload response
+        s3_key: uploadResult.s3_key, // Store S3 key instead of URL
         size: uploadResult.size,
         content_type: uploadResult.content_type,
         uploaded_at: uploadResult.uploaded_at
       };
 
-      // Cache the presigned URL
+      // Cache the presigned URL for immediate use
       setImageUrls(prev => ({
         ...prev,
         [uploadResult.file_id]: uploadResult.url
@@ -513,26 +488,42 @@ const QuestionCard = ({
 
   // Component for handling diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName, onError }) => {
-    const [imageUrl, setImageUrl] = useState(diagramData.url || null);
-    const [loading, setLoading] = useState(!diagramData.url && diagramData.file_id);
+    const [imageUrl, setImageUrl] = useState(null);
+    const [loading, setLoading] = useState(!!diagramData.s3_key);
     const [error, setError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
-        // If we already have a URL (either direct or cached), use it
+        // If we already have a URL (cached), use it
         if (imageUrl) return;
         
-        // If no file_id, we can't fetch from server
-        if (!diagramData.file_id) {
+        // Check if we have a cached URL for this diagram
+        if (diagramData.file_id && imageUrls[diagramData.file_id]) {
+          setImageUrl(imageUrls[diagramData.file_id]);
+          setLoading(false);
+          return;
+        }
+        
+        // If no s3_key, we can't fetch from server
+        if (!diagramData.s3_key) {
           setError(true);
+          setLoading(false);
           return;
         }
 
         try {
           setLoading(true);
           setError(false);
-          const url = await fetchDiagramUrl(diagramData.file_id);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
           setImageUrl(url);
+          
+          // Cache the URL if we have a file_id
+          if (diagramData.file_id) {
+            setImageUrls(prev => ({
+              ...prev,
+              [diagramData.file_id]: url
+            }));
+          }
         } catch (error) {
           console.error('Failed to load diagram URL:', error);
           setError(true);
@@ -543,7 +534,7 @@ const QuestionCard = ({
       };
 
       loadImageUrl();
-    }, [diagramData.file_id, diagramData.url, imageUrl]);
+    }, [diagramData.s3_key, diagramData.file_id, imageUrl, imageUrls]);
 
     if (loading) {
       return (
@@ -1907,8 +1898,8 @@ const QuestionCard = ({
                         <label className="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={subq.hasSubDiagram || false}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'hasSubDiagram', e.target.checked)}
+                            checked={subq.hasDiagram || false}
+                            onChange={(e) => handleSubquestionChange(subIndex, 'hasDiagram', e.target.checked)}
                             className="text-orange-600 bg-gray-600 border-gray-500 rounded focus:ring-orange-500 focus:ring-2"
                           />
                           <span className="text-sm text-gray-300">Include Diagram</span>
@@ -1935,7 +1926,7 @@ const QuestionCard = ({
                       )}
 
                       {/* Sub-question diagram upload */}
-                      {subq.hasSubDiagram && (
+                      {subq.hasDiagram && (
                         <div className="mt-3">
                           <label className="block text-xs font-medium text-orange-300 mb-2">
                             Sub-question Diagram

@@ -234,39 +234,24 @@ export const assignmentApi = {
     return response.data;
   },
 
-  // Get a diagram file URL (this gets the presigned S3 URL)
-  async getDiagramUrl(fileId, assignmentId = null) {
+  // Get a diagram file URL using the s3_key via the storage presign endpoint
+  async getDiagramUrl(s3Key, assignmentId = null) {
     try {
-      const url = assignmentId
-        ? `/api/assignments/diagrams/${fileId}?assignment_id=${assignmentId}`
-        : `/api/assignments/diagrams/${fileId}`;
-
-      const response = await api.get(url, {
-        headers: { 'ngrok-skip-browser-warning': 'true' },
-        maxRedirects: 0, // Don't follow redirects
-        validateStatus: function (status) {
-          return status >= 200 && status < 400; // Accept 200-399 status codes
-        }
+      const response = await api.get('/api/storage/presign', {
+        params: { 
+          key: s3Key,
+          expires_in: 3600 // 1 hour expiry
+        },
+        headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
-      // If it's a redirect (302), get the Location header
-      if (response.status === 302 && response.headers.location) {
-        return response.headers.location;
-      }
-
-      // If it's a direct response with URL
       if (response.data && response.data.url) {
         return response.data.url;
       }
 
       throw new Error('No URL found in response');
     } catch (error) {
-      // If the request fails due to redirect handling, try to extract URL from error
-      if (error.response && error.response.status === 302) {
-        return error.response.headers.location;
-      }
-      
-      console.error('Error getting diagram URL:', error);
+      console.error('Error getting presigned URL:', error);
       throw error;
     }
   },

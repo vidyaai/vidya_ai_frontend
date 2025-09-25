@@ -231,7 +231,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
           }
           
           // Check sub-question diagram
-          if ((subQ.hasDiagram || subQ.hasSubDiagram) && !subQ.subDiagram) {
+          if (subQ.hasDiagram && !subQ.subDiagram) {
             errors.push(`Sub-question ${subNum}: Diagram must be present when Include Diagram is checked`);
           }
           

@@ -69,7 +69,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           type: 'multiple-choice',
           options: ['2.5', '1.0', '0.5', 'Depends on time constant'],
           hasSubCode: false,
-          hasSubDiagram: false
+          hasDiagram: false
         },
         { 
           id: 2, 
@@ -79,7 +79,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           codeLanguage: 'matlab',
           hasSubCode: true,
           subCode: '% Starter code for PID controller\n% Tune the PID parameters\nKp = 0; % Proportional gain\nKi = 0; % Integral gain\nKd = 0; % Derivative gain',
-          hasSubDiagram: false
+          hasDiagram: false
         },
         { 
           id: 3, 
@@ -87,7 +87,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           points: 5, 
           type: 'diagram-analysis',
           hasSubCode: false,
-          hasSubDiagram: true,
+          hasDiagram: true,
           subDiagram: { file: 'root_locus_plot.png', url: '/mock-root-locus.png' }
         },
         {
@@ -133,7 +133,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           codeLanguage: 'python',
           hasSubCode: true,
           subCode: '# Design a Butterworth low-pass filter\n# Your task: Complete the filter design and application\n\nfrom scipy.signal import butter, filtfilt\n\ndef design_lowpass_filter(cutoff, fs, order=5):\n    # TODO: Implement filter design\n    pass\n\ndef apply_filter(data, cutoff, fs):\n    # TODO: Apply filter to data\n    pass',
-          hasSubDiagram: false
+          hasDiagram: false
         }
       ],
       points: 22
@@ -171,18 +171,25 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
   // Component for handling diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName }) => {
-    const [imageUrl, setImageUrl] = useState(diagramData.url || null);
-    const [loading, setLoading] = useState(!diagramData.url && diagramData.file_id);
+    const [imageUrl, setImageUrl] = useState(null);
+    const [loading, setLoading] = useState(!!diagramData.s3_key);
     const [error, setError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
-        if (!diagramData.file_id || imageUrl) return;
+        if (imageUrl) return;
+
+        // If no s3_key, we can't fetch from server
+        if (!diagramData.s3_key) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
 
         try {
           setLoading(true);
           setError(false);
-          const url = await assignmentApi.getDiagramUrl(diagramData.file_id, assignment?.id);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
           setImageUrl(url);
         } catch (error) {
           console.error('Failed to load diagram URL:', error);
@@ -193,7 +200,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       };
 
       loadImageUrl();
-    }, [diagramData.file_id, imageUrl]);
+    }, [diagramData.s3_key, imageUrl]);
 
     if (loading) {
       return (
@@ -232,17 +239,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const renderDiagram = (diagramData, label = "Diagram") => {
     if (!diagramData) return null;
 
-    const isServerDiagram = diagramData.file_id;
+    const isServerDiagram = diagramData.s3_key;
     const displayName = diagramData.filename || diagramData.file || label;
 
     return (
-      <div className="bg-gray-800 rounded-lg p-4 border border-orange-500/30">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-orange-400 text-sm font-medium">{label}</span>
-          <span className="text-gray-400 text-sm">
-            {diagramData.content_type || 'Image'}
-          </span>
-        </div>
         <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
           {isServerDiagram ? (
             <DiagramImage diagramData={diagramData} displayName={displayName} />
@@ -255,12 +255,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               </div>
             </div>
           )}
-          {/* Show filename at bottom */}
-          <div className="px-3 py-2 bg-gray-700 border-t border-gray-600">
-            <span className="text-orange-400 text-xs">📎 {displayName}</span>
-          </div>
         </div>
-      </div>
     );
   };
 
@@ -438,6 +433,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <div className="space-y-3">
               {question.allowMultipleCorrect && (
                 <div className="text-sm text-gray-400 mb-2">
@@ -479,6 +478,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <input
               type="text"
               value={currentAnswer}
@@ -500,6 +503,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <div className="flex space-x-6">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
@@ -537,6 +544,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <textarea
               value={currentAnswer}
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
@@ -558,6 +569,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <input
               type="number"
               value={currentAnswer}
@@ -579,6 +594,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <textarea
               value={currentAnswer}
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
@@ -600,6 +619,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-purple-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
             <div className="bg-gray-800 rounded-lg p-3 border border-purple-500/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-purple-400 text-sm font-medium">
@@ -632,7 +655,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
             
-            {question.diagram && renderDiagram(question.diagram, "Circuit Diagram")}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
               value={currentAnswer}
@@ -672,22 +695,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             )}
             
             {/* Main Question Diagram */}
-            {question.hasMainDiagram && question.mainDiagram && (
-              <div className="bg-gray-800 rounded-lg p-4 border border-orange-500/30">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-orange-400 text-sm font-medium">Main Diagram</span>
-                </div>
-                <div className="bg-gray-900 rounded-lg p-8 text-center border border-gray-700">
-                  <div className="w-full h-48 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
-                    <div className="text-center">
-                      <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">System Diagram</p>
-                      <p className="text-gray-500 text-xs">{question.mainDiagram.file}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {((question.hasMainDiagram && question.mainDiagram) || question.diagram) && 
+              renderDiagram(question.mainDiagram || question.diagram, "Main Diagram")
+            }
             
             <div className="space-y-4">
               {(question.subquestions || []).map((subq, subIndex) => (
@@ -729,17 +739,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                   
                   {/* Sub-question Diagram */}
-                  {subq.hasSubDiagram && subq.subDiagram && (
-                    <div className="bg-gray-900 rounded-lg p-3 border border-orange-500/30 mb-3">
-                      <div className="text-orange-400 text-xs font-medium mb-2">Diagram</div>
-                      <div className="w-full h-32 bg-gray-800 rounded flex items-center justify-center border border-gray-700">
-                        <div className="text-center">
-                          <ImageIcon size={20} className="text-gray-500 mx-auto mb-1" />
-                          <p className="text-gray-400 text-xs">{subq.subDiagram.file}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {subq.hasDiagram && subq.subDiagram && renderDiagram(subq.subDiagram, "Sub-question Diagram")}
                   
                   {/* Render different sub-question types */}
                   {subq.type === 'multiple-choice' ? (

@@ -26,25 +26,26 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
 
   // Component for handling diagram images with URL fetching in preview
   const DiagramPreviewImage = ({ diagramData, displayName }) => {
-    const [imageUrl, setImageUrl] = useState(diagramData.url || null);
-    const [loading, setLoading] = useState(!diagramData.url && diagramData.file_id);
+    const [imageUrl, setImageUrl] = useState(null);
+    const [loading, setLoading] = useState(!!diagramData.s3_key);
     const [error, setError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
-        // If we already have a URL (either direct or cached), use it
+        // If we already have a URL (cached), use it
         if (imageUrl) return;
         
-        // If no file_id, we can't fetch from server
-        if (!diagramData.file_id) {
+        // If no s3_key, we can't fetch from server
+        if (!diagramData.s3_key) {
           setError(true);
+          setLoading(false);
           return;
         }
 
         try {
           setLoading(true);
           setError(false);
-          const url = await assignmentApi.getDiagramUrl(diagramData.file_id);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
           setImageUrl(url);
         } catch (error) {
           console.error('Failed to load diagram URL in preview:', error);
@@ -55,7 +56,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
       };
 
       loadImageUrl();
-    }, [diagramData.file_id, diagramData.url, imageUrl]);
+    }, [diagramData.s3_key, imageUrl]);
 
     if (loading) {
       return (

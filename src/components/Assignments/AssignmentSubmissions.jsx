@@ -558,7 +558,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   )}
 
                   {/* Sub-question diagram if present */}
-                  {subQuestion.hasSubDiagram && subQuestion.subDiagram && (
+                  {subQuestion.hasDiagram && subQuestion.subDiagram && (
                     <div className="mt-2 bg-gray-800 rounded p-3">
                       <p className="text-gray-400 text-xs mb-2">Diagram:</p>
                       <p className="text-gray-300 text-xs">{JSON.stringify(subQuestion.subDiagram)}</p>

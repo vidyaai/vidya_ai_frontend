@@ -1,5 +1,5 @@
 // src/components/Assignments/DoAssignmentModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { 
   X, 
   Save, 
@@ -12,6 +12,74 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+
+// Component for handling diagram images with URL fetching
+const DiagramImage = memo(({ diagramData, displayName }) => {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [loading, setLoading] = useState(!!diagramData.s3_key);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImageUrl = async () => {
+      if (imageUrl) return;
+
+      // If no s3_key, we can't fetch from server
+      if (!diagramData.s3_key) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(false);
+        const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
+        setImageUrl(url);
+      } catch (error) {
+        console.error('Failed to load diagram URL:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadImageUrl();
+  }, [diagramData.s3_key, imageUrl]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto mb-2"></div>
+          <p className="text-gray-300 text-sm">Loading image...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !imageUrl) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+        <div className="text-center">
+          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+          <p className="text-gray-400 text-sm">Failed to load image</p>
+          <p className="text-gray-500 text-xs">{displayName}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={imageUrl} 
+      alt={displayName}
+      className="w-full max-h-64 object-contain bg-gray-900"
+      onError={() => setError(true)}
+    />
+  );
+});
+
+DiagramImage.displayName = 'DiagramImage';
 
 const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [answers, setAnswers] = useState({});
@@ -169,74 +237,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }));
   };
 
-  // Component for handling diagram images with URL fetching
-  const DiagramImage = ({ diagramData, displayName }) => {
-    const [imageUrl, setImageUrl] = useState(null);
-    const [loading, setLoading] = useState(!!diagramData.s3_key);
-    const [error, setError] = useState(false);
 
-    useEffect(() => {
-      const loadImageUrl = async () => {
-        if (imageUrl) return;
-
-        // If no s3_key, we can't fetch from server
-        if (!diagramData.s3_key) {
-          setError(true);
-          setLoading(false);
-          return;
-        }
-
-        try {
-          setLoading(true);
-          setError(false);
-          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
-          setImageUrl(url);
-        } catch (error) {
-          console.error('Failed to load diagram URL:', error);
-          setError(true);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      loadImageUrl();
-    }, [diagramData.s3_key, imageUrl]);
-
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto mb-2"></div>
-            <p className="text-gray-300 text-sm">Loading image...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (error || !imageUrl) {
-      return (
-        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
-          <div className="text-center">
-            <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">Failed to load image</p>
-            <p className="text-gray-500 text-xs">{displayName}</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <img 
-        src={imageUrl} 
-        alt={displayName}
-        className="w-full max-h-64 object-contain bg-gray-900"
-        onError={() => setError(true)}
-      />
-    );
-  };
-
-  // Helper function to render diagrams
-  const renderDiagram = (diagramData, label = "Diagram") => {
+  // Helper function to render diagrams - memoized to prevent unnecessary re-renders
+  const renderDiagram = useCallback((diagramData, label = "Diagram") => {
     if (!diagramData) return null;
 
     const isServerDiagram = diagramData.s3_key;
@@ -257,7 +260,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           )}
         </div>
     );
-  };
+  }, []);
 
   const handleMultipleChoiceChange = (questionId, optionIndex, isChecked, allowMultiple) => {
     if (allowMultiple) {

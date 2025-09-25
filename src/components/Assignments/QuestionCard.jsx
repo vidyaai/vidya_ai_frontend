@@ -33,7 +33,7 @@ const QuestionCard = ({
   const [uploadingDiagram, setUploadingDiagram] = useState(false);
   const [deletingDiagram, setDeletingDiagram] = useState(false);
   const [uploadError, setUploadError] = useState(null);
-  const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '' });
+  const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '', subIndex: null });
   const [imageUrls, setImageUrls] = useState({}); // Cache for presigned URLs
 
   // Fetch presigned URL for a diagram
@@ -422,7 +422,7 @@ const QuestionCard = ({
 
   // Handle subquestion diagram deletion
   const handleSubquestionDiagramDelete = async (subIndex) => {
-    const subq = question.subQuestions[subIndex];
+    const subq = question.subquestions?.[subIndex];
     if (!subq?.subDiagram?.file_id) return;
 
     setDeletingDiagram(true);
@@ -463,7 +463,7 @@ const QuestionCard = ({
       return;
     }
 
-    const subq = question.subQuestions[subIndex];
+    const subq = question.subquestions?.[subIndex];
     const oldDiagramData = subq?.subDiagram;
     
     setUploadingDiagram(true);
@@ -578,7 +578,7 @@ const QuestionCard = ({
   };
 
   // Render diagram display component
-  const renderDiagramDisplay = (diagramData, isUploading = false, onDelete = null, onReplace = null, field = 'diagram') => {
+  const renderDiagramDisplay = (diagramData, isUploading = false, onDelete = null, onReplace = null, field = 'diagram', subIndex = null) => {
     if (isUploading) {
       return (
         <div className="flex items-center justify-center p-4 bg-gray-800 rounded-lg border border-gray-700">
@@ -620,7 +620,7 @@ const QuestionCard = ({
               <div className="absolute top-2 right-2 flex space-x-1">
                 {/* Preview Button */}
                 <button
-                  onClick={() => setPreviewModal({ open: true, diagramData, field })}
+                  onClick={() => setPreviewModal({ open: true, diagramData, field, subIndex })}
                   className="p-1 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors"
                   title="Preview diagram"
                 >
@@ -690,12 +690,13 @@ const QuestionCard = ({
   const renderPreviewModal = () => {
     if (!previewModal.open || !previewModal.diagramData) return null;
 
-    const { diagramData, field } = previewModal;
+    const { diagramData, field, subIndex } = previewModal;
     const displayName = diagramData.filename || diagramData.file || 'diagram';
     const isServerDiagram = diagramData.file_id;
+    const isSubquestion = subIndex !== null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setPreviewModal({ open: false, diagramData: null, field: '' })}>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null })}>
         <div className="bg-gray-900 rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
           {/* Modal Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
@@ -713,8 +714,12 @@ const QuestionCard = ({
                 onChange={(e) => {
                   const file = e.target.files[0];
                   if (file) {
-                    handleDiagramReplace(file, field);
-                    setPreviewModal({ open: false, diagramData: null, field: '' });
+                    if (isSubquestion) {
+                      handleSubquestionDiagramReplace(file, subIndex);
+                    } else {
+                      handleDiagramReplace(file, field);
+                    }
+                    setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null });
                   }
                 }}
                 className="hidden"
@@ -729,8 +734,12 @@ const QuestionCard = ({
               {/* Delete Button */}
               <button
                 onClick={() => {
-                  handleDiagramDelete(field);
-                  setPreviewModal({ open: false, diagramData: null, field: '' });
+                  if (isSubquestion) {
+                    handleSubquestionDiagramDelete(subIndex);
+                  } else {
+                    handleDiagramDelete(field);
+                  }
+                  setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null });
                 }}
                 className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
               >
@@ -738,7 +747,7 @@ const QuestionCard = ({
               </button>
               {/* Close Button */}
               <button
-                onClick={() => setPreviewModal({ open: false, diagramData: null, field: '' })}
+                onClick={() => setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null })}
                 className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
               >
                 Close
@@ -1621,22 +1630,6 @@ const QuestionCard = ({
               </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Expected Analysis Type
-              </label>
-              <select
-                value={question.analysisType || 'description'}
-                onChange={(e) => onUpdate({ analysisType: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              >
-                <option value="description">Describe Components</option>
-                <option value="analysis">Technical Analysis</option>
-                <option value="calculation">Calculations from Diagram</option>
-                <option value="identification">Component Identification</option>
-                <option value="troubleshooting">Troubleshooting</option>
-              </select>
-            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -1979,7 +1972,8 @@ const QuestionCard = ({
                                   false, 
                                   () => handleSubquestionDiagramDelete(subIndex),
                                   (file) => handleSubquestionDiagramReplace(file, subIndex),
-                                  'subDiagram'
+                                  'subDiagram',
+                                  subIndex
                                 )}
                               </div>
                             )}

@@ -24,6 +24,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [assignmentDueDate, setAssignmentDueDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
 
   const questionTypes = [
     { type: 'multiple-choice', label: 'Multiple Choice', icon: '○', category: 'Basic' },
@@ -75,6 +76,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     }
   }, [preloadedData]);
 
+  // Update validation status whenever questions change
+  useEffect(() => {
+    const validation = validateAssignmentForPublishing();
+    setValidationStatus(validation);
+  }, [questions, assignmentTitle]);
+
   const addQuestion = (type) => {
     const baseQuestion = {
       id: Date.now(),
@@ -95,7 +102,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         starterCode: ''
       },
       'diagram-analysis': {
-        analysisType: 'description',
         diagram: null
       },
       'multi-part': {
@@ -156,10 +162,150 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     setQuestions(newQuestions);
   };
 
+  // Validation function for publishing
+  const validateAssignmentForPublishing = () => {
+    const errors = [];
+    
+    // Check if at least one question is present
+    if (questions.length === 0) {
+      errors.push('At least one question must be present');
+    }
+    
+    // Validate each question and sub-questions
+    questions.forEach((question, qIndex) => {
+      const questionNum = qIndex + 1;
+      
+      // Check if question text is not empty
+      if (!question.question || question.question.trim() === '') {
+        errors.push(`Question ${questionNum}: Question text cannot be empty`);
+      }
+      
+      // Check Include Code requirement
+      if ((question.hasMainCode || question.hasCode) && 
+          (!question.mainCode || question.mainCode.trim() === '') && 
+          (!question.code || question.code.trim() === '')) {
+        errors.push(`Question ${questionNum}: Code cannot be empty when Include Code is checked`);
+      }
+      
+      // Check Include Diagram requirement
+      if ((question.hasMainDiagram && !question.mainDiagram) || 
+          (question.diagram === null && question.type === 'diagram-analysis')) {
+        errors.push(`Question ${questionNum}: Diagram must be present when Include Diagram is checked`);
+      }
+      
+      // Check multiple choice options
+      if (question.type === 'multiple-choice') {
+        const validOptions = question.options?.filter(opt => opt && opt.trim() !== '') || [];
+        if (validOptions.length < 2) {
+          errors.push(`Question ${questionNum}: At least two options must be present for multiple choice questions`);
+        }
+      }
+      
+      // Check Sample Answer requirement
+      if (!question.correctAnswer || question.correctAnswer.trim() === '') {
+        errors.push(`Question ${questionNum}: Sample Answer cannot be empty`);
+      }
+      
+      // Check Rubric requirement
+      if (!question.rubric || question.rubric.trim() === '') {
+        errors.push(`Question ${questionNum}: Rubric cannot be empty`);
+      }
+      
+      // Validate sub-questions for multi-part questions
+      if (question.type === 'multi-part' && question.subquestions) {
+        question.subquestions.forEach((subQ, subIndex) => {
+          const subNum = `${questionNum}.${subIndex + 1}`;
+          
+          // Check sub-question text
+          if (!subQ.question || subQ.question.trim() === '') {
+            errors.push(`Sub-question ${subNum}: Question text cannot be empty`);
+          }
+          
+          // Check sub-question code
+          if ((subQ.hasCode || subQ.hasSubCode)) {
+            const hasSubCode = subQ.subCode && subQ.subCode.trim() !== '';
+            const hasCode = subQ.code && subQ.code.trim() !== '';
+            if (!hasSubCode && !hasCode) {
+              errors.push(`Sub-question ${subNum}: Code cannot be empty when Include Code is checked`);
+            }
+          }
+          
+          // Check sub-question diagram
+          if ((subQ.hasDiagram || subQ.hasSubDiagram) && !subQ.subDiagram) {
+            errors.push(`Sub-question ${subNum}: Diagram must be present when Include Diagram is checked`);
+          }
+          
+          // Check sub-question multiple choice options
+          if (subQ.type === 'multiple-choice') {
+            const validSubOptions = subQ.options?.filter(opt => opt && opt.trim() !== '') || [];
+            if (validSubOptions.length < 2) {
+              errors.push(`Sub-question ${subNum}: At least two options must be present for multiple choice questions`);
+            }
+          }
+          
+          // Check sub-question sample answer
+          if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
+            errors.push(`Sub-question ${subNum}: Sample Answer cannot be empty`);
+          }
+          
+          // Check sub-question rubric (if using per-subquestion rubrics)
+          if (question.rubricType === 'per-subquestion' && (!subQ.rubric || subQ.rubric.trim() === '')) {
+            errors.push(`Sub-question ${subNum}: Rubric cannot be empty`);
+          }
+          
+          // Validate sub-sub-questions
+          if (subQ.subquestions) {
+            subQ.subquestions.forEach((subSubQ, subSubIndex) => {
+              const subSubNum = `${questionNum}.${subIndex + 1}.${subSubIndex + 1}`;
+              
+              // Check sub-sub-question text
+              if (!subSubQ.question || subSubQ.question.trim() === '') {
+                errors.push(`Sub-sub-question ${subSubNum}: Question text cannot be empty`);
+              }
+              
+              // Check sub-sub-question multiple choice options
+              if (subSubQ.type === 'multiple-choice') {
+                const validSubSubOptions = subSubQ.options?.filter(opt => opt && opt.trim() !== '') || [];
+                if (validSubSubOptions.length < 2) {
+                  errors.push(`Sub-sub-question ${subSubNum}: At least two options must be present for multiple choice questions`);
+                }
+              }
+              
+              // Check sub-sub-question sample answer
+              if (!subSubQ.correctAnswer || subSubQ.correctAnswer.trim() === '') {
+                errors.push(`Sub-sub-question ${subSubNum}: Sample Answer cannot be empty`);
+              }
+              
+              // Check sub-sub-question rubric
+              if (!subSubQ.rubric || subSubQ.rubric.trim() === '') {
+                errors.push(`Sub-sub-question ${subSubNum}: Rubric cannot be empty`);
+              }
+            });
+          }
+        });
+      }
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   const saveAssignment = async (status = 'draft') => {
     if (!assignmentTitle.trim()) {
       alert('Please enter a title for the assignment');
       return;
+    }
+
+    // Validate for publishing
+    if (status === 'published') {
+      const validation = validateAssignmentForPublishing();
+      if (!validation.isValid) {
+        const errorMessage = `Cannot publish assignment. Please fix the following issues:\n\n${validation.errors.join('\n')}`;
+        alert(errorMessage);
+        return;
+      }
     }
 
     setSaving(true);
@@ -243,14 +389,42 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                   <Save size={18} className="mr-2" />
                   {saving ? 'Saving...' : 'Save Draft'}
                 </button>
-                <button
-                  onClick={() => saveAssignment('published')}
-                  disabled={saving}
-                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50"
-                >
-                  <Save size={18} className="mr-2" />
-                  {saving ? 'Publishing...' : 'Save & Publish'}
-                </button>
+                <div className="relative group">
+                  <button
+                    onClick={() => saveAssignment('published')}
+                    disabled={saving || !validationStatus.isValid}
+                    className={`inline-flex items-center px-4 py-2 font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      validationStatus.isValid 
+                        ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700' 
+                        : 'bg-gray-600 text-gray-300'
+                    }`}
+                    title={validationStatus.isValid ? 'Ready to publish' : `Cannot publish: ${validationStatus.errors.length} validation error(s)`}
+                  >
+                    <Save size={18} className="mr-2" />
+                    {saving ? 'Publishing...' : 'Save & Publish'}
+                    {!validationStatus.isValid && (
+                      <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+                        {validationStatus.errors.length}
+                      </span>
+                    )}
+                  </button>
+                  {!validationStatus.isValid && validationStatus.errors.length > 0 && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-red-900/90 border border-red-500/30 rounded-lg p-3 text-sm text-red-200 z-20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="font-medium text-red-100 mb-2">Cannot publish - Fix these issues:</div>
+                      <ul className="space-y-1 text-xs">
+                        {validationStatus.errors.slice(0, 5).map((error, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-red-400 mr-1 flex-shrink-0">•</span>
+                            <span>{error}</span>
+                          </li>
+                        ))}
+                        {validationStatus.errors.length > 5 && (
+                          <li className="text-red-300 italic">...and {validationStatus.errors.length - 5} more</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -415,6 +589,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 questions={questions}
                 onSave={saveAssignment}
                 saving={saving}
+                validationStatus={validationStatus}
               />
             </div>
           )}

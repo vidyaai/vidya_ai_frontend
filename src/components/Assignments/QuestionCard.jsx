@@ -218,7 +218,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter your question..."
                 rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -257,7 +257,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -343,12 +343,12 @@ const QuestionCard = ({
                         className="text-teal-500 focus:ring-teal-500"
                       />
                     )}
-                    <input
-                      type="text"
+                    <textarea
                       value={option}
                       onChange={(e) => handleOptionChange(optionIndex, e.target.value)}
                       placeholder={`Option ${optionIndex + 1}`}
-                      className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      rows={1}
+                      className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
                     />
                     {question.options.length > 2 && (
                       <button
@@ -384,7 +384,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter your true/false question..."
                 rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -423,7 +423,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -517,7 +517,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter your question with blanks (use ___ for blanks)..."
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -556,7 +556,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -617,7 +617,7 @@ const QuestionCard = ({
                 onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                 placeholder="Enter correct answers, one per line..."
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
           </div>
@@ -635,7 +635,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter your numerical question..."
                 rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -674,7 +674,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -754,7 +754,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder={`Enter your ${question.type === 'long-answer' ? 'long answer' : 'short answer'} question...`}
                 rows={question.type === 'long-answer' ? 3 : 2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -793,7 +793,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -854,7 +854,7 @@ const QuestionCard = ({
                 onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                 placeholder="Enter a sample answer or key points..."
                 rows={question.type === 'long-answer' ? 4 : 2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
           </div>
@@ -872,7 +872,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter your programming problem description..."
                 rows={4}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
               />
             </div>
             
@@ -923,7 +923,7 @@ const QuestionCard = ({
                 onChange={(e) => onUpdate({ starterCode: e.target.value })}
                 placeholder="// Provide starter code or template here..."
                 rows={6}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
               />
             </div>
             
@@ -936,7 +936,7 @@ const QuestionCard = ({
                 onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                 placeholder="Enter sample solution code..."
                 rows={6}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
               />
             </div>
           </div>
@@ -954,7 +954,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter your diagram analysis question..."
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-vertical"
               />
             </div>
             
@@ -1018,7 +1018,7 @@ const QuestionCard = ({
                 onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                 placeholder="Enter sample analysis or key points..."
                 rows={4}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-vertical"
               />
             </div>
           </div>
@@ -1036,7 +1036,7 @@ const QuestionCard = ({
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="Enter the main question or problem statement..."
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -1079,7 +1079,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ rubric: e.target.value })}
                       placeholder="Enter overall grading criteria for this multi-part question..."
                       rows={3}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
                     />
                   </div>
                 )}
@@ -1126,7 +1126,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ mainCode: e.target.value, code: e.target.value })}
                       placeholder="// Main question code here..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -1226,7 +1226,7 @@ const QuestionCard = ({
                       onChange={(e) => handleSubquestionChange(subIndex, 'question', e.target.value)}
                       placeholder={`Enter part ${subIndex + 1} question...`}
                       rows={2}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
                     />
                     
                     {/* Sub-question type selection */}
@@ -1303,7 +1303,7 @@ const QuestionCard = ({
                             }}
                             placeholder="// Enter starter code for this sub-question..."
                             rows={4}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                           />
                         </div>
                       )}
@@ -1380,8 +1380,7 @@ const QuestionCard = ({
                                     className="text-teal-500 focus:ring-teal-500"
                                   />
                                 )}
-                                <input
-                                  type="text"
+                                <textarea
                                   value={option}
                                   onChange={(e) => {
                                     const newOptions = [...(subq.options || ['', '', '', ''])];
@@ -1389,7 +1388,8 @@ const QuestionCard = ({
                                     handleSubquestionChange(subIndex, 'options', newOptions);
                                   }}
                                   placeholder={`Option ${optionIndex + 1}`}
-                                  className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                                  rows={1}
+                                  className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-vertical"
                                 />
                                 {(subq.options || ['', '', '', '']).length > 2 && (
                                   <button
@@ -1460,7 +1460,7 @@ const QuestionCard = ({
                             onChange={(e) => handleSubquestionChange(subIndex, 'correctAnswer', e.target.value)}
                             placeholder={subq.type === 'numerical' ? 'Enter the correct numerical answer...' : 'Enter sample answer or key points...'}
                             rows={2}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none text-sm"
+                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical text-sm"
                           />
                         </div>
                       )}
@@ -1476,7 +1476,7 @@ const QuestionCard = ({
                             onChange={(e) => handleSubquestionChange(subIndex, 'rubric', e.target.value)}
                             placeholder={`Enter grading criteria for part ${subIndex + 1}...`}
                             rows={2}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
                           />
                         </div>
                       )}
@@ -1587,8 +1587,7 @@ const QuestionCard = ({
                                     </button>
                                   </div>
                                 </div>
-                                <input
-                                  type="text"
+                                <textarea
                                   value={subSubq.question || ''}
                                   onChange={(e) => {
                                     const newSubSubquestions = [...(subq.subquestions || [])];
@@ -1596,7 +1595,8 @@ const QuestionCard = ({
                                     handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                   }}
                                   placeholder={`Enter part ${subIndex + 1}.${subSubIndex + 1} question...`}
-                                  className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs mb-2"
+                                  rows={1}
+                                  className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs mb-2 resize-vertical"
                                 />
                                 <select
                                   value={subSubq.type || 'short-answer'}
@@ -1654,8 +1654,7 @@ const QuestionCard = ({
                                             className="text-teal-500 focus:ring-teal-500"
                                           />
                                         )}
-                                        <input
-                                          type="text"
+                                        <textarea
                                           value={option}
                                           onChange={(e) => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
@@ -1665,7 +1664,8 @@ const QuestionCard = ({
                                             handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                           }}
                                           placeholder={`Option ${optionIndex + 1}`}
-                                          className="flex-1 px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs"
+                                          rows={1}
+                                          className="flex-1 px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs resize-vertical"
                                         />
                                         {(subSubq.options || ['', '', '']).length > 2 && (
                                           <button
@@ -1743,8 +1743,7 @@ const QuestionCard = ({
                                     <label className="block text-xs font-medium text-teal-300 mb-1">
                                       {subSubq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Optional)'}
                                     </label>
-                                    <input
-                                      type="text"
+                                    <textarea
                                       value={subSubq.correctAnswer || ''}
                                       onChange={(e) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
@@ -1752,7 +1751,8 @@ const QuestionCard = ({
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
                                       placeholder={subSubq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
-                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs"
+                                      rows={1}
+                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs resize-vertical"
                                     />
                                   </div>
                                 )}
@@ -1763,8 +1763,7 @@ const QuestionCard = ({
                                     <label className="block text-xs font-medium text-blue-300 mb-1">
                                       Rubric for Part {subIndex + 1}.{subSubIndex + 1}
                                     </label>
-                                    <input
-                                      type="text"
+                                    <textarea
                                       value={subSubq.rubric || ''}
                                       onChange={(e) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
@@ -1772,7 +1771,8 @@ const QuestionCard = ({
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
                                       placeholder={`Enter grading criteria for part ${subIndex + 1}.${subSubIndex + 1}...`}
-                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                      rows={1}
+                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs resize-vertical"
                                     />
                                   </div>
                                 )}
@@ -1904,7 +1904,7 @@ const QuestionCard = ({
                 onChange={(e) => handleRubricChange(e.target.value)}
                 placeholder="Enter grading criteria or rubric..."
                 rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
           )}

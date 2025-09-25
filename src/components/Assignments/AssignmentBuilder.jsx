@@ -264,7 +264,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     onChange={(e) => setAssignmentDescription(e.target.value)}
                     placeholder="Enter assignment description..."
                     rows={3}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
                   />
                 </div>
                 <div>

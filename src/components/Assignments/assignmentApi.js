@@ -214,6 +214,165 @@ export const assignmentApi = {
       headers: { 'ngrok-skip-browser-warning': 'true' }
     });
     return response.data;
+  },
+
+  // Upload a diagram/image file for assignment questions
+  async uploadDiagram(file, assignmentId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const url = assignmentId 
+      ? `/api/assignments/upload-diagram?assignment_id=${assignmentId}`
+      : '/api/assignments/upload-diagram';
+
+    const response = await api.post(url, formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        'ngrok-skip-browser-warning': 'true' 
+      }
+    });
+    return response.data;
+  },
+
+  // Get a diagram file URL (this gets the presigned S3 URL)
+  async getDiagramUrl(fileId, assignmentId = null) {
+    try {
+      const url = assignmentId
+        ? `/api/assignments/diagrams/${fileId}?assignment_id=${assignmentId}`
+        : `/api/assignments/diagrams/${fileId}`;
+
+      const response = await api.get(url, {
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+        maxRedirects: 0, // Don't follow redirects
+        validateStatus: function (status) {
+          return status >= 200 && status < 400; // Accept 200-399 status codes
+        }
+      });
+
+      // If it's a redirect (302), get the Location header
+      if (response.status === 302 && response.headers.location) {
+        return response.headers.location;
+      }
+
+      // If it's a direct response with URL
+      if (response.data && response.data.url) {
+        return response.data.url;
+      }
+
+      throw new Error('No URL found in response');
+    } catch (error) {
+      // If the request fails due to redirect handling, try to extract URL from error
+      if (error.response && error.response.status === 302) {
+        return error.response.headers.location;
+      }
+      
+      console.error('Error getting diagram URL:', error);
+      throw error;
+    }
+  },
+
+  // Get a diagram file URL synchronously (for immediate display) - deprecated, use async version
+  getDiagramUrlSync(fileId, assignmentId = null) {
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:8000' 
+      : '';
+    
+    const url = assignmentId
+      ? `${baseUrl}/api/assignments/diagrams/${fileId}?assignment_id=${assignmentId}`
+      : `${baseUrl}/api/assignments/diagrams/${fileId}`;
+    
+    return url;
+  },
+
+  // Delete a diagram file
+  async deleteDiagram(fileId, assignmentId = null) {
+    const url = assignmentId
+      ? `/api/assignments/diagrams/${fileId}?assignment_id=${assignmentId}`
+      : `/api/assignments/diagrams/${fileId}`;
+
+    const response = await api.delete(url, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+  // Cleanup all diagrams for a specific assignment
+  async cleanupAssignmentDiagrams(assignmentId) {
+    if (!assignmentId) return { cleaned: 0, errors: [] };
+    
+    try {
+      // This would require a backend endpoint for bulk cleanup
+      // For now, we'll return success to indicate we attempted cleanup
+      console.log(`Cleanup requested for assignment: ${assignmentId}`);
+      return { cleaned: 0, message: 'Cleanup will be handled by backend when assignment is deleted' };
+    } catch (error) {
+      console.error('Error during diagram cleanup:', error);
+      return { cleaned: 0, errors: [error.message] };
+    }
+  },
+
+  // Extract all diagram file IDs from assignment questions
+  extractDiagramFileIds(questions) {
+    const fileIds = [];
+    
+    if (!questions || !Array.isArray(questions)) return fileIds;
+    
+    questions.forEach(question => {
+      // Main diagram
+      if (question.diagram?.file_id) {
+        fileIds.push(question.diagram.file_id);
+      }
+      
+      // Main diagram for multi-part questions
+      if (question.mainDiagram?.file_id) {
+        fileIds.push(question.mainDiagram.file_id);
+      }
+      
+      // Subquestion diagrams
+      if (question.subquestions) {
+        question.subquestions.forEach(subq => {
+          if (subq.diagram?.file_id) {
+            fileIds.push(subq.diagram.file_id);
+          }
+          if (subq.subDiagram?.file_id) {
+            fileIds.push(subq.subDiagram.file_id);
+          }
+        });
+      }
+    });
+    
+    return [...new Set(fileIds)]; // Remove duplicates
+  },
+
+  // Cleanup orphaned diagram files from questions
+  async cleanupOrphanedDiagrams(oldQuestions, newQuestions, assignmentId = null) {
+    const oldFileIds = this.extractDiagramFileIds(oldQuestions);
+    const newFileIds = this.extractDiagramFileIds(newQuestions);
+    
+    // Find file IDs that are no longer used
+    const orphanedFileIds = oldFileIds.filter(id => !newFileIds.includes(id));
+    
+    if (orphanedFileIds.length === 0) {
+      return { cleaned: 0, errors: [] };
+    }
+    
+    console.log(`Cleaning up ${orphanedFileIds.length} orphaned diagrams:`, orphanedFileIds);
+    
+    const results = { cleaned: 0, errors: [] };
+    
+    // Delete each orphaned file
+    for (const fileId of orphanedFileIds) {
+      try {
+        await this.deleteDiagram(fileId, assignmentId);
+        results.cleaned++;
+        console.log(`Successfully deleted orphaned diagram: ${fileId}`);
+      } catch (error) {
+        console.error(`Failed to delete orphaned diagram ${fileId}:`, error);
+        results.errors.push(`Failed to delete ${fileId}: ${error.message}`);
+      }
+    }
+    
+    return results;
   }
 };
 

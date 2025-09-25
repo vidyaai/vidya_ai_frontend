@@ -1,5 +1,5 @@
 // src/components/Assignments/QuestionCard.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   GripVertical, 
   Trash2, 
@@ -13,8 +13,12 @@ import {
   Calculator,
   Layers,
   FileText,
-  Zap
+  Zap,
+  Upload,
+  Loader2,
+  Eye
 } from 'lucide-react';
+import { assignmentApi } from './assignmentApi';
 
 const QuestionCard = ({ 
   question, 
@@ -22,9 +26,68 @@ const QuestionCard = ({
   onUpdate, 
   onDelete, 
   onMoveUp, 
-  onMoveDown 
+  onMoveDown,
+  assignmentId = null  // Add assignmentId prop for upload context
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [uploadingDiagram, setUploadingDiagram] = useState(false);
+  const [deletingDiagram, setDeletingDiagram] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '' });
+  const [imageUrls, setImageUrls] = useState({}); // Cache for presigned URLs
+
+  // Fetch presigned URL for a diagram
+  const fetchDiagramUrl = async (fileId) => {
+    if (!fileId) return null;
+    
+    // Return cached URL if available
+    if (imageUrls[fileId]) {
+      return imageUrls[fileId];
+    }
+
+    try {
+      const presignedUrl = await assignmentApi.getDiagramUrl(fileId, assignmentId);
+      
+      // Cache the URL
+      setImageUrls(prev => ({
+        ...prev,
+        [fileId]: presignedUrl
+      }));
+      
+      return presignedUrl;
+    } catch (error) {
+      console.error('Failed to fetch diagram URL:', error);
+      return null;
+    }
+  };
+
+  // Enhanced file validation
+  const validateFile = (file) => {
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'application/pdf'];
+    const allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    // Check file type
+    const extension = file.name.toLowerCase().split('.').pop();
+    const hasValidType = allowedTypes.includes(file.type);
+    const hasValidExtension = allowedExtensions.includes('.' + extension);
+    
+    if (!hasValidType && !hasValidExtension) {
+      return { valid: false, error: 'Invalid file type. Please upload PNG, JPG, GIF, SVG, or PDF files only.' };
+    }
+    
+    // Check file size
+    if (file.size > maxSize) {
+      return { valid: false, error: `File size too large. Maximum size is ${(maxSize / 1024 / 1024).toFixed(1)}MB.` };
+    }
+    
+    // Check for suspicious files
+    if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+      return { valid: false, error: 'Invalid file name. Please choose a different file.' };
+    }
+    
+    return { valid: true };
+  };
 
   const handleQuestionChange = (value) => {
     onUpdate({ question: value });
@@ -175,8 +238,529 @@ const QuestionCard = ({
     onUpdate({ codeLanguage: language });
   };
 
-  const handleDiagramChange = (diagramData) => {
-    onUpdate({ diagram: diagramData });
+  // Handle real diagram upload to backend
+  const handleDiagramUpload = async (file, field = 'diagram') => {
+    if (!file) return;
+
+    // Validate file before upload
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      return;
+    }
+
+    setUploadingDiagram(true);
+    setUploadError(null);
+
+    try {
+      console.log('Uploading diagram:', file.name);
+      const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
+      
+      console.log('Upload successful:', uploadResult);
+      
+      // Create diagram object with server data
+      const diagramData = {
+        file_id: uploadResult.file_id,
+        filename: uploadResult.filename,
+        url: uploadResult.url, // Use the presigned URL from upload response
+        size: uploadResult.size,
+        content_type: uploadResult.content_type,
+        uploaded_at: uploadResult.uploaded_at
+      };
+
+      // Cache the presigned URL
+      setImageUrls(prev => ({
+        ...prev,
+        [uploadResult.file_id]: uploadResult.url
+      }));
+
+      // Update the question with the diagram data
+      onUpdate({ [field]: diagramData });
+      
+    } catch (error) {
+      console.error('Error uploading diagram:', error);
+      setUploadError(error.response?.data?.detail || 'Failed to upload diagram');
+    } finally {
+      setUploadingDiagram(false);
+    }
+  };
+
+  // Handle diagram deletion
+  const handleDiagramDelete = async (field = 'diagram') => {
+    const diagramData = question[field];
+    if (!diagramData?.file_id) return;
+
+    setDeletingDiagram(true);
+    setUploadError(null);
+
+    try {
+      await assignmentApi.deleteDiagram(diagramData.file_id, assignmentId);
+      
+      // Clear the diagram from the question
+      onUpdate({ [field]: null });
+      
+      // Clear from cache
+      setImageUrls(prev => {
+        const newUrls = { ...prev };
+        delete newUrls[diagramData.file_id];
+        return newUrls;
+      });
+      
+      console.log('Diagram deleted successfully');
+    } catch (error) {
+      console.error('Error deleting diagram:', error);
+      setUploadError('Failed to delete diagram');
+      // Note: We still remove it from UI even if backend deletion fails
+      onUpdate({ [field]: null });
+    } finally {
+      setDeletingDiagram(false);
+    }
+  };
+
+  // Handle diagram replacement (delete old + upload new)
+  const handleDiagramReplace = async (file, field = 'diagram') => {
+    if (!file) return;
+
+    // Validate file before upload
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      return;
+    }
+
+    const oldDiagramData = question[field];
+    
+    setUploadingDiagram(true);
+    setUploadError(null);
+
+    try {
+      // First, upload the new diagram
+      console.log('Replacing diagram:', file.name);
+      const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
+      
+      // Create new diagram object with server data
+      const newDiagramData = {
+        file_id: uploadResult.file_id,
+        filename: uploadResult.filename,
+        url: uploadResult.url, // Use the presigned URL from upload response
+        size: uploadResult.size,
+        content_type: uploadResult.content_type,
+        uploaded_at: uploadResult.uploaded_at
+      };
+
+      // Cache the presigned URL
+      setImageUrls(prev => ({
+        ...prev,
+        [uploadResult.file_id]: uploadResult.url
+      }));
+
+      // Update the question with the new diagram data
+      onUpdate({ [field]: newDiagramData });
+
+      // Delete the old diagram (best effort - don't fail if this doesn't work)
+      if (oldDiagramData?.file_id) {
+        try {
+          await assignmentApi.deleteDiagram(oldDiagramData.file_id, assignmentId);
+          console.log('Successfully deleted old diagram:', oldDiagramData.file_id);
+        } catch (deleteError) {
+          console.warn('Failed to delete old diagram (non-critical):', deleteError);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error replacing diagram:', error);
+      setUploadError(error.response?.data?.detail || 'Failed to replace diagram');
+    } finally {
+      setUploadingDiagram(false);
+    }
+  };
+
+  // Handle subquestion diagram upload
+  const handleSubquestionDiagramUpload = async (file, subIndex) => {
+    if (!file) return;
+
+    // Validate file before upload
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      return;
+    }
+
+    setUploadingDiagram(true);
+    setUploadError(null);
+
+    try {
+      console.log('Uploading subquestion diagram:', file.name);
+      const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
+      
+      // Create diagram object with server data
+      const diagramData = {
+        file_id: uploadResult.file_id,
+        filename: uploadResult.filename,
+        url: uploadResult.url, // Use the presigned URL from upload response
+        size: uploadResult.size,
+        content_type: uploadResult.content_type,
+        uploaded_at: uploadResult.uploaded_at
+      };
+
+      // Cache the presigned URL
+      setImageUrls(prev => ({
+        ...prev,
+        [uploadResult.file_id]: uploadResult.url
+      }));
+
+      // Update the subquestion with the diagram data
+      handleSubquestionChange(subIndex, 'subDiagram', diagramData);
+      
+    } catch (error) {
+      console.error('Error uploading subquestion diagram:', error);
+      setUploadError(error.response?.data?.detail || 'Failed to upload diagram');
+    } finally {
+      setUploadingDiagram(false);
+    }
+  };
+
+  // Handle subquestion diagram deletion
+  const handleSubquestionDiagramDelete = async (subIndex) => {
+    const subq = question.subQuestions[subIndex];
+    if (!subq?.subDiagram?.file_id) return;
+
+    setDeletingDiagram(true);
+    setUploadError(null);
+
+    try {
+      await assignmentApi.deleteDiagram(subq.subDiagram.file_id, assignmentId);
+      
+      // Update the subquestion to remove the diagram
+      handleSubquestionChange(subIndex, 'subDiagram', null);
+      
+      // Clear from cache
+      setImageUrls(prev => {
+        const newUrls = { ...prev };
+        delete newUrls[subq.subDiagram.file_id];
+        return newUrls;
+      });
+      
+      console.log('Subquestion diagram deleted successfully');
+    } catch (error) {
+      console.error('Error deleting subquestion diagram:', error);
+      setUploadError('Failed to delete diagram');
+      // Still remove from UI
+      handleSubquestionChange(subIndex, 'subDiagram', null);
+    } finally {
+      setDeletingDiagram(false);
+    }
+  };
+
+  // Handle subquestion diagram replacement
+  const handleSubquestionDiagramReplace = async (file, subIndex) => {
+    if (!file) return;
+
+    // Validate file before upload
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      return;
+    }
+
+    const subq = question.subQuestions[subIndex];
+    const oldDiagramData = subq?.subDiagram;
+    
+    setUploadingDiagram(true);
+    setUploadError(null);
+
+    try {
+      // First, upload the new diagram
+      console.log('Replacing subquestion diagram:', file.name);
+      const uploadResult = await assignmentApi.uploadDiagram(file, assignmentId);
+      
+      // Create new diagram object with server data
+      const newDiagramData = {
+        file_id: uploadResult.file_id,
+        filename: uploadResult.filename,
+        url: uploadResult.url, // Use the presigned URL from upload response
+        size: uploadResult.size,
+        content_type: uploadResult.content_type,
+        uploaded_at: uploadResult.uploaded_at
+      };
+
+      // Cache the presigned URL
+      setImageUrls(prev => ({
+        ...prev,
+        [uploadResult.file_id]: uploadResult.url
+      }));
+
+      // Update the subquestion with the new diagram data
+      handleSubquestionChange(subIndex, 'subDiagram', newDiagramData);
+
+      // Delete the old diagram (best effort - don't fail if this doesn't work)
+      if (oldDiagramData?.file_id) {
+        try {
+          await assignmentApi.deleteDiagram(oldDiagramData.file_id, assignmentId);
+          console.log('Old subquestion diagram deleted successfully');
+        } catch (deleteError) {
+          console.warn('Failed to delete old subquestion diagram:', deleteError);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error replacing subquestion diagram:', error);
+      setUploadError(error.response?.data?.detail || 'Failed to replace diagram');
+    } finally {
+      setUploadingDiagram(false);
+    }
+  };
+
+  // Component for handling diagram images with URL fetching
+  const DiagramImage = ({ diagramData, displayName, onError }) => {
+    const [imageUrl, setImageUrl] = useState(diagramData.url || null);
+    const [loading, setLoading] = useState(!diagramData.url && diagramData.file_id);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        // If we already have a URL (either direct or cached), use it
+        if (imageUrl) return;
+        
+        // If no file_id, we can't fetch from server
+        if (!diagramData.file_id) {
+          setError(true);
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setError(false);
+          const url = await fetchDiagramUrl(diagramData.file_id);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('Failed to load diagram URL:', error);
+          setError(true);
+          onError && onError();
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.file_id, diagramData.url, imageUrl]);
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-32 bg-gray-800 rounded">
+          <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
+          <span className="text-gray-300">Loading image...</span>
+        </div>
+      );
+    }
+
+    if (error || !imageUrl) {
+      return (
+        <div className="p-4 text-center">
+          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+          <p className="text-gray-400 text-sm">Failed to load image</p>
+          <p className="text-gray-500 text-xs">{displayName}</p>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={imageUrl} 
+        alt={displayName}
+        className="w-full max-h-64 object-contain bg-gray-900"
+        onError={(e) => {
+          console.error('Failed to load diagram:', imageUrl);
+          onError && onError();
+        }}
+      />
+    );
+  };
+
+  // Render diagram display component
+  const renderDiagramDisplay = (diagramData, isUploading = false, onDelete = null, onReplace = null, field = 'diagram') => {
+    if (isUploading) {
+      return (
+        <div className="flex items-center justify-center p-4 bg-gray-800 rounded-lg border border-gray-700">
+          <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
+          <span className="text-gray-300">Uploading diagram...</span>
+        </div>
+      );
+    }
+
+    if (deletingDiagram) {
+      return (
+        <div className="flex items-center justify-center p-4 bg-gray-800 rounded-lg border border-gray-700">
+          <Loader2 className="animate-spin text-red-400 mr-2" size={20} />
+          <span className="text-gray-300">Deleting diagram...</span>
+        </div>
+      );
+    }
+
+    if (!diagramData) return null;
+
+    // Check if this is the new format with file_id (from server) or old format with local file
+    const isServerDiagram = diagramData.file_id;
+    const displayName = diagramData.filename || diagramData.file || 'diagram';
+
+    return (
+      <div className="mt-3">
+        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          {diagramData ? (
+            // Show actual image for uploaded diagrams
+            <div className="relative">
+              <DiagramImage 
+                diagramData={diagramData}
+                displayName={displayName}
+                onError={() => {
+                  // Handle image load error - could show error state
+                }}
+              />
+              {/* File management buttons */}
+              <div className="absolute top-2 right-2 flex space-x-1">
+                {/* Preview Button */}
+                <button
+                  onClick={() => setPreviewModal({ open: true, diagramData, field })}
+                  className="p-1 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors"
+                  title="Preview diagram"
+                >
+                  <Eye size={16} />
+                </button>
+                {onReplace && (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.svg"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          onReplace(file);
+                        }
+                      }}
+                      className="hidden"
+                      disabled={uploadingDiagram}
+                      id={`replace-${field}-${question.id}`}
+                    />
+                    <label
+                      htmlFor={`replace-${field}-${question.id}`}
+                      className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors cursor-pointer"
+                      title="Replace diagram"
+                    >
+                      <Upload size={16} />
+                    </label>
+                  </>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete()}
+                    className="p-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
+                    title="Delete diagram"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Fallback for old blob URLs or missing images
+            <div className="p-4 text-center">
+              <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">{displayName}</p>
+              {diagramData.url && (
+                <p className="text-gray-500 text-xs mt-1">Preview not available</p>
+              )}
+            </div>
+          )}
+          <div className="px-3 py-2 bg-gray-700 border-t border-gray-600">
+            <div className="flex items-center justify-between">
+              <span className="text-orange-400 text-xs">📎 {displayName}</span>
+              {diagramData.size && (
+                <span className="text-gray-500 text-xs">
+                  {(diagramData.size / 1024).toFixed(1)} KB
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // File Preview Modal Component
+  const renderPreviewModal = () => {
+    if (!previewModal.open || !previewModal.diagramData) return null;
+
+    const { diagramData, field } = previewModal;
+    const displayName = diagramData.filename || diagramData.file || 'diagram';
+    const isServerDiagram = diagramData.file_id;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setPreviewModal({ open: false, diagramData: null, field: '' })}>
+        <div className="bg-gray-900 rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          {/* Modal Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <div>
+              <h3 className="text-lg font-semibold text-white">{displayName}</h3>
+              <p className="text-sm text-gray-400">
+                {diagramData.content_type} • {diagramData.size ? `${(diagramData.size / 1024).toFixed(1)} KB` : 'Unknown size'}
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              {/* Replace Button */}
+              <input
+                type="file"
+                accept="image/*,.pdf,.svg"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    handleDiagramReplace(file, field);
+                    setPreviewModal({ open: false, diagramData: null, field: '' });
+                  }
+                }}
+                className="hidden"
+                id={`modal-replace-${field}-${question.id}`}
+              />
+              <label
+                htmlFor={`modal-replace-${field}-${question.id}`}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm cursor-pointer"
+              >
+                Replace
+              </label>
+              {/* Delete Button */}
+              <button
+                onClick={() => {
+                  handleDiagramDelete(field);
+                  setPreviewModal({ open: false, diagramData: null, field: '' });
+                }}
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+              >
+                Delete
+              </button>
+              {/* Close Button */}
+              <button
+                onClick={() => setPreviewModal({ open: false, diagramData: null, field: '' })}
+                className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          
+          {/* Modal Content */}
+          <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
+            <div className="bg-gray-800 rounded">
+              <DiagramImage 
+                diagramData={diagramData}
+                displayName={displayName}
+                onError={() => {
+                  console.error('Failed to load diagram in modal');
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderQuestionTypeIcon = () => {
@@ -284,12 +868,15 @@ const QuestionCard = ({
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                            handleDiagramUpload(file, 'diagram');
                           }
                         }}
                         className="hidden"
+                        disabled={uploadingDiagram}
                         id={`diagram-upload-${question.id}`}
                       />
+                      {/* Show upload section only if no diagram exists */}
+                      {!question.diagram && !uploadingDiagram && (
                       <label
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
@@ -298,10 +885,15 @@ const QuestionCard = ({
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
                         <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
-                      {question.diagram && (
-                        <div className="mt-2 text-orange-400 text-xs">
-                          📎 {question.diagram.file}
-                        </div>
+                      )}
+                      {/* Show upload progress or diagram */}
+                      {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                        question.diagram, 
+                        false, 
+                        () => handleDiagramDelete('diagram'),
+                        (file) => handleDiagramReplace(file, 'diagram'),
+                        'diagram'
                       )}
                     </div>
                   </div>
@@ -450,12 +1042,15 @@ const QuestionCard = ({
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                            handleDiagramUpload(file, 'diagram');
                           }
                         }}
                         className="hidden"
+                        disabled={uploadingDiagram}
                         id={`diagram-upload-${question.id}`}
                       />
+                      {/* Show upload section only if no diagram exists */}
+                      {!question.diagram && !uploadingDiagram && (
                       <label
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
@@ -464,10 +1059,15 @@ const QuestionCard = ({
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
                         <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
-                      {question.diagram && (
-                        <div className="mt-2 text-orange-400 text-xs">
-                          📎 {question.diagram.file}
-                        </div>
+                      )}
+                      {/* Show upload progress or diagram */}
+                      {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                        question.diagram, 
+                        false, 
+                        () => handleDiagramDelete('diagram'),
+                        (file) => handleDiagramReplace(file, 'diagram'),
+                        'diagram'
                       )}
                     </div>
                   </div>
@@ -583,12 +1183,15 @@ const QuestionCard = ({
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                            handleDiagramUpload(file, 'diagram');
                           }
                         }}
                         className="hidden"
+                        disabled={uploadingDiagram}
                         id={`diagram-upload-${question.id}`}
                       />
+                      {/* Show upload section only if no diagram exists */}
+                      {!question.diagram && !uploadingDiagram && (
                       <label
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
@@ -597,10 +1200,15 @@ const QuestionCard = ({
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
                         <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
-                      {question.diagram && (
-                        <div className="mt-2 text-orange-400 text-xs">
-                          📎 {question.diagram.file}
-                        </div>
+                      )}
+                      {/* Show upload progress or diagram */}
+                      {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                        question.diagram, 
+                        false, 
+                        () => handleDiagramDelete('diagram'),
+                        (file) => handleDiagramReplace(file, 'diagram'),
+                        'diagram'
                       )}
                     </div>
                   </div>
@@ -701,12 +1309,15 @@ const QuestionCard = ({
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                            handleDiagramUpload(file, 'diagram');
                           }
                         }}
                         className="hidden"
+                        disabled={uploadingDiagram}
                         id={`diagram-upload-${question.id}`}
                       />
+                      {/* Show upload section only if no diagram exists */}
+                      {!question.diagram && !uploadingDiagram && (
                       <label
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
@@ -715,10 +1326,15 @@ const QuestionCard = ({
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
                         <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
-                      {question.diagram && (
-                        <div className="mt-2 text-orange-400 text-xs">
-                          📎 {question.diagram.file}
-                        </div>
+                      )}
+                      {/* Show upload progress or diagram */}
+                      {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                        question.diagram, 
+                        false, 
+                        () => handleDiagramDelete('diagram'),
+                        (file) => handleDiagramReplace(file, 'diagram'),
+                        'diagram'
                       )}
                     </div>
                   </div>
@@ -820,12 +1436,15 @@ const QuestionCard = ({
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            onUpdate({ diagram: { file: file.name, url: URL.createObjectURL(file) } });
+                            handleDiagramUpload(file, 'diagram');
                           }
                         }}
                         className="hidden"
+                        disabled={uploadingDiagram}
                         id={`diagram-upload-${question.id}`}
                       />
+                      {/* Show upload section only if no diagram exists */}
+                      {!question.diagram && !uploadingDiagram && (
                       <label
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
@@ -834,10 +1453,15 @@ const QuestionCard = ({
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
                         <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
-                      {question.diagram && (
-                        <div className="mt-2 text-orange-400 text-xs">
-                          📎 {question.diagram.file}
-                        </div>
+                      )}
+                      {/* Show upload progress or diagram */}
+                      {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                        question.diagram, 
+                        false, 
+                        () => handleDiagramDelete('diagram'),
+                        (file) => handleDiagramReplace(file, 'diagram'),
+                        'diagram'
                       )}
                     </div>
                   </div>
@@ -969,13 +1593,14 @@ const QuestionCard = ({
                   onChange={(e) => {
                     const file = e.target.files[0];
                     if (file) {
-                      // In a real implementation, you'd upload the file and get a URL
-                      handleDiagramChange({ file: file.name, url: URL.createObjectURL(file) });
+                      handleDiagramUpload(file, 'diagram');
                     }
                   }}
                   className="hidden"
                   id={`diagram-upload-${question.id}`}
                 />
+                {/* Show upload section only if no diagram exists */}
+                {!question.diagram && !uploadingDiagram && (
                 <label
                   htmlFor={`diagram-upload-${question.id}`}
                   className="cursor-pointer flex flex-col items-center"
@@ -984,10 +1609,14 @@ const QuestionCard = ({
                     <p className="text-white font-medium mb-1">Upload Diagram</p>
                     <p className="text-gray-400 text-sm">PNG, JPG, SVG, PDF supported</p>
                 </label>
-                {question.diagram && (
-                  <div className="mt-3 text-orange-400 text-sm">
-                    📎 {question.diagram.file}
-                  </div>
+                )}
+                {uploadingDiagram && renderDiagramDisplay(null, true)}
+                {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                  question.diagram, 
+                  false, 
+                  () => handleDiagramDelete('diagram'),
+                  (file) => handleDiagramReplace(file, 'diagram'),
+                  'diagram'
                 )}
               </div>
             </div>
@@ -1153,10 +1782,11 @@ const QuestionCard = ({
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            onUpdate({ mainDiagram: { file: file.name, url: URL.createObjectURL(file) } });
+                            handleDiagramUpload(file, 'mainDiagram');
                           }
                         }}
                         className="hidden"
+                        disabled={uploadingDiagram}
                         id={`main-diagram-upload-${question.id}`}
                       />
                       <label
@@ -1167,10 +1797,13 @@ const QuestionCard = ({
                         <p className="text-white font-medium text-sm mb-1">Upload Main Diagram</p>
                         <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
-                      {question.mainDiagram && (
-                        <div className="mt-2 text-orange-400 text-xs">
-                          📎 {question.mainDiagram.file}
-                        </div>
+                      {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {question.mainDiagram && !uploadingDiagram && renderDiagramDisplay(
+                        question.mainDiagram, 
+                        false, 
+                        () => handleDiagramDelete('mainDiagram'),
+                        (file) => handleDiagramReplace(file, 'mainDiagram'),
+                        'mainDiagram'
                       )}
                     </div>
                   </div>
@@ -1321,12 +1954,15 @@ const QuestionCard = ({
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
-                                  handleSubquestionChange(subIndex, 'subDiagram', { file: file.name, url: URL.createObjectURL(file) });
+                                  handleSubquestionDiagramUpload(file, subIndex);
                                 }
                               }}
                               className="hidden"
+                              disabled={uploadingDiagram}
                               id={`subq-diagram-upload-${question.id}-${subIndex}`}
                             />
+                            {/* Show upload section only if no sub-diagram exists */}
+                            {!subq.subDiagram && !uploadingDiagram && (
                             <label
                               htmlFor={`subq-diagram-upload-${question.id}-${subIndex}`}
                               className="cursor-pointer flex flex-col items-center"
@@ -1335,9 +1971,16 @@ const QuestionCard = ({
                               <p className="text-white font-medium text-xs mb-1">Upload Diagram</p>
                               <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                             </label>
-                            {subq.subDiagram && (
-                              <div className="mt-2 text-orange-400 text-xs">
-                                📎 {subq.subDiagram.file}
+                            )}
+                            {subq.subDiagram && !uploadingDiagram && (
+                              <div className="mt-2">
+                                {renderDiagramDisplay(
+                                  subq.subDiagram, 
+                                  false, 
+                                  () => handleSubquestionDiagramDelete(subIndex),
+                                  (file) => handleSubquestionDiagramReplace(file, subIndex),
+                                  'subDiagram'
+                                )}
                               </div>
                             )}
                           </div>
@@ -1807,6 +2450,7 @@ const QuestionCard = ({
   };
 
   return (
+    <>
     <div className="bg-gray-800 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
       {/* Question Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
@@ -1911,6 +2555,10 @@ const QuestionCard = ({
         </div>
       )}
     </div>
+    
+    {/* Render Preview Modal */}
+    {renderPreviewModal()}
+  </> 
   );
 };
 

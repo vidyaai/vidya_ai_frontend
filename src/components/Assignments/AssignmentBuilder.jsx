@@ -193,22 +193,46 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         errors.push(`Question ${questionNum}: Diagram must be present when Include Diagram is checked`);
       }
       
-      // Check multiple choice options
+      // Check multiple choice options and answers
       if (question.type === 'multiple-choice') {
         const validOptions = question.options?.filter(opt => opt && opt.trim() !== '') || [];
         if (validOptions.length < 2) {
           errors.push(`Question ${questionNum}: At least two options must be present for multiple choice questions`);
         }
+        
+        // Check correct answers based on single vs multiple correct
+        if (question.allowMultipleCorrect) {
+          if (!question.multipleCorrectAnswers || question.multipleCorrectAnswers.length === 0) {
+            errors.push(`Question ${questionNum}: At least one correct answer must be selected for multiple choice questions`);
+          }
+        } else {
+          if (!question.correctAnswer || question.correctAnswer.trim() === '') {
+            errors.push(`Question ${questionNum}: A correct answer must be selected for multiple choice questions`);
+          }
+        }
+      } else if (question.type !== 'multi-part') {
+        // Check Sample Answer requirement for non-multiple-choice, non-multi-part questions
+        if (!question.correctAnswer || question.correctAnswer.trim() === '') {
+          errors.push(`Question ${questionNum}: Sample Answer cannot be empty`);
+        }
       }
       
-      // Check Sample Answer requirement
-      if (!question.correctAnswer || question.correctAnswer.trim() === '') {
-        errors.push(`Question ${questionNum}: Sample Answer cannot be empty`);
-      }
-      
-      // Check Rubric requirement
-      if (!question.rubric || question.rubric.trim() === '') {
-        errors.push(`Question ${questionNum}: Rubric cannot be empty`);
+      // Check Rubric requirement (varies for multi-part vs other questions)
+      if (question.type === 'multi-part') {
+        // For multi-part questions, check based on rubricType
+        if (question.rubricType === 'per-subquestion') {
+          // No overall rubric required, but each sub-question must have one (checked below)
+        } else {
+          // Default is 'overall' rubric required
+          if (!question.rubric || question.rubric.trim() === '') {
+            errors.push(`Question ${questionNum}: Overall rubric cannot be empty for multi-part questions`);
+          }
+        }
+      } else {
+        // For non-multi-part questions, always require rubric
+        if (!question.rubric || question.rubric.trim() === '') {
+          errors.push(`Question ${questionNum}: Rubric cannot be empty`);
+        }
       }
       
       // Validate sub-questions for multi-part questions
@@ -235,22 +259,33 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             errors.push(`Sub-question ${subNum}: Diagram must be present when Include Diagram is checked`);
           }
           
-          // Check sub-question multiple choice options
+          // Check sub-question multiple choice options and answers
           if (subQ.type === 'multiple-choice') {
             const validSubOptions = subQ.options?.filter(opt => opt && opt.trim() !== '') || [];
             if (validSubOptions.length < 2) {
               errors.push(`Sub-question ${subNum}: At least two options must be present for multiple choice questions`);
             }
-          }
-          
-          // Check sub-question sample answer
-          if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
-            errors.push(`Sub-question ${subNum}: Sample Answer cannot be empty`);
+            
+            // Check correct answers based on single vs multiple correct
+            if (subQ.allowMultipleCorrect) {
+              if (!subQ.multipleCorrectAnswers || subQ.multipleCorrectAnswers.length === 0) {
+                errors.push(`Sub-question ${subNum}: At least one correct answer must be selected for multiple choice questions`);
+              }
+            } else {
+              if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
+                errors.push(`Sub-question ${subNum}: A correct answer must be selected for multiple choice questions`);
+              }
+            }
+          } else {
+            // Check sample answer for non-multiple-choice sub-questions
+            if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
+              errors.push(`Sub-question ${subNum}: Sample Answer cannot be empty`);
+            }
           }
           
           // Check sub-question rubric (if using per-subquestion rubrics)
           if (question.rubricType === 'per-subquestion' && (!subQ.rubric || subQ.rubric.trim() === '')) {
-            errors.push(`Sub-question ${subNum}: Rubric cannot be empty`);
+            errors.push(`Sub-question ${subNum}: Rubric cannot be empty when using per-subquestion rubrics`);
           }
           
           // Validate sub-sub-questions
@@ -263,17 +298,28 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 errors.push(`Sub-sub-question ${subSubNum}: Question text cannot be empty`);
               }
               
-              // Check sub-sub-question multiple choice options
+              // Check sub-sub-question multiple choice options and answers
               if (subSubQ.type === 'multiple-choice') {
                 const validSubSubOptions = subSubQ.options?.filter(opt => opt && opt.trim() !== '') || [];
                 if (validSubSubOptions.length < 2) {
                   errors.push(`Sub-sub-question ${subSubNum}: At least two options must be present for multiple choice questions`);
                 }
-              }
-              
-              // Check sub-sub-question sample answer
-              if (!subSubQ.correctAnswer || subSubQ.correctAnswer.trim() === '') {
-                errors.push(`Sub-sub-question ${subSubNum}: Sample Answer cannot be empty`);
+                
+                // Check correct answers based on single vs multiple correct
+                if (subSubQ.allowMultipleCorrect) {
+                  if (!subSubQ.multipleCorrectAnswers || subSubQ.multipleCorrectAnswers.length === 0) {
+                    errors.push(`Sub-sub-question ${subSubNum}: At least one correct answer must be selected for multiple choice questions`);
+                  }
+                } else {
+                  if (!subSubQ.correctAnswer || subSubQ.correctAnswer.trim() === '') {
+                    errors.push(`Sub-sub-question ${subSubNum}: A correct answer must be selected for multiple choice questions`);
+                  }
+                }
+              } else {
+                // Check sample answer for non-multiple-choice sub-sub-questions
+                if (!subSubQ.correctAnswer || subSubQ.correctAnswer.trim() === '') {
+                  errors.push(`Sub-sub-question ${subSubNum}: Sample Answer cannot be empty`);
+                }
               }
               
               // Check sub-sub-question rubric

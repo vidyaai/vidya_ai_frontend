@@ -2078,7 +2078,7 @@ const QuestionCard = ({
                       )}
 
                       {/* Correct answer for other sub-question types */}
-                      {!['multiple-choice', 'true-false'].includes(subq.type) && (
+                      {!['multiple-choice', 'true-false', 'multi-part'].includes(subq.type) && (
                         <div className="mt-3">
                           <label className="block text-xs font-medium text-teal-300 mb-2">
                             {subq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Optional)'}

@@ -219,6 +219,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       
       // Check Rubric requirement (varies for multi-part vs other questions)
       if (question.type === 'multi-part') {
+        // Check if multi-part question has sub-questions
+        if (!question.subquestions || question.subquestions.length === 0) {
+          errors.push(`Question ${questionNum}: Multi-part questions must have at least one sub-question`);
+        }
+        
         // For multi-part questions, check based on rubricType
         if (question.rubricType === 'per-subquestion') {
           // No overall rubric required, but each sub-question must have one (checked below)
@@ -276,16 +281,40 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 errors.push(`Sub-question ${subNum}: A correct answer must be selected for multiple choice questions`);
               }
             }
-          } else {
-            // Check sample answer for non-multiple-choice sub-questions
+          } else if (subQ.type !== 'multi-part') {
+            // Check sample answer for non-multiple-choice, non-multi-part sub-questions
             if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
               errors.push(`Sub-question ${subNum}: Sample Answer cannot be empty`);
             }
           }
           
+          // Check if multi-part sub-question has sub-sub-questions
+          if (subQ.type === 'multi-part') {
+            if (!subQ.subquestions || subQ.subquestions.length === 0) {
+              errors.push(`Sub-question ${subNum}: Multi-part sub-questions must have at least one sub-part`);
+            }
+            
+            // For multi-part sub-questions, check their own rubric configuration
+            if (subQ.rubricType === 'per-subquestion') {
+              // No overall rubric required for this multi-part sub-question, 
+              // but each of its sub-sub-questions must have rubrics (checked below)
+            } else {
+              // Default is 'overall' rubric required for the multi-part sub-question
+              if (!subQ.rubric || subQ.rubric.trim() === '') {
+                errors.push(`Sub-question ${subNum}: Overall rubric cannot be empty for multi-part sub-questions`);
+              }
+            }
+          }
+          
           // Check sub-question rubric (if using per-subquestion rubrics)
-          if (question.rubricType === 'per-subquestion' && (!subQ.rubric || subQ.rubric.trim() === '')) {
-            errors.push(`Sub-question ${subNum}: Rubric cannot be empty when using per-subquestion rubrics`);
+          if (question.rubricType === 'per-subquestion') {
+            if (subQ.type !== 'multi-part') {
+              // For non-multi-part sub-questions, always require rubric when parent uses per-subquestion
+              if (!subQ.rubric || subQ.rubric.trim() === '') {
+                errors.push(`Sub-question ${subNum}: Rubric cannot be empty when using per-subquestion rubrics`);
+              }
+            }
+            // Note: Multi-part sub-questions are handled in the block above
           }
           
           // Validate sub-sub-questions
@@ -322,9 +351,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 }
               }
               
-              // Check sub-sub-question rubric
-              if (!subSubQ.rubric || subSubQ.rubric.trim() === '') {
-                errors.push(`Sub-sub-question ${subSubNum}: Rubric cannot be empty`);
+              // Check sub-sub-question rubric (only required if parent sub-question uses per-subquestion rubrics)
+              if (subQ.rubricType === 'per-subquestion' && (!subSubQ.rubric || subSubQ.rubric.trim() === '')) {
+                errors.push(`Sub-sub-question ${subSubNum}: Rubric cannot be empty when using per-subquestion rubrics`);
               }
             });
           }

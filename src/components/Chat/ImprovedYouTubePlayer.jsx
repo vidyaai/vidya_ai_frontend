@@ -1,4 +1,4 @@
-// ImprovedYoutubePlayer.jsx - Main component with Quiz integration
+// ImprovedYoutubePlayer.jsx - Main component with Quiz integration (STABLE FIX)
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Youtube, Menu, Home, MessageSquare, Globe, Upload } from 'lucide-react';
 import YoutubeDownloader from './YoutubeDownloader';
@@ -42,6 +42,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [showVideoUploader, setShowVideoUploader] = useState(true);
   
   const menuRef = useRef(null);
+  const lastSelectedRef = useRef(null);
+  const isLoadingRef = useRef(false); // Prevent multiple concurrent loads
 
   // Ensure we always use an absolute URL for uploaded videos
   const buildAbsoluteVideoUrl = useCallback((maybeUrl) => {
@@ -56,12 +58,12 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     }
   }, []);
 
-  // Load selected video from gallery only when the selection object changes (identity-based)
-  const lastSelectedRef = useRef(null);
+  // Simplified selected video handling
   useEffect(() => {
     if (!isUploadCompleting) {
       if (selectedVideo && selectedVideo.videoId) {
-        if (selectedVideo !== lastSelectedRef.current) {
+        if (selectedVideo !== lastSelectedRef.current && !isLoadingRef.current) {
+          console.log("Selected video changed, loading:", selectedVideo.videoId);
           lastSelectedRef.current = selectedVideo;
           loadSelectedVideo(selectedVideo);
         }
@@ -89,31 +91,24 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   };
 
   const loadSelectedVideo = async (videoData) => {
+    console.log("loadSelectedVideo called with:", videoData);
     if (!videoData || !videoData.videoId) {
       setErrorMessage("Invalid video data provided");
       return;
     }
 
     // Prevent loading if we're in the middle of an upload completion
-    if (isUploadCompleting) {
+    if (isUploadCompleting || isLoadingRef.current) {
       return;
     }
 
+    isLoadingRef.current = true;
     setIsLoading(true);
     setErrorMessage('');
-    setTranscript('');
-    setChatMessages([]);
-    setIsQuizOpen(false);
-    setSystemMessages([]);
-    setShowVideoUploader(true); // Show uploader when loading selected video
-
-    // If the same video is selected again, still trigger a refresh to reset chat/transcript
-    // This ensures the UI reloads even when re-selecting the same video from gallery
-    const isSameVideo = currentVideo.videoId === videoData.videoId && currentVideo.sourceType === videoData.sourceType;
+    setShowVideoUploader(true);
 
     try {
       if (videoData.sourceType === 'youtube') {
-        // For YouTube videos, we need to fetch transcript
         const response = await api.post(`/api/youtube/info`, {
           url: `https://www.youtube.com/watch?v=${videoData.videoId}`
         }, {
@@ -123,12 +118,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           }
         });
 
-        if (response.data.transcript) {
-          setTranscript(response.data.transcript);
-        } else {
-          setTranscript("No transcript available for this video.");
-        }
-
+        setTranscript(response.data.transcript || "No transcript available for this video.");
         setCurrentVideo({
           title: response.data.title || videoData.title || "YouTube Video",
           source: videoData.source,
@@ -137,10 +127,11 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           videoUrl: '',
           isShared: videoData.isShared || false,
           shareToken: videoData.shareToken || null,
-          shareId: videoData.shareId || null
+          shareId: videoData.shareId || null,
+          loadTimestamp: Date.now()
         });
       } else {
-        // For uploaded videos, fetch info from API
+        // For uploaded videos
         const response = await api.get(`/api/user-videos/info`, {
           params: { 
             video_id: videoData.videoId,
@@ -159,7 +150,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             videoUrl: buildAbsoluteVideoUrl(response.data.video_url || videoData.videoUrl),
             isShared: videoData.isShared || false,
             shareToken: videoData.shareToken || null,
-            shareId: videoData.shareId || null
+            shareId: videoData.shareId || null,
+            loadTimestamp: Date.now()
           });
         } else {
           setCurrentVideo({
@@ -170,7 +162,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             videoUrl: videoData.videoUrl,
             isShared: videoData.isShared || false,
             shareToken: videoData.shareToken || null,
-            shareId: videoData.shareId || null
+            shareId: videoData.shareId || null,
+            loadTimestamp: Date.now()
           });
         }
       }
@@ -180,32 +173,29 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       newUrl.searchParams.set('v', videoData.videoId);
       window.history.replaceState({}, '', newUrl);
 
-      // Force refresh effects when same video is re-selected
-      if (isSameVideo) {
-        // Toggle videoId briefly to ensure dependent components reset
-        setCurrentVideo(prev => ({ ...prev, videoId: '' }));
-        setTimeout(() => {
-          setCurrentVideo(prev => ({ ...prev, videoId: videoData.videoId }));
-        }, 0);
-      }
+      // Reset chat/quiz state
+      setChatMessages([]);
+      setIsQuizOpen(false);
+      setSystemMessages([]);
 
     } catch (error) {
       console.error("Error loading selected video:", error);
       setErrorMessage(error.response?.data?.detail || error.message || "Failed to load video");
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
   const handleYoutubeSubmit = async (e) => {
     e.preventDefault();
     
-    if (!youtubeUrl.trim()) return;
+    if (!youtubeUrl.trim() || isLoadingRef.current) return;
     
+    isLoadingRef.current = true;
     setIsLoading(true);
     setErrorMessage('');
-    setTranscript('');
-    setShowVideoUploader(true); // Show uploader when loading new video
+    setShowVideoUploader(true);
     
     try {
       let videoId = '';
@@ -223,45 +213,22 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         throw new Error("Could not extract video ID from URL");
       }
       
-      if (currentVideo.videoId === videoId) {
-        console.log("Same video already loaded");
-        setIsLoading(false);
+      if (currentVideo.videoId === videoId && currentVideo.sourceType === 'youtube') {
+        console.log("Same YouTube video already loaded");
         return;
       }
       
-      let response;
-      try {
-        response = await api.post(`/api/youtube/info`, {
-          url: youtubeUrl
-        }, {
-          timeout: 60000,
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
-          }
-        });
-      } catch (networkError) {
-        if (networkError.code === 'ERR_NETWORK_CHANGED') {
-          console.log("Network changed, retrying...");
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          response = await api.post(`/api/youtube/info`, {
-            url: youtubeUrl
-          }, {
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true'
-            }
-          });
-        } else {
-          throw networkError;
+      const response = await api.post(`/api/youtube/info`, {
+        url: youtubeUrl
+      }, {
+        timeout: 60000,
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         }
-      }
+      });
       
-      if (response.data.transcript) {
-        setTranscript(response.data.transcript);
-      } else {
-        setTranscript("No transcript available for this video.");
-      }
+      setTranscript(response.data.transcript || "No transcript available for this video.");
       
       setCurrentVideo({
         title: response.data.title || "YouTube Video", 
@@ -271,7 +238,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         videoUrl: '',
         isShared: false, // YouTube videos are not shared
         shareToken: null,
-        shareId: null
+        shareId: null,
+        loadTimestamp: Date.now()
       });
 
       const newUrl = new URL(window.location);
@@ -279,7 +247,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       window.history.replaceState({}, '', newUrl);
       
       setChatMessages([]);
-      setIsQuizOpen(false); // Close quiz when new video loads
+      setIsQuizOpen(false);
       setSystemMessages([]);
       
     } catch (error) {
@@ -287,35 +255,41 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       setErrorMessage(error.message || "Failed to load video");
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
   const handleUploadComplete = useCallback(async (videoId) => {
+    console.log("Upload completion started for video ID:", videoId);
     if (!videoId) {
       return;
     }
     
+    if (isLoadingRef.current) {
+      console.log("Already loading, skipping upload complete");
+      return;
+    }
+
+    isLoadingRef.current = true;
     setIsUploadCompleting(true);
     setYoutubeUrl('');
-    setTranscript('');
-    setChatMessages([]);
-    setIsQuizOpen(false);
-    setSystemMessages([]);
+    setErrorMessage('');
     
     // Immediately mark this as an uploaded video to prevent clearing
     lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
     
     try {
-      // Fetch video info from API
       const response = await api.get(`/api/user-videos/info`, {
         params: { video_id: videoId },
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
       if (response.data) {
+        console.log("Upload completion: Setting video data for ID:", videoId);
+        
         setTranscript(response.data.transcript || '');
         
-        const newVideoData = {
+        const newVideoObject = {
           title: response.data.title || 'Uploaded Video',
           videoId: videoId,
           source: '',
@@ -323,21 +297,25 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           videoUrl: buildAbsoluteVideoUrl(response.data.video_url),
           isShared: false, // Uploaded videos are not shared
           shareToken: null,
-          shareId: null
+          shareId: null,
+          loadTimestamp: Date.now()
         };
         
-        // Clear the current video first to force a refresh, similar to loadSelectedVideo
-        setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+        console.log("Setting new uploaded video object:", newVideoObject);
+        setCurrentVideo(newVideoObject);
         
-        // Then set the new video data after a brief delay to ensure the PlayerComponent reacts
-        setTimeout(() => {
-          setCurrentVideo(newVideoData);
-          
-          // Update URL to reflect the uploaded video
-          const newUrl = new URL(window.location);
-          newUrl.searchParams.set('v', videoId);
-          window.history.replaceState({}, '', newUrl);
-        }, 50);
+        // Update URL
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('v', videoId);
+        window.history.replaceState({}, '', newUrl);
+
+        // Reset state
+        setChatMessages([]);
+        setIsQuizOpen(false);
+        setSystemMessages([]);
+
+        // Update refs to prevent conflicts
+        lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
       } else {
         setErrorMessage('Upload completed but no video data received');
       }
@@ -347,8 +325,9 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       lastSelectedRef.current = null;
     } finally {
       setIsUploadCompleting(false);
+      isLoadingRef.current = false;
     }
-  }, []);
+  }, [buildAbsoluteVideoUrl]);
 
   const handleUploadSuccess = useCallback(() => {
     setShowVideoUploader(false);
@@ -534,7 +513,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
   const handleQuizSystemMessage = (message) => {
     setSystemMessages(prev => [...prev, message]);
-    
   };
 
   const handleStartQuiz = () => {
@@ -563,10 +541,12 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     };
   }, [menuRef]);
 
-  // Save to localStorage when state changes
+  // Save to localStorage when state changes (but not loadTimestamp)
   useEffect(() => {
     if (currentVideo.videoId) {
-      saveToLocalStorage('currentVideo', currentVideo);
+      const videoToSave = { ...currentVideo };
+      delete videoToSave.loadTimestamp; // Don't persist timestamp
+      saveToLocalStorage('currentVideo', videoToSave);
     }
   }, [currentVideo]);
 
@@ -585,12 +565,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     const urlParams = new URLSearchParams(window.location.search);
     const videoIdFromUrl = urlParams.get('v');
     
-    // Only handle URL parameters if no selectedVideo is provided and no video is currently loaded
-    // and we're not in the middle of an upload process
-    if (videoIdFromUrl && !currentVideo.videoId && !youtubeUrl && !selectedVideo) {
+    if (videoIdFromUrl && !currentVideo.videoId && !youtubeUrl && !selectedVideo && !isLoadingRef.current) {
       setYoutubeUrl(`https://www.youtube.com/watch?v=${videoIdFromUrl}`);
     }
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
   
   return (
     <div className="w-full">
@@ -614,11 +592,12 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
               onChange={(e) => setYoutubeUrl(e.target.value)}
               placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
               className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-gray-400 shadow-lg"
+              disabled={isLoading}
             />
           </div>
           <button 
             type="submit"
-            className="px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center"
+            className="px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -642,6 +621,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
               onClick={() => setShowVideoUploader(true)}
               className="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center"
               title="Upload another video"
+              disabled={isLoading}
             >
               <Upload size={20} className="mr-2" />
               <span>Upload Another Video</span>
@@ -669,7 +649,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       <div className="flex flex-col xl:flex-row gap-8 mt-6 w-full">
         <div className="w-full xl:w-3/5">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10 rounded-2xl">
               <div className="flex flex-col items-center">
                 <SimpleSpinner size={48} className="mb-4" />
                 <p className="text-white text-lg">Loading video...</p>

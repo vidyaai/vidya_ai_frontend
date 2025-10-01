@@ -5,6 +5,7 @@ import AuthForm from './components/Login/AuthForm';
 import HomePage from './components/HomePage/HomePage';
 import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
 import Gallery from './components/Gallery/Gallery';
+import PricingPage from './components/PricingPage';
 import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
@@ -52,6 +53,7 @@ const getInitialPage = () => {
   if (path === '/gallery') return 'gallery';
   if (path === '/translate') return 'translate';
   if (path === '/assignments') return 'assignments';
+  if (path === '/pricing') return 'pricing';
   return 'home';
 };
 
@@ -98,6 +100,12 @@ const AppContent = () => {
     setCurrentPage('assignments');
     setSelectedVideo(null);
     window.history.pushState({ page: 'assignments' }, '', '/assignments');
+  };
+
+  const handleNavigateToPricing = () => {
+    setCurrentPage('pricing');
+    setSelectedVideo(null);
+    window.history.pushState({ page: 'pricing' }, '', '/pricing');
   };
 
   // Handle browser back/forward buttons
@@ -179,6 +187,8 @@ const AppContent = () => {
         setCurrentPage('translate');
       } else if (newUrl === '/assignments') {
         setCurrentPage('assignments');
+      } else if (newUrl === '/pricing') {
+        setCurrentPage('pricing');
       } else {
         setCurrentPage('home');
       }
@@ -203,6 +213,7 @@ const AppContent = () => {
             onNavigateToTranslate={handleNavigateToTranslate}
             onNavigateToGallery={handleNavigateToGallery}
             onNavigateToAssignments={handleNavigateToAssignments}
+            onNavigateToPricing={handleNavigateToPricing}
           />
         );
       case 'chat':
@@ -217,6 +228,7 @@ const AppContent = () => {
                 onNavigateToGallery={handleNavigateToGallery}
                 onNavigateToTranslate={handleNavigateToTranslate}
                 onNavigateToHome={handleNavigateToHome}
+                onNavigateToPricing={handleNavigateToPricing}
               />
               <ImprovedYoutubePlayer 
                 onNavigateToHome={handleNavigateToHome}
@@ -239,6 +251,7 @@ const AppContent = () => {
                   onNavigateToGallery={handleNavigateToGallery}
                   onNavigateToTranslate={handleNavigateToTranslate}
                   onNavigateToHome={handleNavigateToHome}
+                  onNavigateToPricing={handleNavigateToPricing}
                 />
                 <Gallery onNavigateToChat={handleNavigateToChat} />
               </div>
@@ -257,6 +270,7 @@ const AppContent = () => {
                   onNavigateToGallery={handleNavigateToGallery}
                   onNavigateToTranslate={handleNavigateToTranslate}
                   onNavigateToHome={handleNavigateToHome}
+                  onNavigateToPricing={handleNavigateToPricing}
                 />
                 <TranslatePage 
                   onNavigateToHome={handleNavigateToHome}
@@ -271,6 +285,16 @@ const AppContent = () => {
           <ProtectedRoute>
             <AssignmentManager onNavigateToHome={handleNavigateToHome} />
           </ProtectedRoute>
+        );
+      case 'pricing':
+        return (
+          <PricingPage 
+            onNavigateToHome={handleNavigateToHome}
+            onNavigateToChat={handleNavigateToChat}
+            onNavigateToGallery={handleNavigateToGallery}
+            onNavigateToTranslate={handleNavigateToTranslate}
+            onNavigateToPricing={handleNavigateToPricing}
+          />
         );
       case 'shared':
         return (
@@ -295,6 +319,7 @@ const AppContent = () => {
             onNavigateToTranslate={handleNavigateToTranslate}
             onNavigateToGallery={handleNavigateToGallery}
             onNavigateToAssignments={handleNavigateToAssignments}
+            onNavigateToPricing={handleNavigateToPricing}
           />
         );
     }

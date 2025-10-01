@@ -1,4 +1,4 @@
-// PlayerComponent.jsx - YouTube player with controls
+// PlayerComponent.jsx - Simple fix for uploaded video container issue
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, VolumeX, Volume2, Rewind, FastForward } from 'lucide-react';
 import { formatTime } from '../generic/utils.jsx';
@@ -19,9 +19,12 @@ const PlayerComponent = ({
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isHtml5, setIsHtml5] = useState(false);
+  const [loadingState, setLoadingState] = useState('');
   
   const playerContainerRef = useRef(null);
   const html5Ref = useRef(null);
+  const lastVideoIdRef = useRef(null);
+  const lastVideoUrlRef = useRef(null);
   
   useEffect(() => {
     if (!window.YT) {
@@ -58,15 +61,16 @@ const PlayerComponent = ({
     console.log("Initializing YouTube player with video ID:", videoId);
     setIsInitializing(true);
     
+    // Clean up existing player
     if (player && typeof player.destroy === 'function') {
       try {
         player.destroy();
       } catch (e) {
         console.warn('Error destroying player:', e);
       }
-      setPlayer(null);
-      setPlayerReady(false);
     }
+    setPlayer(null);
+    setPlayerReady(false);
     
     recreatePlayerDiv();
     
@@ -84,8 +88,7 @@ const PlayerComponent = ({
             showinfo: 0,
             modestbranding: 1,
             enablejsapi: 1,
-            origin: 'https://vidyaai.co',
-            host: 'https://www.youtube.com'
+            origin: window.location.origin
           },
           events: {
             onReady: onPlayerReadyInternal,
@@ -102,21 +105,15 @@ const PlayerComponent = ({
       }
     };
     
-    if (currentVideo.videoId === videoId && player && playerReady) {
-      console.log("Player already exists for this video, skipping initialization");
-      setIsInitializing(false);
-      return;
-    }
-    
     if (window.YT && window.YT.Player && window.YT.loaded) {
-      setTimeout(initPlayer, 300);
+      setTimeout(initPlayer, 100);
     } else if (window.YT && window.YT.Player) {
-      setTimeout(initPlayer, 600);
+      setTimeout(initPlayer, 300);
     } else {
       console.log("YouTube API not ready, setting up callback");
       window.onYouTubeIframeAPIReady = () => {
         console.log("YouTube API ready callback triggered");
-        setTimeout(initPlayer, 400);
+        setTimeout(initPlayer, 200);
       };
     }
   };
@@ -130,11 +127,6 @@ const PlayerComponent = ({
       setPlayer(playerInstance);
       setIsInitializing(false);
       
-      setTimeout(() => {
-        updatePlayerState();
-      }, 100);
-      
-      // Notify parent component
       if (onPlayerReady) {
         onPlayerReady(playerInstance);
       }
@@ -168,6 +160,7 @@ const PlayerComponent = ({
       setDuration(el.duration || 0);
       return;
     }
+    
     if (!player || typeof player.getPlayerState !== 'function') return;
     
     try {
@@ -183,7 +176,6 @@ const PlayerComponent = ({
         setCurrentTime(current);
         setSliderPosition(current);
         
-        // Notify parent component about time updates
         if (onTimeUpdate) {
           onTimeUpdate(current);
         }
@@ -203,103 +195,209 @@ const PlayerComponent = ({
     }, 1000);
     
     return () => clearInterval(intervalId);
-  }, [player, isDraggingSlider]);
+  }, [player, isDraggingSlider, isHtml5]);
   
-
-  
-  useEffect(() => {
-    const html5Source = currentVideo?.sourceType === 'uploaded' && currentVideo?.videoUrl;
-    setIsHtml5(!!html5Source);
+  const resetPlayerState = () => {
     setCurrentTime(0);
     setSliderPosition(0);
     setDuration(0);
-    if (html5Source) {
+    setIsPlaying(false);
+    setPlayerReady(false);
+    setLoadingState('');
+  };
+
+  useEffect(() => {
+    const html5Source = currentVideo?.sourceType === 'uploaded' && currentVideo?.videoUrl;
+    setIsHtml5(!!html5Source);
+  }, [currentVideo?.sourceType, currentVideo?.videoUrl]);
+
+  // Enhanced video change detection that properly handles uploads
+  useEffect(() => {
+    const isUploadedVideo = currentVideo?.sourceType === 'uploaded';
+    const currentVideoId = currentVideo?.videoId;
+    const currentVideoUrl = currentVideo?.videoUrl;
+    const loadTimestamp = currentVideo?.loadTimestamp;
+
+    console.log("=== VIDEO CHANGE DETECTION ===");
+    console.log("Is uploaded video:", isUploadedVideo);
+    console.log("Video ID:", currentVideoId);
+    console.log("Video URL:", currentVideoUrl);
+    console.log("Load timestamp:", loadTimestamp);
+    console.log("Last video ID:", lastVideoIdRef.current);
+    console.log("Last video URL:", lastVideoUrlRef.current);
+
+    // Create a comprehensive key that includes all identifying properties
+    const currentVideoKey = `${currentVideoId}-${currentVideoUrl}-${loadTimestamp}`;
+    const lastVideoKey = `${lastVideoIdRef.current}-${lastVideoUrlRef.current}-${loadTimestamp}`;
+
+    // Detect if this is a different video than what's currently loaded
+    const videoChanged = currentVideoKey !== lastVideoKey || 
+                         currentVideoId !== lastVideoIdRef.current || 
+                         currentVideoUrl !== lastVideoUrlRef.current;
+
+    console.log("Current video key:", currentVideoKey);
+    console.log("Last video key:", lastVideoKey);
+    console.log("Video changed:", videoChanged);
+
+    if (videoChanged) {
+      console.log("NEW VIDEO DETECTED - FORCING SWITCH");
+      resetPlayerState();
+      
+      // Update refs IMMEDIATELY to prevent re-detection
+      lastVideoIdRef.current = currentVideoId;
+      lastVideoUrlRef.current = currentVideoUrl;
+      
+      // Clean up YouTube player if exists
       if (player && typeof player.destroy === 'function') {
-        try { player.destroy(); } catch (e) {}
-      }
-      setPlayer(null);
-      setPlayerReady(false);
-      
-      // Use a small delay to ensure the video element is rendered
-      const setupVideo = () => {
-        const el = html5Ref.current;
-        if (el) {
-          // Force reload of the media element when URL changes
-          try { el.pause(); } catch (e) {}
-          el.removeAttribute('src');
-          el.load(); // Clear previous state
-          el.src = currentVideo.videoUrl;
-
-          const handleLoadedMetadata = () => {
-            setDuration(el.duration || 0);
-            if (onPlayerReady) onPlayerReady(null);
-          };
-          const handleCanPlay = () => {
-            // For uploaded videos, auto-play like gallery videos do
-            el.play().then(() => {
-              setIsPlaying(true);
-            }).catch(() => {
-              // Auto-play failed, but video is still playable
-            });
-          };
-          const handleError = () => {
-            // Surface a simple log to help debugging network/cors issues
-            console.warn('HTML5 video error event fired');
-          };
-          const handlePlay = () => {
-            setIsPlaying(true);
-          };
-          const handlePause = () => {
-            setIsPlaying(false);
-          };
-          const handleTimeUpdate = () => {
-            const cur = el.currentTime || 0;
-            setCurrentTime(cur);
-            setSliderPosition(cur);
-            if (onTimeUpdate) onTimeUpdate(cur);
-          };
-          const handleVolumeChange = () => {
-            setIsMuted(el.muted);
-          };
-          const handleEnded = () => {
-            setIsPlaying(false);
-          };
-
-          el.addEventListener('loadedmetadata', handleLoadedMetadata);
-          el.addEventListener('canplay', handleCanPlay);
-          el.addEventListener('error', handleError);
-          el.addEventListener('play', handlePlay);
-          el.addEventListener('pause', handlePause);
-          el.addEventListener('timeupdate', handleTimeUpdate);
-          el.addEventListener('volumechange', handleVolumeChange);
-          el.addEventListener('ended', handleEnded);
-          try { el.load(); } catch (e) {}
-        } else {
-          // Video element not found, retry after a short delay
-          setTimeout(setupVideo, 100);
-        }
-      };
-      
-      // Try immediately first, then with delay if needed
-      setupVideo();
-    } else if (currentVideo.videoId && !isInitializing) {
-      if (!player) {
-        const timer = setTimeout(() => {
-          initializeYouTubePlayer(currentVideo.videoId);
-        }, 500);
-        return () => clearTimeout(timer);
-      } else if (player && playerReady) {
         try {
-          if (typeof player.loadVideoById === 'function') {
-            player.loadVideoById(currentVideo.videoId);
-          }
-        } catch (error) {
-          console.error('Error loading new video:', error);
-          initializeYouTubePlayer(currentVideo.videoId);
+          console.log("Destroying YouTube player for new video");
+          player.destroy();
+        } catch (e) {
+          console.warn('Error destroying YouTube player:', e);
         }
+        setPlayer(null);
+        setPlayerReady(false);
       }
     }
-  }, [currentVideo.videoId, currentVideo.videoUrl, currentVideo.sourceType]);
+
+    setIsHtml5(isUploadedVideo);
+
+    if (isUploadedVideo && currentVideoUrl && videoChanged) {
+      console.log("LOADING NEW UPLOADED VIDEO - FORCED SWITCH");
+      console.log("New S3 URL:", currentVideoUrl);
+      
+      setLoadingState('Switching to new uploaded video...');
+      
+      // Use the existing video element (don't recreate it)
+      const el = html5Ref.current;
+      if (!el) {
+        console.error("No video element found - this should not happen");
+        setLoadingState('Error: Video element missing');
+        return;
+      }
+
+      // FORCE a complete reset of the video element
+      try {
+        console.log("FORCING video element reset for new video");
+        el.pause();
+        el.currentTime = 0;
+        
+        // Remove all event listeners to prevent interference
+        const newEl = el.cloneNode(true);
+        if (el.parentNode) {
+          el.parentNode.replaceChild(newEl, el);
+          html5Ref.current = newEl;
+        }
+        
+        setLoadingState('Video element replaced, loading new video...');
+      } catch (error) {
+        console.error("Error replacing video element:", error);
+        setLoadingState(`Reset error: ${error.message}`);
+      }
+
+      // Use the new element reference
+      const newEl = html5Ref.current;
+
+      // Set up event handlers for this specific video load
+      const handleLoadStart = () => {
+        console.log("NEW UPLOADED VIDEO: Load started");
+        setLoadingState('Starting to load from S3...');
+      };
+
+      const handleLoadedMetadata = () => {
+        console.log("NEW UPLOADED VIDEO: Metadata loaded, duration:", newEl.duration);
+        setDuration(newEl.duration || 0);
+        setLoadingState('Video metadata loaded');
+      };
+
+      const handleCanPlay = () => {
+        console.log("NEW UPLOADED VIDEO: Ready to play!");
+        setPlayerReady(true);
+        setLoadingState('Ready to play');
+        if (onPlayerReady) onPlayerReady(null);
+      };
+
+      const handleCanPlayThrough = () => {
+        console.log("NEW UPLOADED VIDEO: Can play through (enough buffered)");
+        setLoadingState('Fully loaded');
+      };
+
+      const handleError = (e) => {
+        console.error('NEW UPLOADED VIDEO ERROR:', e.target.error);
+        console.error('Error details:', {
+          code: e.target.error?.code,
+          message: e.target.error?.message,
+          src: newEl.src,
+          readyState: newEl.readyState,
+          networkState: newEl.networkState
+        });
+        
+        let errorMsg = 'Unknown error';
+        if (e.target.error) {
+          switch(e.target.error.code) {
+            case 1:
+              errorMsg = 'Video loading aborted';
+              break;
+            case 2:
+              errorMsg = 'Network error loading video';
+              break;
+            case 3:
+              errorMsg = 'Video decode error';
+              break;
+            case 4:
+              errorMsg = 'Video format not supported';
+              break;
+            default:
+              errorMsg = `Video error code: ${e.target.error.code}`;
+          }
+        }
+        
+        setLoadingState(`Error: ${errorMsg}`);
+        setPlayerReady(false);
+      };
+
+      const handleProgress = () => {
+        if (newEl.buffered.length > 0 && newEl.duration) {
+          const buffered = (newEl.buffered.end(0) / newEl.duration) * 100;
+          setLoadingState(`Buffering: ${Math.round(buffered)}%`);
+        }
+      };
+
+      // Add event listeners to the new element
+      newEl.addEventListener('loadstart', handleLoadStart);
+      newEl.addEventListener('loadedmetadata', handleLoadedMetadata);
+      newEl.addEventListener('canplay', handleCanPlay);
+      newEl.addEventListener('canplaythrough', handleCanPlayThrough);
+      newEl.addEventListener('error', handleError);
+      newEl.addEventListener('progress', handleProgress);
+
+      // Load the NEW uploaded video - this is the critical part
+      console.log("Setting NEW video source to S3 URL:", currentVideoUrl);
+      try {
+        newEl.src = currentVideoUrl;
+        newEl.load();
+        setLoadingState('Requesting NEW video from S3...');
+        console.log("NEW video load initiated successfully");
+      } catch (error) {
+        console.error("Error setting NEW video source:", error);
+        setLoadingState(`Source error: ${error.message}`);
+      }
+
+      // Cleanup function for event listeners
+      return () => {
+        newEl.removeEventListener('loadstart', handleLoadStart);
+        newEl.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        newEl.removeEventListener('canplay', handleCanPlay);
+        newEl.removeEventListener('canplaythrough', handleCanPlayThrough);
+        newEl.removeEventListener('error', handleError);
+        newEl.removeEventListener('progress', handleProgress);
+      };
+      
+    } else if (currentVideoId && currentVideo?.sourceType === 'youtube' && videoChanged && !isInitializing) {
+      console.log("Loading YouTube video:", currentVideoId);
+      initializeYouTubePlayer(currentVideoId);
+    }
+  }, [currentVideo?.videoId, currentVideo?.videoUrl, currentVideo?.sourceType, currentVideo?.loadTimestamp]);
 
   // Expose seekToTime function to parent
   useEffect(() => {
@@ -311,7 +409,6 @@ const PlayerComponent = ({
           el.currentTime = timeInSeconds;
           setCurrentTime(timeInSeconds);
           setSliderPosition(timeInSeconds);
-          el.play().catch(() => {});
         } catch (error) {
           console.error('Error seeking HTML5:', error);
         }
@@ -324,10 +421,6 @@ const PlayerComponent = ({
           player.seekTo(timeInSeconds, true);
           setCurrentTime(timeInSeconds);
           setSliderPosition(timeInSeconds);
-          
-          if (typeof player.playVideo === 'function') {
-            player.playVideo();
-          }
         } catch (error) {
           console.error('Error seeking to time:', error);
         }
@@ -345,19 +438,16 @@ const PlayerComponent = ({
   const handleSliderRelease = () => {
     if (isHtml5) {
       const el = html5Ref.current;
-      if (el && isDraggingSlider) {
-        try {
-          el.currentTime = sliderPosition;
-          setCurrentTime(sliderPosition);
-        } catch (error) {
-          console.error('Error seeking HTML5 on release:', error);
-        } finally {
-          setIsDraggingSlider(false);
-        }
+      if (!el) return;
+      try {
+        el.currentTime = sliderPosition;
+        setCurrentTime(sliderPosition);
+      } catch (error) {
+        console.error("Error seeking HTML5 video:", error);
+      } finally {
+        setIsDraggingSlider(false);
       }
-      return;
-    }
-    if (player && isDraggingSlider && typeof player.seekTo === 'function') {
+    } else if (player && isDraggingSlider && typeof player.seekTo === 'function') {
       try {
         player.seekTo(sliderPosition);
         setCurrentTime(sliderPosition);
@@ -372,22 +462,63 @@ const PlayerComponent = ({
   const togglePlay = () => {
     if (isHtml5) {
       const el = html5Ref.current;
-      if (!el) return;
-      try {
+      if (!el) {
+        console.error("No HTML5 element for uploaded video");
+        setLoadingState('Error: No video element');
+        return;
+      }
+      
+      console.log("Play button clicked for uploaded video");
+      console.log("Video element state:", {
+        paused: el.paused,
+        readyState: el.readyState,
+        src: el.src,
+        currentSrc: el.currentSrc,
+        duration: el.duration,
+        error: el.error,
+        networkState: el.networkState
+      });
+      
+      if (!playerReady) {
+        console.log("Video not ready yet");
+        setLoadingState('Video not ready - please wait');
+        return;
+      }
+      
+      try { 
         if (el.paused) {
-          const p = el.play();
-          if (p && typeof p.then === 'function') {
-            p.then(() => setIsPlaying(true)).catch(() => {});
+          console.log("Attempting to play uploaded video from S3");
+          const playPromise = el.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log("SUCCESS: Uploaded video started playing");
+                setIsPlaying(true);
+                setLoadingState('Playing');
+              })
+              .catch(error => {
+                console.error("FAILED: Could not play uploaded video:", error);
+                setLoadingState(`Play failed: ${error.message}`);
+              });
           } else {
+            // Older browsers that don't return a promise
             setIsPlaying(true);
+            setLoadingState('Playing');
           }
         } else {
+          console.log("Pausing uploaded video");
           el.pause();
           setIsPlaying(false);
+          setLoadingState('Paused');
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Error toggling uploaded video play:", e);
+        setLoadingState(`Play error: ${e.message}`);
+      }
       return;
     }
+    
+    // YouTube player logic
     if (!player) return;
     try {
       if (isPlaying && typeof player.pauseVideo === 'function') {
@@ -402,7 +533,8 @@ const PlayerComponent = ({
   
   const toggleMute = () => {
     if (isHtml5) {
-      const el = html5Ref.current; if (!el) return;
+      const el = html5Ref.current; 
+      if (!el) return;
       el.muted = !el.muted;
       setIsMuted(el.muted);
       return;
@@ -421,7 +553,8 @@ const PlayerComponent = ({
   
   const skipBackward = () => {
     if (isHtml5) {
-      const el = html5Ref.current; if (!el) return;
+      const el = html5Ref.current; 
+      if (!el) return;
       const newTime = Math.max(0, (el.currentTime || 0) - 10);
       el.currentTime = newTime;
       setCurrentTime(newTime);
@@ -441,7 +574,8 @@ const PlayerComponent = ({
   
   const skipForward = () => {
     if (isHtml5) {
-      const el = html5Ref.current; if (!el) return;
+      const el = html5Ref.current; 
+      if (!el) return;
       const newTime = Math.min(el.duration || 0, (el.currentTime || 0) + 10);
       el.currentTime = newTime;
       setCurrentTime(newTime);
@@ -464,14 +598,15 @@ const PlayerComponent = ({
       <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl aspect-video">
         {isHtml5 ? (
           <video 
-            key={currentVideo.videoUrl || 'html5'} 
+            key={`uploaded-${currentVideo?.videoId}-${currentVideo?.loadTimestamp || 0}`}
             ref={html5Ref} 
             className="absolute top-0 left-0 w-full h-full" 
             controls={false} 
-            playsInline
+            crossOrigin="anonymous"
             preload="metadata"
+            playsInline
           />
-        ) : currentVideo.videoId ? (
+        ) : currentVideo?.videoId ? (
           <div ref={playerContainerRef} className="absolute top-0 left-0 w-full h-full"></div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
@@ -480,21 +615,36 @@ const PlayerComponent = ({
             </div>
           </div>
         )}
+        
+        {/* Loading/Error state overlay for uploaded videos */}
+        {isHtml5 && loadingState && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80">
+            <div className="text-center text-white p-4 max-w-lg">
+              <p className="text-sm mb-2">{loadingState}</p>
+              {!playerReady && (
+                <div className="text-xs text-gray-400 break-all">
+                  <strong>S3 URL:</strong><br />
+                  {currentVideo?.videoUrl}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="mt-6 flex items-center space-x-4">
         <button 
           onClick={togglePlay} 
-          className="p-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors shadow-lg"
-          disabled={!currentVideo.videoId && !isHtml5}
+          className="p-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors shadow-lg disabled:opacity-50"
+          disabled={!currentVideo?.videoId}
         >
           {isPlaying ? <Pause size={22} /> : <Play size={22} />}
         </button>
         
         <button 
           onClick={toggleMute} 
-          className="p-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors shadow-lg"
-          disabled={!currentVideo.videoId && !isHtml5}
+          className="p-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors shadow-lg disabled:opacity-50"
+          disabled={!currentVideo?.videoId}
         >
           {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
         </button>
@@ -509,7 +659,7 @@ const PlayerComponent = ({
             onMouseUp={handleSliderRelease}
             onTouchEnd={handleSliderRelease}
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500" 
-            disabled={!currentVideo.videoId && !isHtml5}
+            disabled={!currentVideo?.videoId}
             style={{
               background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(sliderPosition / (duration || 1)) * 100}%, rgb(55, 65, 81) ${(sliderPosition / (duration || 1)) * 100}%, rgb(55, 65, 81) 100%)`
             }}
@@ -524,8 +674,8 @@ const PlayerComponent = ({
       <div className="mt-2 flex justify-center space-x-4">
         <button 
           onClick={skipBackward}
-          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-          disabled={!currentVideo.videoId && !isHtml5}
+          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors disabled:opacity-50"
+          disabled={!currentVideo?.videoId}
         >
           <Rewind size={16} />
           <span className="sr-only">Skip backward</span>
@@ -533,8 +683,8 @@ const PlayerComponent = ({
         
         <button 
           onClick={skipForward}
-          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-          disabled={!currentVideo.videoId && !isHtml5}
+          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors disabled:opacity-50"
+          disabled={!currentVideo?.videoId}
         >
           <FastForward size={16} />
           <span className="sr-only">Skip forward</span>

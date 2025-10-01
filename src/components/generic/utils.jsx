@@ -9,7 +9,7 @@ console.log("NODE_ENV", NODE_ENV);
 console.log("API_BASE_URL from env", API_BASE_URL);
 
 // Use environment variable or fallback to hardcoded for backward compatibility
-let API_URL = API_BASE_URL || 'https://7de5d1a559ab.ngrok-free.app';
+let API_URL = API_BASE_URL || 'https://api.vidyaai.co';
 
 if (NODE_ENV === 'development') {
   API_URL = 'https://devapi.vidyaai.co';

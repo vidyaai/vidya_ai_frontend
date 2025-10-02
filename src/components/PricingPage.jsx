@@ -128,30 +128,39 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
       
       // Create checkout session
       const response = await api.post(`/api/payments/create-checkout-session`, {
-        method: 'POST',
+        plan_type: planName,
+        billing_period: isAnnual ? 'annual' : 'monthly'
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          plan_type: planName,
-          billing_period: isAnnual ? 'annual' : 'monthly'
-        })
+        }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (!response.data) {
+        const error = await response.data;
         throw new Error(error.detail || 'Payment creation failed');
       }
 
-      const { checkout_url } = await response.json();
+      const { checkout_url } = await response.data;
       
       // Redirect to Stripe Checkout
       window.location.href = checkout_url;
       
     } catch (error) {
       console.error('Payment error:', error);
-      alert(`Payment failed: ${error.message}`);
+      
+      // Extract error message from backend response
+      let errorMessage = 'Payment failed: request failed';
+      
+      if (error.response && error.response.data && error.response.data.detail) {
+        // Backend returned a detailed error message
+        errorMessage = `Payment failed: ${error.response.data.detail}`;
+      } else if (error.message) {
+        // Use the error message if available
+        errorMessage = `Payment failed: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }

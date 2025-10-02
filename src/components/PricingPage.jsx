@@ -17,6 +17,7 @@ import {
 import TopBar from './generic/TopBar';
 import PageHeader from './generic/PageHeader';
 import { auth } from '../firebase/config';
+import { api } from './generic/utils.jsx';
 
 const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToPricing }) => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -126,7 +127,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
       const token = await user.getIdToken();
       
       // Create checkout session
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/create-checkout-session`, {
+      const response = await api.post(`/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

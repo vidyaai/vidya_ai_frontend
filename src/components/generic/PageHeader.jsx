@@ -1,8 +1,8 @@
 // src/components/generic/PageHeader.jsx
 import { useState, useRef, useEffect } from 'react';
-import { Menu, X, MessageSquare, Folder, Globe, Home } from 'lucide-react';
+import { Menu, X, MessageSquare, Folder, Globe, Home, DollarSign } from 'lucide-react';
 
-const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToHome }) => {
+const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToHome, onNavigateToPricing }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -38,6 +38,12 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
       label: 'Translate',
       onClick: onNavigateToTranslate,
       active: title === 'Translate'
+    },
+    {
+      icon: DollarSign,
+      label: 'Pricing',
+      onClick: onNavigateToPricing,
+      active: title === 'Pricing'
     }
   ];
 

@@ -17,6 +17,7 @@ import TopBar from '../generic/TopBar';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { assignmentApi } from './assignmentApi';
+import { fileToBase64 } from './ImportFromDocumentModal';
 
 const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
   const { currentUser } = useAuth();
@@ -97,7 +98,7 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
     // Read file content for each file
     const newFiles = await Promise.all(validFiles.map(async (file) => {
       try {
-        const content = await readFileAsText(file);
+        const content = await await fileToBase64(file);
         return {
           id: Date.now() + Math.random(),
           file,
@@ -383,7 +384,7 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       setIsGenerating(false);
       
       // Show error to user instead of falling back to mock questions
-      alert('Failed to generate assignment. Please try again or check your input.');
+      alert(`Failed to generate assignment. Please try again or check your input. ${error.response?.data?.detail || error.message}`);
     }
   };
 

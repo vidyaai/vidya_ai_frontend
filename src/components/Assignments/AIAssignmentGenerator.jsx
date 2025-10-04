@@ -495,7 +495,7 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
                   >
                     <Upload size={48} className="text-gray-400 mb-4" />
                     <p className="text-white font-medium mb-2">Click to upload documents</p>
-                    <p className="text-gray-400 text-sm">PDF, Word, PowerPoint, Excel, Text, Markdown, JSON, XML supported</p>
+                    <p className="text-gray-400 text-sm">PDF, Word, Text, Markdown, JSON, XML supported</p>
                   </label>
                 </div>
               </div>

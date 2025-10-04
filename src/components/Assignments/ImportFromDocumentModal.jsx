@@ -11,6 +11,20 @@ import {
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 
+// Helper function to convert file to base64
+export const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Remove the data:mime/type;base64, prefix
+      const base64 = reader.result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 const ImportFromDocumentModal = ({ onClose, onParsed }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [parsing, setParsing] = useState(false);
@@ -117,20 +131,6 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
         setError('Failed to extract assignment questions from document. Please ensure the document contains assignment questions, exercises, or problems.');
       }
     }
-  };
-
-  // Helper function to convert file to base64
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        // Remove the data:mime/type;base64, prefix
-        const base64 = reader.result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
   };
 
   const formatFileSize = (bytes) => {

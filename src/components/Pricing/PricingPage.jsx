@@ -14,10 +14,10 @@ import {
   Shield,
   ArrowRight
 } from 'lucide-react';
-import TopBar from './generic/TopBar';
-import PageHeader from './generic/PageHeader';
-import { auth } from '../firebase/config';
-import { api } from './generic/utils.jsx';
+import TopBar from '../generic/TopBar';
+import PageHeader from '../generic/PageHeader';
+import { auth } from '../../firebase/config';
+import { api } from '../generic/utils.jsx';
 
 const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToPricing }) => {
   const [isAnnual, setIsAnnual] = useState(false);

@@ -5,7 +5,7 @@ import AuthForm from './components/Login/AuthForm';
 import HomePage from './components/HomePage/HomePage';
 import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
 import Gallery from './components/Gallery/Gallery';
-import PricingPage from './components/PricingPage';
+import PricingPage from './components/Pricing/PricingPage';
 import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';

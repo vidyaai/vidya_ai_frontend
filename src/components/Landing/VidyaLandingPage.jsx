@@ -13,11 +13,23 @@ import {
   Star,
   ArrowRight,
   Menu,
-  X
+  X,
+  Mail,
+  User,
+  MessageSquare
 } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [sending, setSending] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -31,28 +43,174 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
   };
 
   const handleGetStarted = () => {
-    // Navigate to login with home target
     if (onNavigateToLoginWithTarget) {
       onNavigateToLoginWithTarget('home');
     }
   };
 
   const handleTryHWAssistant = () => {
-    // Navigate to login with assignments target
     if (onNavigateToLoginWithTarget) {
       onNavigateToLoginWithTarget('assignments');
     }
   };
 
+  const handleContactSales = () => {
+    setContactModalOpen(true);
+    setSubmitStatus(null);
+  };
+
+  const handleCloseModal = () => {
+    setContactModalOpen(false);
+    setFormData({ name: '', email: '', message: '' });
+    setSubmitStatus(null);
+  };
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmitContact = async (e) => {
+    e.preventDefault();
+    setSending(true);
+    setSubmitStatus(null);
+
+    try {
+      // Replace these with your actual EmailJS credentials
+      const serviceId = 'service_3qtt4eu';
+      const templateId = 'template_xgigp3g'; // Replace with your EmailJS template ID
+      const publicKey = '15XEZx-YXn86POgyR'; // Replace with your EmailJS public key
+
+      const templateParams = {
+        from_name: formData.name,
+        from_email: formData.email,
+        message: formData.message,
+        to_email: 'pingakshya@vidyaai.co'
+      };
+
+      await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      
+      setSubmitStatus('success');
+      setTimeout(() => {
+        handleCloseModal();
+      }, 2000);
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+      setSubmitStatus('error');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
+      {/* Contact Modal */}
+      {contactModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-md w-full p-8 relative">
+            <button
+              onClick={handleCloseModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
+            >
+              <X size={24} />
+            </button>
+
+            <h2 className="text-2xl font-bold mb-2">Contact Sales</h2>
+            <p className="text-gray-400 mb-6">
+              Get in touch with our team to learn more about Vidya AI
+            </p>
+
+            {submitStatus === 'success' && (
+              <div className="mb-4 p-3 bg-green-900/30 border border-green-500 rounded-lg">
+                <p className="text-green-400 text-sm">✓ Message sent successfully! We'll get back to you soon.</p>
+              </div>
+            )}
+
+            {submitStatus === 'error' && (
+              <div className="mb-4 p-3 bg-red-900/30 border border-red-500 rounded-lg">
+                <p className="text-red-400 text-sm">✗ Failed to send message. Please try again or email us directly.</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitContact} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Name *</label>
+                <div className="relative">
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Your name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Email *</label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Message *</label>
+                <div className="relative">
+                  <MessageSquare size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <textarea
+                    name="message"
+                    required
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    placeholder="Tell us about your needs..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg font-medium hover:bg-gray-700 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sending ? 'Sending...' : 'Send Message'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="fixed top-0 w-full bg-gray-950/95 backdrop-blur-sm border-b border-gray-800 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <img 
-                src="/logo-new-2.png" 
+                src="logo-new-2.png" 
                 alt="Vidya AI Logo" 
                 className="h-12 w-auto rounded-lg"
               />
@@ -130,7 +288,19 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            {/* Buttons removed as requested */}
+            <button
+              onClick={handleGetStarted}
+              className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg shadow-purple-500/25 flex items-center"
+            >
+              Start Learning Now
+              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+            </button>
+            <button
+              onClick={() => scrollToSection('homework')}
+              className="px-8 py-4 bg-gray-800 border border-gray-700 rounded-xl font-bold text-lg hover:bg-gray-700 transition-all duration-300 hover:scale-105"
+            >
+              For Educators
+            </button>
           </div>
 
           {/* Stats */}
@@ -291,7 +461,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
                 onClick={handleTryHWAssistant}
                 className="w-full mt-8 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 hover:scale-105"
               >
-                Try Homework Assistant for Free
+                Try It Now
               </button>
             </div>
 
@@ -429,7 +599,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
                 Get Started Free
               </button>
               <button
-                onClick={() => window.open('mailto:support@vidyaai.com', '_blank')}
+                onClick={handleContactSales}
                 className="px-8 py-4 bg-gray-800 border border-gray-700 rounded-xl font-bold text-lg hover:bg-gray-700 transition-all duration-300"
               >
                 Contact Sales
@@ -445,7 +615,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <img 
-                src="/logo-new-2.png" 
+                src="logo-new-2.png" 
                 alt="Vidya AI Logo" 
                 className="h-16 w-auto rounded-lg mb-4"
               />

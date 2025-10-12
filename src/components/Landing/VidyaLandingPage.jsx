@@ -212,7 +212,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
               <img 
                 src="logo-new-2.png" 
                 alt="Vidya AI Logo" 
-                className="h-12 w-auto rounded-lg"
+                className="h-16 w-auto rounded-lg border-2 border-white"
               />
             </div>
 

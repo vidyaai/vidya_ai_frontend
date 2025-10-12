@@ -1,9 +1,7 @@
 // src/components/HomePage/HomePage.jsx
-import { useState } from 'react';
 import { 
   MessageSquare, 
   Globe, 
-  Brain, 
   Video, 
   Award,
   BookOpen,
@@ -27,53 +25,21 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       gradient: "from-blue-500 to-cyan-500"
     },
     {
-      icon: Video,
-      title: "Gallery",
-      description: "Organize your uploaded and YouTube videos into folders. Drag and drop to move items within each section.",
-      action: "Open Gallery",
-      onClick: onNavigateToGallery,
-      gradient: "from-indigo-500 to-purple-500"
-    },
-    {
-      icon: Brain,
-      title: "AI Doubt Solver",
-      description: "Get instant answers to your academic questions. Our AI tutor can help with math, science, literature, and more subjects.",
-      action: "Ask a Question",
-      onClick: () => console.log("Navigate to doubt solver"),
-      gradient: "from-purple-500 to-pink-500"
-    },
-    {
-      icon: Award,
-      title: "Interactive Quizzes",
-      description: "Test your knowledge with AI-generated quizzes. Adaptive difficulty levels ensure you're always challenged at the right level.",
-      action: "Take a Quiz",
-      onClick: () => console.log("Navigate to quiz"),
-      gradient: "from-green-500 to-emerald-500"
-    },
-    {
-      icon: Globe,
-      title: "Smart Translation",
-      description: "Translate text between languages with context awareness. Perfect for learning new languages and understanding foreign content.",
-      action: "Start Translating",
-      onClick: onNavigateToTranslate,
-      gradient: "from-orange-500 to-red-500"
-    },
-    {
-      icon: BookOpen,
-      title: "Courses",
-      description: "Design or take courses on a wide range of topics. Perfect for learning new skills and understanding complex topics.",
-      action: "Start Courses",
-      onClick: () => console.log("Navigate to courses"),
-      gradient: "from-blue-500 to-green-500"
-    },
-    {
       icon: ClipboardList,
       title: "AI Assignment Manager",
       description: "Create, manage, and share assignments with AI-powered generation. Build custom assignments or let AI create them from your content.",
       action: "Manage Assignments",
       onClick: onNavigateToAssignments,
       gradient: "from-teal-500 to-cyan-500"
-    }
+    },
+    // {
+    //   icon: Video,
+    //   title: "Gallery",
+    //   description: "Organize your uploaded and YouTube videos into folders. Drag and drop to move items within each section.",
+    //   action: "Open Gallery",
+    //   onClick: onNavigateToGallery,
+    //   gradient: "from-indigo-500 to-purple-500"
+    // },
   ];
 
   return (

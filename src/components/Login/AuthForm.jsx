@@ -46,7 +46,7 @@ const mapFirebaseError = (error) => {
   return 'Something went wrong. Please try again';
 };
 
-const AuthForm = ({ returnUrl }) => {
+const AuthForm = ({ returnUrl, onNavigateToLanding }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -515,6 +515,15 @@ const AuthForm = ({ returnUrl }) => {
                     {isLogin ? 'Sign up' : 'Sign in'}
                   </button>
                 </p>
+                {onNavigateToLanding && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToLanding}
+                    className="mt-2 text-sm text-gray-500 hover:text-gray-400 transition-colors"
+                  >
+                    ← Back to Home
+                  </button>
+                )}
               </div>
             </div>
           </div>

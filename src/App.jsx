@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthForm from './components/Login/AuthForm';
+import VidyaLandingPage from './components/Landing/VidyaLandingPage';
 import HomePage from './components/HomePage/HomePage';
 import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
 import Gallery from './components/Gallery/Gallery';
@@ -54,7 +55,10 @@ const getInitialPage = () => {
   if (path === '/translate') return 'translate';
   if (path === '/assignments') return 'assignments';
   if (path === '/pricing') return 'pricing';
-  return 'home';
+  if (path === '/home') return 'home';
+  
+  // Default to landing page for root path when not logged in
+  return 'landing';
 };
 
 // Main App Content Component
@@ -66,10 +70,16 @@ const AppContent = () => {
   // MOVE ALL HOOKS BEFORE ANY CONDITIONAL LOGIC
 
   // Handle navigation with browser history
+  const handleNavigateToLanding = () => {
+    setCurrentPage('landing');
+    setSelectedVideo(null);
+    window.history.pushState({ page: 'landing' }, '', '/');
+  };
+
   const handleNavigateToHome = () => {
     setCurrentPage('home');
     setSelectedVideo(null);
-    window.history.pushState({ page: 'home' }, '', '/');
+    window.history.pushState({ page: 'home' }, '', '/home');
   };
   
   const handleNavigateToChat = (videoData = null) => {
@@ -106,6 +116,20 @@ const AppContent = () => {
     setCurrentPage('pricing');
     setSelectedVideo(null);
     window.history.pushState({ page: 'pricing' }, '', '/pricing');
+  };
+
+  const handleNavigateToLogin = () => {
+    setCurrentPage('login');
+    setSelectedVideo(null);
+    window.history.pushState({ page: 'login' }, '', '/login');
+  };
+
+  const handleNavigateToLoginWithTarget = (targetPage) => {
+    // Store the target page for after login
+    sessionStorage.setItem('postLoginTarget', targetPage);
+    setCurrentPage('login');
+    setSelectedVideo(null);
+    window.history.pushState({ page: 'login' }, '', '/login');
   };
 
   // Handle browser back/forward buttons
@@ -162,6 +186,26 @@ const AppContent = () => {
     }
   }, [currentUser, currentPage]);
 
+  // Handle post-login navigation
+  useEffect(() => {
+    if (currentUser) {
+      const postLoginTarget = sessionStorage.getItem('postLoginTarget');
+      if (postLoginTarget) {
+        sessionStorage.removeItem('postLoginTarget');
+        if (postLoginTarget === 'chat') {
+          handleNavigateToChat();
+        } else if (postLoginTarget === 'assignments') {
+          handleNavigateToAssignments();
+        } else {
+          handleNavigateToHome();
+        }
+      } else if (currentPage === 'login' || currentPage === 'landing') {
+        // If user is logged in and on login/landing page, redirect to home
+        handleNavigateToHome();
+      }
+    }
+  }, [currentUser]);
+
   // NOW AFTER ALL HOOKS, CHECK AUTHENTICATION
   // Check if user wants to login (from shared link redirect)
   const urlParams = new URLSearchParams(window.location.search);
@@ -189,23 +233,42 @@ const AppContent = () => {
         setCurrentPage('assignments');
       } else if (newUrl === '/pricing') {
         setCurrentPage('pricing');
+      } else if (newUrl === '/home') {
+        setCurrentPage('home');
       } else {
         setCurrentPage('home');
       }
     }
   }, [currentUser, returnUrl, shouldShowLogin]);
   
-  // Allow shared page access without authentication
-  if (!currentUser && currentPage !== 'shared') {
+  // Show landing page when not authenticated unless on shared page
+  if (!currentUser && currentPage !== 'shared' && currentPage !== 'login') {
     if (shouldShowLogin) {
       return <AuthForm returnUrl={returnUrl} />;
     }
-    return <AuthForm />;
+    // Show landing page by default when not logged in
+    if (currentPage !== 'landing') {
+      setCurrentPage('landing');
+    }
+  }
+
+  // Show login form when user is not authenticated and on login page
+  if (!currentUser && currentPage === 'login') {
+    return <AuthForm onNavigateToLanding={handleNavigateToLanding} />;
   }
 
   // Render current page
   const renderCurrentPage = () => {
     switch (currentPage) {
+      case 'landing':
+        return (
+          <VidyaLandingPage 
+            onLogin={handleNavigateToLogin}
+            onNavigateToLoginWithTarget={handleNavigateToLoginWithTarget}
+          />
+        );
+      case 'login':
+        return <AuthForm onNavigateToLanding={handleNavigateToLanding} />;
       case 'home':
         return (
           <HomePage 
@@ -314,12 +377,9 @@ const AppContent = () => {
         );
       default:
         return (
-          <HomePage 
-            onNavigateToChat={handleNavigateToChat}
-            onNavigateToTranslate={handleNavigateToTranslate}
-            onNavigateToGallery={handleNavigateToGallery}
-            onNavigateToAssignments={handleNavigateToAssignments}
-            onNavigateToPricing={handleNavigateToPricing}
+          <VidyaLandingPage 
+            onLogin={handleNavigateToLogin}
+            onNavigateToLoginWithTarget={handleNavigateToLoginWithTarget}
           />
         );
     }

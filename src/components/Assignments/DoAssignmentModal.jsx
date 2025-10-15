@@ -90,6 +90,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
+  const [isGraded, setIsGraded] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfUploading, setPdfUploading] = useState(false);
 
   // Extract the actual assignment data from the shared assignment
   const actualAssignment = assignment.assignment || assignment;
@@ -220,8 +223,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         setAnswers(submission.answers);
         setSubmissionMethod(submission.submission_method || 'in-app');
         // Check if assignment is already submitted
-        if (submission.status === 'submitted') {
+        if (submission.status === 'submitted' || submission.status === 'graded') {
           setIsAlreadySubmitted(true);
+        }
+        if (submission.status === 'graded') {
+          setIsGraded(true);
         }
       }
     } catch (error) {
@@ -235,6 +241,108 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       ...prev,
       [questionId]: answer
     }));
+  };
+
+  // Handle diagram upload for a question
+  const handleDiagramUpload = async (questionId, file, isSubQuestion = false, subqId = null) => {
+    try {
+      const uploadResult = await assignmentApi.uploadDiagram(file, actualAssignment.id);
+      
+      if (isSubQuestion && subqId) {
+        // For subquestions
+        const currentAnswer = answers[questionId] || {};
+        const currentSubAnswers = currentAnswer.subAnswers || {};
+        const currentSubAnswer = currentSubAnswers[subqId];
+        
+        const newSubAnswer = {
+          text: typeof currentSubAnswer === 'string' ? currentSubAnswer : (currentSubAnswer?.text || ''),
+          diagram: {
+            s3_key: uploadResult.s3_key,
+            file_id: uploadResult.file_id,
+            filename: uploadResult.filename,
+          }
+        };
+        
+        handleAnswerChange(questionId, {
+          ...currentAnswer,
+          subAnswers: {
+            ...currentSubAnswers,
+            [subqId]: newSubAnswer
+          }
+        });
+      } else {
+        // For main questions
+        const currentAnswer = answers[questionId];
+        const newAnswer = {
+          text: typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || ''),
+          diagram: {
+            s3_key: uploadResult.s3_key,
+            file_id: uploadResult.file_id,
+            filename: uploadResult.filename,
+          }
+        };
+        handleAnswerChange(questionId, newAnswer);
+      }
+    } catch (error) {
+      console.error('Failed to upload diagram:', error);
+      alert('Failed to upload diagram. Please try again.');
+    }
+  };
+
+  // Remove diagram from answer
+  const handleRemoveDiagram = (questionId, isSubQuestion = false, subqId = null) => {
+    if (isSubQuestion && subqId) {
+      const currentAnswer = answers[questionId] || {};
+      const currentSubAnswers = currentAnswer.subAnswers || {};
+      const currentSubAnswer = currentSubAnswers[subqId];
+      
+      const newSubAnswer = {
+        text: typeof currentSubAnswer === 'string' ? currentSubAnswer : (currentSubAnswer?.text || ''),
+        diagram: null
+      };
+      
+      handleAnswerChange(questionId, {
+        ...currentAnswer,
+        subAnswers: {
+          ...currentSubAnswers,
+          [subqId]: newSubAnswer
+        }
+      });
+    } else {
+      const currentAnswer = answers[questionId];
+      const newAnswer = {
+        text: typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || ''),
+        diagram: null
+      };
+      handleAnswerChange(questionId, newAnswer);
+    }
+  };
+
+  // Handle text change for diagram-enabled questions
+  const handleTextChangeWithDiagram = (questionId, text, isSubQuestion = false, subqId = null) => {
+    if (isSubQuestion && subqId) {
+      const currentAnswer = answers[questionId] || {};
+      const currentSubAnswers = currentAnswer.subAnswers || {};
+      const currentSubAnswer = currentSubAnswers[subqId];
+      
+      const newSubAnswer = typeof currentSubAnswer === 'object' && currentSubAnswer !== null
+        ? { ...currentSubAnswer, text }
+        : { text, diagram: null };
+      
+      handleAnswerChange(questionId, {
+        ...currentAnswer,
+        subAnswers: {
+          ...currentSubAnswers,
+          [subqId]: newSubAnswer
+        }
+      });
+    } else {
+      const currentAnswer = answers[questionId];
+      const newAnswer = typeof currentAnswer === 'object' && currentAnswer !== null
+        ? { ...currentAnswer, text }
+        : { text, diagram: null };
+      handleAnswerChange(questionId, newAnswer);
+    }
   };
 
 
@@ -400,15 +508,63 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }
   };
 
+  const handlePdfFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+    } else {
+      alert('Please select a valid PDF file');
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       
-      const submissionData = {
+      let submissionData = {
         answers,
         submission_method: submissionMethod,
-        time_spent: "0" // Could track actual time spent
+        time_spent: "0", // Could track actual time spent
+        submitted_files: null
       };
+
+      // Handle PDF submission
+      if (submissionMethod === 'pdf') {
+        if (!pdfFile) {
+          alert('Please upload a PDF file first');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Upload PDF to S3 first, then submit with file info
+        setPdfUploading(true);
+        try {
+          // Upload PDF to S3
+          const pdfUploadResult = await assignmentApi.uploadDiagram(pdfFile, 'pdf');
+          
+          // Submit with PDF file info - backend will convert PDF to JSON immediately
+          submissionData = {
+            answers: {}, // Backend will extract from PDF
+            submission_method: 'pdf',
+            time_spent: "0",
+            submitted_files: [{
+              s3_key: pdfUploadResult.s3_key,
+              file_id: pdfUploadResult.file_id,
+              filename: pdfFile.name,
+              content_type: 'application/pdf',
+              size: pdfFile.size
+            }]
+          };
+          
+        } catch (uploadError) {
+          console.error('Failed to upload PDF:', uploadError);
+          alert('Failed to upload PDF. Please try again.');
+          setIsSubmitting(false);
+          setPdfUploading(false);
+          return;
+        }
+        setPdfUploading(false);
+      }
 
       await assignmentApi.submitAssignment(actualAssignment.id, submissionData);
       setSubmitted(true);
@@ -552,8 +708,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
-              value={currentAnswer}
-              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
               rows={4}
               readOnly={isAlreadySubmitted}
@@ -561,6 +717,47 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
+            
+            {/* Diagram upload */}
+            {!isAlreadySubmitted && (
+              <div className="space-y-2">
+                {currentAnswer?.diagram ? (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <button
+                        onClick={() => handleRemoveDiagram(question.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id={`diagram-upload-${question.id}`}
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleDiagramUpload(question.id, e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`diagram-upload-${question.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      Attach Diagram (Optional)
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -577,7 +774,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <input
-              type="number"
+              type="text"
               value={currentAnswer}
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your numerical answer..."}
@@ -602,8 +799,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
-              value={currentAnswer}
-              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your detailed answer here..."}
               rows={8}
               readOnly={isAlreadySubmitted}
@@ -611,6 +808,47 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
+            
+            {/* Diagram upload */}
+            {!isAlreadySubmitted && (
+              <div className="space-y-2">
+                {currentAnswer?.diagram ? (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <button
+                        onClick={() => handleRemoveDiagram(question.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id={`diagram-upload-${question.id}`}
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleDiagramUpload(question.id, e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`diagram-upload-${question.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      Attach Diagram (Optional)
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -661,8 +899,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
-              value={currentAnswer}
-              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted analysis" : "Enter your analysis here..."}
               rows={8}
               readOnly={isAlreadySubmitted}
@@ -670,6 +908,47 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
+            
+            {/* Diagram upload */}
+            {!isAlreadySubmitted && (
+              <div className="space-y-2">
+                {currentAnswer?.diagram ? (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <button
+                        onClick={() => handleRemoveDiagram(question.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id={`diagram-upload-${question.id}`}
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleDiagramUpload(question.id, e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`diagram-upload-${question.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      Attach Diagram (Optional)
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -844,7 +1123,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     </div>
                   ) : subq.type === 'numerical' ? (
                     <input
-                      type="number"
+                      type="text"
                       value={(currentAnswer?.subAnswers || {})[subq.id] || ''}
                       onChange={(e) => {
                         const newAnswer = {
@@ -881,23 +1160,57 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm font-mono"
                       />
                     </div>
-                  ) : subq.type === 'diagram-analysis' ? (
-                    <textarea
-                      value={(currentAnswer?.subAnswers || {})[subq.id] || ''}
-                      onChange={(e) => {
-                        const newAnswer = {
-                          ...currentAnswer,
-                          subAnswers: {
-                            ...(currentAnswer?.subAnswers || {}),
-                            [subq.id]: e.target.value
-                          }
-                        };
-                        handleAnswerChange(question.id, newAnswer);
-                      }}
-                      placeholder="Enter your diagram analysis..."
-                      rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm"
-                    />
+                  ) : subq.type === 'diagram-analysis' || subq.type === 'short-answer' || subq.type === 'long-answer' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? (currentAnswer?.subAnswers || {})[subq.id] : ((currentAnswer?.subAnswers || {})[subq.id]?.text || '')}
+                        onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value, true, subq.id)}
+                        placeholder={subq.type === 'diagram-analysis' ? "Enter your diagram analysis..." : "Enter your answer..."}
+                        rows={subq.type === 'long-answer' ? 6 : 4}
+                        readOnly={isAlreadySubmitted}
+                        className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                      />
+                      {/* Diagram upload for subquestions */}
+                      {!isAlreadySubmitted && (
+                        <div>
+                          {(currentAnswer?.subAnswers || {})[subq.id]?.diagram ? (
+                            <div className="bg-gray-800 p-2 rounded border border-gray-600">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs text-gray-400">Attached Diagram:</span>
+                                <button
+                                  onClick={() => handleRemoveDiagram(question.id, true, subq.id)}
+                                  className="text-red-400 hover:text-red-300 text-xs"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              {renderDiagram((currentAnswer?.subAnswers || {})[subq.id]?.diagram, "Your diagram")}
+                            </div>
+                          ) : (
+                            <div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id={`diagram-upload-${question.id}-${subq.id}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleDiagramUpload(question.id, e.target.files[0], true, subq.id);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`diagram-upload-${question.id}-${subq.id}`}
+                                className="inline-flex items-center px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded cursor-pointer transition-colors text-xs"
+                              >
+                                <ImageIcon size={12} className="mr-1" />
+                                Attach Diagram
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ) : subq.type === 'multi-part' ? (
                     <div className="space-y-3 ml-4 border-l-2 border-blue-400/30 pl-4">
                       {(subq.subquestions || []).map((subSubq, subSubIndex) => (
@@ -1025,7 +1338,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             />
                           ) : subSubq.type === 'numerical' ? (
                             <input
-                              type="number"
+                              type="text"
                               value={(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] || ''}
                               onChange={(e) => {
                                 const newAnswer = {
@@ -1287,20 +1600,44 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   <option value="pdf">Upload PDF</option>
                 </select>
               </div>
-              <div className="text-sm text-gray-400">
-                {isAlreadySubmitted ? (
-                  <span className="text-green-400 font-medium">✓ Assignment submitted - viewing submission</span>
-                ) : (
-                  <>
-                    {Object.keys(answers).length} of {questions.length} questions answered
-                    {actualAssignment.total_points && (
-                      <span className="ml-2">
-                        • {actualAssignment.total_points} total points
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
+              
+              {/* PDF Upload Section */}
+              {submissionMethod === 'pdf' && !isAlreadySubmitted && (
+                <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                  <label className="block text-sm font-medium text-blue-300 mb-2">
+                    Upload PDF Answer Sheet
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handlePdfFileChange}
+                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                  />
+                  {pdfFile && (
+                    <div className="mt-2 text-sm text-green-400">
+                      ✓ Selected: {pdfFile.name}
+                    </div>
+                  )}
+                  <p className="mt-2 text-xs text-gray-400">
+                    Upload a PDF containing your answers. Diagrams will be automatically extracted and analyzed.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="text-sm text-gray-400">
+              {isAlreadySubmitted ? (
+                <span className="text-green-400 font-medium">{isGraded ? '✓ Assignment graded - viewing submission' : '✓ Assignment submitted - viewing submission'}</span>
+              ) : (
+                <>
+                  {Object.keys(answers).length} of {questions.length} questions answered
+                  {actualAssignment.total_points && (
+                    <span className="ml-2">
+                      • {actualAssignment.total_points} total points
+                    </span>
+                  )}
+                </>
+              )}
             </div>
             
             <div className="flex space-x-3">
@@ -1325,14 +1662,19 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || isAlreadySubmitted}
+                disabled={isSubmitting || isAlreadySubmitted || pdfUploading}
                 className={`px-6 py-2 font-medium rounded-lg transition-all duration-300 ${
-                  isSubmitting || isAlreadySubmitted
+                  isSubmitting || isAlreadySubmitted || pdfUploading
                     ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
                 }`}
               >
-                {isSubmitting ? (
+                {pdfUploading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing PDF...
+                  </div>
+                ) : isSubmitting ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Submitting...

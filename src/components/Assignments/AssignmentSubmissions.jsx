@@ -14,7 +14,9 @@ import {
   Send,
   Filter,
   Search,
-  Loader2
+  Loader2,
+  RefreshCw,
+  Image as ImageIcon
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { assignmentApi } from './assignmentApi';
@@ -151,6 +153,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     const matchesStatus = filterStatus === 'all' || 
       (filterStatus === 'submitted' && submission.status === 'submitted') ||
       (filterStatus === 'graded' && submission.status === 'graded') ||
+      (filterStatus === 'grading' && submission.status === 'grading') ||
       (filterStatus === 'pending' && submission.status === 'submitted' && !submission.score);
     
     const user = userDetails[submission.user_id];
@@ -183,13 +186,25 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     setGradingModalOpen(true);
   };
 
-  const confirmAIGrading = () => {
-    // TODO: Implement AI grading API call
-    console.log('Sending submissions for AI grading:', selectedForGrading);
-    setGradingModalOpen(false);
-    setSelectedForGrading([]);
-    // Show success message
-    alert(`${selectedForGrading.length} submissions sent for AI grading`);
+  const confirmAIGrading = async () => {
+    try {
+      setGradingModalOpen(false);
+      // Call batch grading API
+      await assignmentApi.batchGradeSubmissions(assignment.id, selectedForGrading);
+      
+      // Show success message
+      alert(`${selectedForGrading.length} submissions queued for AI grading. Use the refresh button to check status.`);
+      
+      setSelectedForGrading([]);
+      
+      // Refresh submissions after a short delay
+      setTimeout(() => {
+        loadSubmissions();
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to start AI grading:', error);
+      alert('Failed to start AI grading. Please try again.');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -659,6 +674,86 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     }
   };
 
+  // Helper function to render answer with diagrams
+  const renderAnswerWithDiagram = (answer) => {
+    const answerText = typeof answer === 'string' ? answer : (answer?.text || '');
+    const diagram = typeof answer === 'object' ? answer?.diagram : null;
+    
+    return (
+      <div className="space-y-3">
+        {answerText && (
+          <div className="bg-gray-700 rounded p-3">
+            <p className="text-white whitespace-pre-wrap">{answerText}</p>
+          </div>
+        )}
+        {diagram && diagram.s3_key && (
+          <div className="bg-gray-800 p-3 rounded border border-gray-700">
+            <div className="flex items-center space-x-2 mb-2">
+              <ImageIcon size={16} className="text-teal-400" />
+              <span className="text-sm text-gray-300">Attached Diagram</span>
+            </div>
+            <DiagramImage diagramData={diagram} displayName={diagram.filename || 'Student diagram'} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Component for displaying diagram images with URL fetching
+  const DiagramImage = ({ diagramData, displayName }) => {
+    const [imageUrl, setImageUrl] = useState(null);
+    const [imageLoading, setImageLoading] = useState(!!diagramData.s3_key);
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        if (imageUrl || !diagramData.s3_key) return;
+
+        try {
+          setImageLoading(true);
+          setImageError(false);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('Failed to load diagram URL:', error);
+          setImageError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.s3_key, imageUrl]);
+
+    if (imageLoading) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+          <Loader2 size={24} className="text-teal-500 animate-spin" />
+        </div>
+      );
+    }
+
+    if (imageError || !imageUrl) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+          <div className="text-center">
+            <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">Failed to load image</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={imageUrl} 
+        alt={displayName}
+        className="w-full max-h-64 object-contain bg-gray-900 rounded"
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
   // Submission Detail Modal
   const SubmissionDetailModal = ({ submission, onClose }) => {
     if (!submission) return null;
@@ -721,6 +816,37 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
             </div>
 
+            {/* Grading Results - Show if graded */}
+            {submission.status === 'graded' && submission.feedback && (
+              <div className="mb-6 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl p-6 border border-green-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <CheckCircle size={24} className="text-green-400 mr-2" />
+                    Grading Results
+                  </h3>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-green-400">
+                      {submission.score && submission.percentage ? `${submission.percentage}%` : submission.score || 'N/A'}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {submission.score ? `${submission.score} points` : ''}
+                    </div>
+                  </div>
+                </div>
+                
+                {submission.overall_feedback && (
+                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                    <p className="text-gray-300 font-medium mb-2">Overall Feedback:</p>
+                    <p className="text-gray-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
+                  </div>
+                )}
+                
+                <div className="text-sm text-gray-400">
+                  Graded at: {submission.graded_at ? formatDate(submission.graded_at) : 'N/A'}
+                </div>
+              </div>
+            )}
+
             {/* Submission Content */}
             {submission.submission_method === 'in-app' || !submission.submission_method ? (
               <div className="space-y-6">
@@ -729,24 +855,36 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   Object.entries(submission.answers).map(([questionId, answer]) => {
                     const question = getQuestionById(questionId);
                     const questionNumber = getQuestionNumber(questionId);
+                    const questionFeedback = submission.feedback?.[questionId];
                     
                     return (
                       <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         {/* Question Header */}
                         <div className="mb-4">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                              Question {questionNumber}
-                            </span>
-                            {question?.type && (
-                              <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
-                                {question.type.replace('_', ' ')}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Question {questionNumber}
                               </span>
-                            )}
-                            {question?.points && (
-                              <span className="text-gray-400 text-sm">
-                                {question.points} {question.points === 1 ? 'point' : 'points'}
-                              </span>
+                              {question?.type && (
+                                <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                                  {question.type.replace('_', ' ')}
+                                </span>
+                              )}
+                              {question?.points && (
+                                <span className="text-gray-400 text-sm">
+                                  {question.points} {question.points === 1 ? 'point' : 'points'}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Show score for this question if available */}
+                            {questionFeedback && (
+                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                <span className="text-green-400 font-bold">
+                                  {questionFeedback.score || 0}/{questionFeedback.max_points || question?.points || 0}
+                                </span>
+                              </div>
                             )}
                           </div>
                           
@@ -770,10 +908,44 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         </div>
                         
                         {/* Answer Section */}
-                        <div>
+                        <div className="mb-4">
                           <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
-                          {renderAnswer(question, answer)}
+                          {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
+                            ? renderAnswerWithDiagram(answer)
+                            : renderAnswer(question, answer)
+                          }
                         </div>
+                        
+                        {/* Question Feedback */}
+                        {questionFeedback && (
+                          <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                            <p className="text-green-400 font-medium mb-3 flex items-center">
+                              <Brain size={16} className="mr-2" />
+                              AI Feedback
+                            </p>
+                            
+                            {questionFeedback.breakdown && (
+                              <div className="mb-3">
+                                <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
+                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                              </div>
+                            )}
+                            
+                            {questionFeedback.strengths && (
+                              <div className="mb-3">
+                                <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
+                                <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                              </div>
+                            )}
+                            
+                            {questionFeedback.areas_for_improvement && (
+                              <div>
+                                <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
+                                <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   }) :
@@ -869,6 +1041,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <button
+                onClick={loadSubmissions}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors border border-gray-700"
+                title="Refresh submissions"
+              >
+                <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
               {selectedForGrading.length > 0 && (
                 <button
                   onClick={handleSendForAIGrading}
@@ -910,6 +1091,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               >
                 <option value="all">All Submissions</option>
                 <option value="submitted">Submitted</option>
+                <option value="grading">Grading in Progress</option>
                 <option value="graded">Graded</option>
                 <option value="pending">Pending Grade</option>
               </select>
@@ -1021,7 +1203,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       type="checkbox"
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedForGrading(filteredSubmissions.filter(s => s.status === 'submitted' && !s.score).map(s => s.id));
+                          setSelectedForGrading(filteredSubmissions.filter(s => s.status === 'submitted' && !s.score && s.status !== 'grading').map(s => s.id));
                         } else {
                           setSelectedForGrading([]);
                         }
@@ -1057,7 +1239,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         type="checkbox"
                         checked={selectedForGrading.includes(submission.id)}
                         onChange={() => handleSelectForGrading(submission.id)}
-                        disabled={submission.status === 'graded' || submission.score}
+                        disabled={submission.status === 'graded' || submission.status === 'grading' || submission.score}
                         className="text-teal-500 focus:ring-teal-500"
                       />
                     </td>
@@ -1084,11 +1266,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
                         submission.status === 'graded' || submission.score
                           ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                          : submission.status === 'grading'
+                          ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
                           : submission.status === 'submitted'
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                           : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                       }`}>
-                        {submission.status}
+                        {submission.status==='grading' ? <><Loader2 size={12} className="mr-1 animate-spin" /> Grading</> : submission.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-300">

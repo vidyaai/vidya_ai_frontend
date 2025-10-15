@@ -179,7 +179,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
         color = 'bg-blue-500/20 text-blue-400';
         break;
       case 'graded':
-        displayStatus = `Graded (${percentage || grade || 'N/A'})`;
+        displayStatus = `Graded (${percentage || grade || progress+'%'})`;
         color = 'bg-green-500/20 text-green-400';
         break;
       default:
@@ -245,6 +245,8 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
+      case 'graded':
+        return <CheckCircle size={16} className="text-green-400" />;
       case 'completed':
         return <CheckCircle size={16} className="text-green-400" />;
       case 'overdue':
@@ -407,11 +409,6 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                               {getStatusIcon(studentStatus.status)}
                               <span>{studentStatus.displayStatus}</span>
                             </span>
-                            {studentStatus.grade && (
-                              <span className="text-xs text-green-400 font-medium">
-                                Grade: {studentStatus.percentage ? `${studentStatus.percentage}%` : studentStatus.grade}
-                              </span>
-                            )}
                           </>
                         );
                       })()}
@@ -448,7 +445,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                     return (
                       <div className="mb-4">
                         <div className="flex justify-between text-sm text-gray-400 mb-1">
-                          <span>Progress</span>
+                         <span>{studentStatus.status === 'graded' ? 'Precentage Grade' : 'Progress'}</span>
                           <span>{Math.round(studentStatus.progress)}%</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2">

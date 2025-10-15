@@ -234,6 +234,28 @@ export const assignmentApi = {
     return response.data;
   },
 
+  // Trigger AI grading for a submission
+  async gradeSubmission(assignmentId, submissionId, options = null) {
+    const payload = options ? { options } : {};
+    const response = await api.post(`/api/assignments/${assignmentId}/submissions/${submissionId}/grade`, payload, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+  // Trigger batch AI grading for multiple submissions (background processing)
+  async batchGradeSubmissions(assignmentId, submissionIds, options = null) {
+    const payload = {
+      submission_ids: submissionIds,
+      options: options || null
+    };
+    const response = await api.post(`/api/assignments/${assignmentId}/submissions/batch-grade`, payload, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+
   // Get a diagram file URL using the s3_key via the storage presign endpoint
   async getDiagramUrl(s3Key, assignmentId = null) {
     try {

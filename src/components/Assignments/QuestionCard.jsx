@@ -1347,7 +1347,7 @@ const QuestionCard = ({
                 Correct Answer
               </label>
               <input
-                type="number"
+                type="text"
                 value={question.correctAnswer}
                 onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                 placeholder="Enter the correct numerical answer..."

@@ -32,6 +32,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [error, setError] = useState(null);
   const [userDetails, setUserDetails] = useState({});
   const [assignmentQuestions, setAssignmentQuestions] = useState([]);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // Load submissions from API
   useEffect(() => {
@@ -204,6 +205,35 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     } catch (error) {
       console.error('Failed to start AI grading:', error);
       alert('Failed to start AI grading. Please try again.');
+    }
+  };
+
+  const handleDownloadPDF = async (submission) => {
+    try {
+      setPdfLoading(true);
+      
+      // Get the first file from submitted_files (PDF submissions typically have one file)
+      const fileInfo = submission.submitted_files?.[0];
+      if (!fileInfo || !fileInfo.file_id) {
+        alert('No PDF file found in this submission.');
+        return;
+      }
+
+      // Get presigned URL from backend
+      const response = await assignmentApi.getSubmissionFileUrl(
+        assignment.id,
+        submission.id,
+        fileInfo.file_id
+      );
+
+      // Open PDF in new tab
+      window.open(response.url, '_blank');
+
+    } catch (error) {
+      console.error('Failed to open PDF:', error);
+      alert('Failed to open PDF. Please try again.');
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -961,9 +991,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 <p className="text-gray-400 mb-6">
                   This student submitted their answers as a PDF file.
                 </p>
-                <button className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300">
-                  <Download size={18} className="mr-2" />
-                  Download PDF
+                <button 
+                  onClick={() => handleDownloadPDF(submission)}
+                  disabled={pdfLoading}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {pdfLoading ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={18} className="mr-2" />
+                      Download PDF
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -1027,36 +1070,38 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center space-x-4 min-w-0 flex-1">
               <button
                 onClick={onBack}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-400 hover:text-white transition-colors flex-shrink-0"
               >
                 <ArrowLeft size={24} />
               </button>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{assignment.title}</h1>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-3xl font-bold text-white truncate">{assignment.title}</h1>
                 <p className="text-gray-400 mt-2">Assignment Submissions</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
               <button
                 onClick={loadSubmissions}
                 disabled={loading}
-                className="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors border border-gray-700"
+                className="inline-flex items-center justify-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors border border-gray-700 whitespace-nowrap"
                 title="Refresh submissions"
               >
                 <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
+                <span className="sm:hidden">↻</span>
               </button>
               {selectedForGrading.length > 0 && (
                 <button
                   onClick={handleSendForAIGrading}
-                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 whitespace-nowrap"
                 >
                   <Brain size={18} className="mr-2" />
-                  Grade with AI ({selectedForGrading.length})
+                  <span className="hidden sm:inline">Grade with AI ({selectedForGrading.length})</span>
+                  <span className="sm:hidden">AI ({selectedForGrading.length})</span>
                 </button>
               )}
             </div>
@@ -1067,8 +1112,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters and Search */}
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800 mb-6">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -1083,11 +1128,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Filter size={20} className="text-gray-400" />
+              <Filter size={20} className="text-gray-400 flex-shrink-0" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Submissions</option>
                 <option value="submitted">Submitted</option>
@@ -1100,57 +1145,57 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <FileText size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">{submissions.length}</p>
-                <p className="text-gray-400">Total Submissions</p>
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">{submissions.length}</p>
+                <p className="text-gray-400 text-sm sm:text-base">Total Submissions</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <CheckCircle size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CheckCircle size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">
                   {submissions.filter(s => s.gradingStatus === 'graded').length}
                 </p>
-                <p className="text-gray-400">Graded</p>
+                <p className="text-gray-400 text-sm sm:text-base">Graded</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
-                <Clock size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">
                   {submissions.filter(s => s.gradingStatus === 'pending').length}
                 </p>
-                <p className="text-gray-400">Pending</p>
+                <p className="text-gray-400 text-sm sm:text-base">Pending</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <Brain size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Brain size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">
                   {Math.round((submissions.filter(s => s.score).reduce((sum, s) => sum + s.score, 0) / submissions.filter(s => s.score).length) || 0)}
                 </p>
-                <p className="text-gray-400">Avg Score</p>
+                <p className="text-gray-400 text-sm sm:text-base">Avg Score</p>
               </div>
             </div>
           </div>
@@ -1195,10 +1240,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             </div>
             
             <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[800px]">
               <thead className="bg-gray-800">
                 <tr>
-                  <th className="px-6 py-4 text-left">
+                  <th className="px-3 sm:px-6 py-4 text-left">
                     <input
                       type="checkbox"
                       onChange={(e) => {
@@ -1211,22 +1256,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       className="text-teal-500 focus:ring-teal-500"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Student
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Submitted
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden md:table-cell">
                     Type
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Score
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -1234,7 +1279,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               <tbody className="divide-y divide-gray-800">
                 {filteredSubmissions.map((submission) => (
                   <tr key={submission.id} className="hover:bg-gray-800/50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <input
                         type="checkbox"
                         checked={selectedForGrading.includes(submission.id)}
@@ -1243,27 +1288,27 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         className="text-teal-500 focus:ring-teal-500"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-white font-medium">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate">
                           {userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User'}
                         </p>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-gray-400 text-sm truncate">
                           {userDetails[submission.user_id]?.email || `User ID: ${submission.user_id}`}
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-300 text-sm">
+                    <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
                       {submission.submitted_at ? formatDate(submission.submitted_at) : 'Not submitted'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="flex items-center">
                         <FileText size={16} className="text-gray-400 mr-2" />
                         <span className="text-gray-300 text-sm capitalize">{submission.submission_method || 'in-app'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                    <td className="px-3 sm:px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
                         submission.status === 'graded' || submission.score
                           ? 'bg-green-500/20 text-green-400 border-green-500/30' 
                           : submission.status === 'grading'
@@ -1272,19 +1317,20 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                           : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                       }`}>
-                        {submission.status==='grading' ? <><Loader2 size={12} className="mr-1 animate-spin" /> Grading</> : submission.status}
+                        {/* {(submission.status === 'grading') ? <><Loader2 size={16} className="animate-spin" /></> : <></>} */}
+                        {submission.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-300">
+                    <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
                       {submission.score ? `${submission.score}${submission.percentage ? ` (${submission.percentage}%)` : ''}` : '-'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <button
                         onClick={() => handleViewSubmission(submission)}
-                        className="inline-flex items-center px-3 py-1 bg-gray-700 text-white text-sm font-medium rounded hover:bg-gray-600 transition-colors"
+                        className="inline-flex items-center px-2 py-1 bg-gray-700 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
                       >
-                        <Eye size={14} className="mr-1" />
-                        View
+                        <Eye size={12} className="mr-1" />
+                        <span className="hidden sm:inline">View</span>
                       </button>
                     </td>
                   </tr>

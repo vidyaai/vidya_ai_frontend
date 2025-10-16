@@ -509,6 +509,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   };
 
   const handlePdfFileChange = (event) => {
+    // Prevent file changes if assignment is already submitted
+    if (isAlreadySubmitted) {
+      return;
+    }
+    
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
@@ -536,37 +541,24 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           return;
         }
         
-        // Upload PDF to S3 first, then submit with file info
+        // Build minimal payload; backend will extract answers from PDF
         setPdfUploading(true);
         try {
-          // Upload PDF to S3
-          const pdfUploadResult = await assignmentApi.uploadDiagram(pdfFile, 'pdf');
-          
-          // Submit with PDF file info - backend will convert PDF to JSON immediately
           submissionData = {
-            answers: {}, // Backend will extract from PDF
+            answers: {},
             submission_method: 'pdf',
             time_spent: "0",
-            submitted_files: [{
-              s3_key: pdfUploadResult.s3_key,
-              file_id: pdfUploadResult.file_id,
-              filename: pdfFile.name,
-              content_type: 'application/pdf',
-              size: pdfFile.size
-            }]
           };
-          
-        } catch (uploadError) {
-          console.error('Failed to upload PDF:', uploadError);
-          alert('Failed to upload PDF. Please try again.');
-          setIsSubmitting(false);
+        } finally {
           setPdfUploading(false);
-          return;
         }
-        setPdfUploading(false);
       }
 
-      await assignmentApi.submitAssignment(actualAssignment.id, submissionData);
+      await assignmentApi.submitAssignment(
+        actualAssignment.id,
+        submissionData,
+        submissionMethod === 'pdf' ? pdfFile : null
+      );
       setSubmitted(true);
       
       // Notify parent component to refresh assignment status
@@ -1559,23 +1551,57 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-4">Upload PDF Answer Sheet</h3>
                 <p className="text-gray-400 mb-6">
-                  Upload a PDF file containing your complete answers to all questions.
+                  Upload a PDF containing your answers. Diagrams will be automatically extracted and analyzed.
                 </p>
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 hover:border-gray-600 transition-colors">
+                <div className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
+                  isAlreadySubmitted 
+                    ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed' 
+                    : 'border-gray-700 hover:border-gray-600'
+                }`}>
                   <input
                     type="file"
                     accept=".pdf"
                     className="hidden"
                     id="pdf-upload"
+                    onChange={handlePdfFileChange}
+                    disabled={isAlreadySubmitted}
                   />
-                  <label
-                    htmlFor="pdf-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <Upload size={32} className="text-gray-400 mb-3" />
-                    <p className="text-white font-medium mb-1">Click to upload PDF</p>
-                    <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
-                  </label>
+                  {isAlreadySubmitted ? (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle size={32} className="text-yellow-400" />
+                      </div>
+                      <p className="text-yellow-400 font-medium mb-1">Assignment Already Submitted</p>
+                      <p className="text-gray-300 text-sm mb-2">
+                        PDF upload is disabled for submitted assignments
+                      </p>
+                    </div>
+                  ) : pdfFile ? (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-green-400 font-medium mb-1">✓ PDF Selected</p>
+                      <p className="text-gray-300 text-sm mb-2">{pdfFile.name}</p>
+                      <button
+                        onClick={() => setPdfFile(null)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="pdf-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload size={32} className="text-gray-400 mb-3" />
+                      <p className="text-white font-medium mb-1">Click to upload PDF</p>
+                      <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
@@ -1600,29 +1626,6 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   <option value="pdf">Upload PDF</option>
                 </select>
               </div>
-              
-              {/* PDF Upload Section */}
-              {submissionMethod === 'pdf' && !isAlreadySubmitted && (
-                <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                  <label className="block text-sm font-medium text-blue-300 mb-2">
-                    Upload PDF Answer Sheet
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handlePdfFileChange}
-                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                  />
-                  {pdfFile && (
-                    <div className="mt-2 text-sm text-green-400">
-                      ✓ Selected: {pdfFile.name}
-                    </div>
-                  )}
-                  <p className="mt-2 text-xs text-gray-400">
-                    Upload a PDF containing your answers. Diagrams will be automatically extracted and analyzed.
-                  </p>
-                </div>
-              )}
             </div>
             
             <div className="text-sm text-gray-400">

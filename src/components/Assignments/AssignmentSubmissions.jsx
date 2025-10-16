@@ -983,31 +983,99 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 }
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <FileText size={40} className="text-gray-400" />
+              <div className="space-y-6">
+                {/* PDF Submission Header */}
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText size={40} className="text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
+                  <p className="text-gray-400 mb-6">
+                    This student submitted their answers as a PDF file.
+                  </p>
+                  <button 
+                    onClick={() => handleDownloadPDF(submission)}
+                    disabled={pdfLoading}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {pdfLoading ? (
+                      <>
+                        <Loader2 size={18} className="mr-2 animate-spin" />
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download size={18} className="mr-2" />
+                        Download PDF
+                      </>
+                    )}
+                  </button>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
-                <p className="text-gray-400 mb-6">
-                  This student submitted their answers as a PDF file.
-                </p>
-                <button 
-                  onClick={() => handleDownloadPDF(submission)}
-                  disabled={pdfLoading}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {pdfLoading ? (
-                    <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
-                      Downloading...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={18} className="mr-2" />
-                      Download PDF
-                    </>
-                  )}
-                </button>
+
+                {/* PDF Feedback by Question */}
+                {submission.feedback && Object.keys(submission.feedback).length > 0 && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-bold text-white flex items-center">
+                      <Brain size={24} className="text-green-400 mr-2" />
+                      Question-by-Question Feedback
+                    </h3>
+                    
+                    {Object.entries(submission.feedback)
+                      .sort(([a], [b]) => {
+                        // Sort questions numerically, handling decimal formats like 1.1, 1.2
+                        const aNum = parseFloat(a);
+                        const bNum = parseFloat(b);
+                        return aNum - bNum;
+                      })
+                      .map(([questionId, feedback]) => (
+                        <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                          {/* Question Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Question {questionId}
+                              </span>
+                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                <span className="text-green-400 font-bold">
+                                  {feedback.score || 0}/{feedback.max_points || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Feedback Content */}
+                          <div className="space-y-4">
+                            {feedback.breakdown && (
+                              <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
+                                <p className="text-gray-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
+                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
+                              </div>
+                            )}
+                            
+                            {feedback.strengths && (
+                              <div className="bg-green-900/20 rounded-lg p-4 border border-green-500/30">
+                                <p className="text-green-400 text-sm mb-2 font-medium flex items-center">
+                                  <CheckCircle size={16} className="mr-2" />
+                                  Strengths:
+                                </p>
+                                <p className="text-gray-200 text-sm">{feedback.strengths}</p>
+                              </div>
+                            )}
+                            
+                            {feedback.areas_for_improvement && feedback.areas_for_improvement !== "None." && (
+                              <div className="bg-orange-900/20 rounded-lg p-4 border border-orange-500/30">
+                                <p className="text-orange-400 text-sm mb-2 font-medium flex items-center">
+                                  <AlertCircle size={16} className="mr-2" />
+                                  Areas for Improvement:
+                                </p>
+                                <p className="text-gray-200 text-sm">{feedback.areas_for_improvement}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

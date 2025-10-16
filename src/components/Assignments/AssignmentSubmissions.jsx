@@ -1233,7 +1233,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                 <p className="text-xl sm:text-2xl font-bold text-white">
-                  {submissions.filter(s => s.gradingStatus === 'graded').length}
+                  {submissions.filter(s => s.status === 'graded').length}
                 </p>
                 <p className="text-gray-400 text-sm sm:text-base">Graded</p>
               </div>
@@ -1247,7 +1247,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                 <p className="text-xl sm:text-2xl font-bold text-white">
-                  {submissions.filter(s => s.gradingStatus === 'pending').length}
+                  {submissions.filter(s => s.status === 'pending').length}
                 </p>
                 <p className="text-gray-400 text-sm sm:text-base">Pending</p>
               </div>
@@ -1261,7 +1261,16 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                 <p className="text-xl sm:text-2xl font-bold text-white">
-                  {Math.round((submissions.filter(s => s.score).reduce((sum, s) => sum + s.score, 0) / submissions.filter(s => s.score).length) || 0)}
+                  {
+                    (() => {
+                      const scores = submissions
+                        .map(s => typeof s.score === 'number' ? s.score : parseFloat(s.score))
+                        .filter(score => !isNaN(score));
+                      if (scores.length === 0) return 'N/A';
+                      const avg = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+                      return Math.round(avg);
+                    })()
+                  }
                 </p>
                 <p className="text-gray-400 text-sm sm:text-base">Avg Score</p>
               </div>

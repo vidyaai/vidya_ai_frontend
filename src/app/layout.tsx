@@ -3,7 +3,11 @@ import { AuthProvider } from '@/context/AuthContext'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'VidyaAI - AI-Powered STEM Education Platform',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://vidyaai.co'),
+  title: {
+    default: 'VidyaAI - AI-Powered STEM Education Platform',
+    template: '%s | VidyaAI',
+  },
   description: 'Transform STEM learning with 24/7 AI tutoring and automated grading. Save 30+ hours per week for educators.',
   keywords: 'AI education, STEM learning, automated grading, AI tutor, homework assistant, video learning',
   authors: [{ name: 'VidyaAI' }],

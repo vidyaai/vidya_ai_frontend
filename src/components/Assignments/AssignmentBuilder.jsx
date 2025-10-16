@@ -109,7 +109,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         hasMainCode: false,
         hasMainDiagram: false,
         mainCodeLanguage: 'python',
-        mainDiagram: null
+        mainDiagram: null,
+        rubricType: 'per-subquestion'
       }
     };
 
@@ -224,15 +225,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
           errors.push(`Question ${questionNum}: Multi-part questions must have at least one sub-question`);
         }
         
-        // For multi-part questions, check based on rubricType
-        if (question.rubricType === 'per-subquestion') {
-          // No overall rubric required, but each sub-question must have one (checked below)
-        } else {
-          // Default is 'overall' rubric required
-          if (!question.rubric || question.rubric.trim() === '') {
-            errors.push(`Question ${questionNum}: Overall rubric cannot be empty for multi-part questions`);
-          }
-        }
+        // Multi-part questions now only use per-subquestion rubrics
+        // No overall rubric required
       } else {
         // For non-multi-part questions, always require rubric
         if (!question.rubric || question.rubric.trim() === '') {
@@ -294,16 +288,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
               errors.push(`Sub-question ${subNum}: Multi-part sub-questions must have at least one sub-part`);
             }
             
-            // For multi-part sub-questions, check their own rubric configuration
-            if (subQ.rubricType === 'per-subquestion') {
-              // No overall rubric required for this multi-part sub-question, 
-              // but each of its sub-sub-questions must have rubrics (checked below)
-            } else {
-              // Default is 'overall' rubric required for the multi-part sub-question
-              if (!subQ.rubric || subQ.rubric.trim() === '') {
-                errors.push(`Sub-question ${subNum}: Overall rubric cannot be empty for multi-part sub-questions`);
-              }
-            }
+            // Multi-part sub-questions now only use per-subquestion rubrics
+            // No overall rubric required
           }
           
           // Check sub-question rubric (if using per-subquestion rubrics)

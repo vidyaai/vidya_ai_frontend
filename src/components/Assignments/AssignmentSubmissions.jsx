@@ -70,65 +70,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     } catch (err) {
       console.error('Failed to load submissions:', err);
       setError('Failed to load submissions. Please try again.');
-      // Fallback to mock data for development
-      setSubmissions([
-    {
-      id: 1,
-      studentName: "Alice Johnson",
-      studentEmail: "alice.johnson@university.edu",
-      submittedAt: "2024-01-20T14:30:00",
-      submissionType: "in-app",
-      status: "submitted",
-      score: null,
-      answers: {
-        1: "Mathematics",
-        2: "true",
-        3: "The key concepts include differential calculus, integral calculus, and the fundamental theorem of calculus.",
-        4: "5",
-        5: "Calculus is a branch of mathematics that studies continuous change..."
-      },
-      gradingStatus: "pending"
-    },
-    {
-      id: 2,
-      studentName: "Bob Smith",
-      studentEmail: "bob.smith@university.edu", 
-      submittedAt: "2024-01-21T09:15:00",
-      submissionType: "pdf",
-      status: "submitted",
-      score: 85,
-      pdfUrl: "/submissions/bob_smith_assignment.pdf",
-      gradingStatus: "graded"
-    },
-    {
-      id: 3,
-      studentName: "Carol Davis",
-      studentEmail: "carol.davis@university.edu",
-      submittedAt: "2024-01-21T16:45:00", 
-      submissionType: "in-app",
-      status: "submitted",
-      score: null,
-      answers: {
-        1: "Physics",
-        2: "false",
-        3: "The content covers basic principles of motion and energy conservation.",
-        4: "7",
-        5: "Physics deals with matter, energy, and their interactions in the universe..."
-      },
-      gradingStatus: "pending"
-    },
-    {
-      id: 4,
-      studentName: "David Wilson",
-      studentEmail: "david.wilson@university.edu",
-      submittedAt: "2024-01-22T11:20:00",
-      submissionType: "pdf",
-      status: "submitted", 
-      score: 92,
-      pdfUrl: "/submissions/david_wilson_assignment.pdf",
-        gradingStatus: "graded"
-      }
-      ]);
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }

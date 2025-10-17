@@ -40,60 +40,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
     } catch (err) {
       console.error('Failed to load shared assignments:', err);
       setError('Failed to load assignments. Please try again.');
-      // Fallback to mock data for development
-      setAssignedAssignments([
-        {
-          id: 1,
-          assignment: {
-            id: 'assign-1',
-            title: "Control Systems Design",
-            description: "Temperature regulation system with MATLAB implementation, block diagrams, and multi-part analysis including PID controller design and stability analysis",
-            due_date: "2024-02-01T00:00:00Z",
-            total_questions: "4",
-            total_points: "15",
-            question_types: ["multiple-choice", "code-writing", "diagram-analysis", "multi-part"],
-            engineering_level: "undergraduate"
-          },
-          shared_by_user_id: "instructor@example.com",
-          permission: "complete",
-          status: "not_started",
-          progress: 0
-        },
-        {
-          id: 2,
-          assignment: {
-            id: 'assign-2',
-            title: "Digital Signal Processing",
-            description: "Audio filter design with Python implementation, frequency analysis, and nested multi-part questions covering filter theory and practical implementation",
-            due_date: "2024-01-25T00:00:00Z",
-            total_questions: "5",
-            total_points: "12",
-            question_types: ["code-writing", "multi-part", "numerical"],
-            engineering_level: "graduate"
-          },
-          shared_by_user_id: "prof.smith@university.edu",
-          permission: "complete",
-          status: "in_progress",
-          progress: 60
-        },
-        {
-          id: 3,
-          assignment: {
-            id: 'assign-3',
-            title: "Circuit Analysis & Design",
-            description: "Comprehensive electrical engineering assignment with circuit diagrams, impedance calculations, and design challenges",
-            due_date: "2024-01-20T00:00:00Z",
-            total_questions: "6",
-            total_points: "8",
-            question_types: ["diagram-analysis", "multiple-choice", "numerical"],
-            engineering_level: "undergraduate"
-          },
-          shared_by_user_id: "dr.johnson@tech.edu",
-          permission: "complete",
-          status: "completed",
-          progress: 100
-        }
-      ]);
+      setAssignedAssignments([]);
     } finally {
       setLoading(false);
     }
@@ -179,7 +126,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
         color = 'bg-blue-500/20 text-blue-400';
         break;
       case 'graded':
-        displayStatus = `Graded (${percentage || grade || 'N/A'})`;
+        displayStatus = `Graded (${percentage || grade || progress+'%'})`;
         color = 'bg-green-500/20 text-green-400';
         break;
       default:
@@ -245,6 +192,8 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
+      case 'graded':
+        return <CheckCircle size={16} className="text-green-400" />;
       case 'completed':
         return <CheckCircle size={16} className="text-green-400" />;
       case 'overdue':
@@ -407,11 +356,6 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                               {getStatusIcon(studentStatus.status)}
                               <span>{studentStatus.displayStatus}</span>
                             </span>
-                            {studentStatus.grade && (
-                              <span className="text-xs text-green-400 font-medium">
-                                Grade: {studentStatus.percentage ? `${studentStatus.percentage}%` : studentStatus.grade}
-                              </span>
-                            )}
                           </>
                         );
                       })()}
@@ -448,7 +392,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                     return (
                       <div className="mb-4">
                         <div className="flex justify-between text-sm text-gray-400 mb-1">
-                          <span>Progress</span>
+                         <span>{studentStatus.status === 'graded' ? 'Precentage Grade' : 'Progress'}</span>
                           <span>{Math.round(studentStatus.progress)}%</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2">

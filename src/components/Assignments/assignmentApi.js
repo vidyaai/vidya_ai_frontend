@@ -141,8 +141,32 @@ export const assignmentApi = {
     return response.data;
   },
 
-  // Submit an assignment
-  async submitAssignment(assignmentId, submissionData) {
+  // Submit an assignment (supports JSON or multipart with PDF file)
+  async submitAssignment(assignmentId, submissionData, pdfFile = null) {
+    // If PDF file is provided, build multipart/form-data to send the file
+    if (pdfFile) {
+      const formData = new FormData();
+      // submission_method and time_spent
+      formData.append('submission_method', 'pdf');
+      formData.append('time_spent', submissionData?.time_spent ?? '0');
+      // Frontend sends submitted_files metadata minimal; backend will fill from file
+      if (submissionData?.submitted_files) {
+        formData.append('submitted_files', JSON.stringify(submissionData.submitted_files));
+      }
+      // Answers can be empty; backend will extract from PDF
+      formData.append('answers', JSON.stringify(submissionData?.answers ?? {}));
+      // Attach the actual PDF file (key must align with backend expectation)
+      formData.append('file', pdfFile, pdfFile.name);
+
+      const response = await api.post(
+        `/api/assignments/${assignmentId}/submit`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data', 'ngrok-skip-browser-warning': 'true' } }
+      );
+      return response.data;
+    }
+
+    // Default JSON submission (in-app flow)
     const response = await api.post(`/api/assignments/${assignmentId}/submit`, submissionData, {
       headers: { 'ngrok-skip-browser-warning': 'true' }
     });
@@ -233,6 +257,42 @@ export const assignmentApi = {
     });
     return response.data;
   },
+
+  // Trigger AI grading for a submission
+  async gradeSubmission(assignmentId, submissionId, options = null) {
+    const payload = options ? { options } : {};
+    const response = await api.post(`/api/assignments/${assignmentId}/submissions/${submissionId}/grade`, payload, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+  // Trigger batch AI grading for multiple submissions (background processing)
+  async batchGradeSubmissions(assignmentId, submissionIds, options = null) {
+    const payload = {
+      submission_ids: submissionIds,
+      options: options || null
+    };
+    const response = await api.post(`/api/assignments/${assignmentId}/submissions/batch-grade`, payload, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+  // Download a submitted file (PDF)
+  async getSubmissionFileUrl(assignmentId, submissionId, fileId) {
+    try {
+      const response = await api.get(
+        `/api/assignments/${assignmentId}/submissions/${submissionId}/files/${fileId}`,
+        { headers: { 'ngrok-skip-browser-warning': 'true' } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error getting submission file URL:', error);
+      throw error;
+    }
+  },
+
 
   // Get a diagram file URL using the s3_key via the storage presign endpoint
   async getDiagramUrl(s3Key, assignmentId = null) {

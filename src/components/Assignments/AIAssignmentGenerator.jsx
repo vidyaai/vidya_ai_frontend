@@ -383,8 +383,9 @@ const AIAssignmentGenerator = ({ onBack, onNavigateToHome }) => {
       console.error('Error details:', error.response?.data || error.message);
       setIsGenerating(false);
       
-      // Show error to user instead of falling back to mock questions
-      alert(`Failed to generate assignment. Please try again or check your input. ${error.response?.data?.detail || error.message}`);
+      // Show user-friendly error message
+      const errorMessage = error.response?.data?.detail || error.message || 'Unknown error occurred';
+      alert(`Failed to generate assignment: ${errorMessage}\n\nPlease try again or check your input. If the problem persists, contact support.`);
     }
   };
 

@@ -1347,7 +1347,7 @@ const QuestionCard = ({
                 Correct Answer
               </label>
               <input
-                type="number"
+                type="text"
                 value={question.correctAnswer}
                 onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                 placeholder="Enter the correct numerical answer..."
@@ -1471,7 +1471,7 @@ const QuestionCard = ({
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Sample Answer (Optional)
+                Sample Answer (Required)
               </label>
               <textarea
                 value={question.correctAnswer}
@@ -1553,7 +1553,7 @@ const QuestionCard = ({
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Sample Solution (Optional)
+                Sample Solution (Required)
               </label>
               <textarea
                 value={question.correctAnswer}
@@ -1624,7 +1624,7 @@ const QuestionCard = ({
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Sample Answer (Optional)
+                Sample Answer (Required)
               </label>
               <textarea
                 value={question.correctAnswer}
@@ -1659,50 +1659,10 @@ const QuestionCard = ({
                 Rubric Configuration
               </label>
               <div className="space-y-3">
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name={`rubric-type-${question.id}`}
-                      checked={question.rubricType === 'overall' || !question.rubricType}
-                      onChange={() => onUpdate({ rubricType: 'overall' })}
-                      className="text-blue-500 focus:ring-blue-500 mr-2"
-                    />
-                    <span className="text-white text-sm">Overall Rubric</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name={`rubric-type-${question.id}`}
-                      checked={question.rubricType === 'per-subquestion'}
-                      onChange={() => onUpdate({ rubricType: 'per-subquestion' })}
-                      className="text-blue-500 focus:ring-blue-500 mr-2"
-                    />
-                    <span className="text-white text-sm">Per Sub-question Rubric</span>
-                  </label>
+                <div className="text-blue-300 text-sm bg-blue-900/20 p-3 rounded-lg border border-blue-700/30">
+                  <p className="font-medium mb-1">Per Sub-question Rubrics</p>
+                  <p className="text-xs text-blue-200">Individual rubrics should be added to each sub-question below.</p>
                 </div>
-                
-                {(question.rubricType === 'overall' || !question.rubricType) && (
-                  <div>
-                    <label className="block text-xs font-medium text-blue-300 mb-2">
-                      Overall Rubric for Entire Question
-                    </label>
-                    <textarea
-                      value={question.rubric || ''}
-                      onChange={(e) => onUpdate({ rubric: e.target.value })}
-                      placeholder="Enter overall grading criteria for this multi-part question..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
-                    />
-                  </div>
-                )}
-                
-                {question.rubricType === 'per-subquestion' && (
-                  <div className="text-blue-300 text-sm bg-blue-900/20 p-3 rounded-lg border border-blue-700/30">
-                    <p className="font-medium mb-1">Per Sub-question Rubrics</p>
-                    <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-question below.</p>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -2081,7 +2041,7 @@ const QuestionCard = ({
                       {!['multiple-choice', 'true-false', 'multi-part'].includes(subq.type) && (
                         <div className="mt-3">
                           <label className="block text-xs font-medium text-teal-300 mb-2">
-                            {subq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Optional)'}
+                            {subq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Required)'}
                           </label>
                           <textarea
                             value={subq.correctAnswer || ''}
@@ -2118,50 +2078,10 @@ const QuestionCard = ({
                               Rubric Configuration for Part {subIndex + 1}
                             </label>
                             <div className="space-y-2">
-                              <div className="flex items-center space-x-3">
-                                <label className="flex items-center">
-                                  <input
-                                    type="radio"
-                                    name={`nested-rubric-type-${question.id}-${subIndex}`}
-                                    checked={subq.rubricType === 'overall' || !subq.rubricType}
-                                    onChange={() => handleSubquestionChange(subIndex, 'rubricType', 'overall')}
-                                    className="text-blue-500 focus:ring-blue-500 mr-2"
-                                  />
-                                  <span className="text-white text-xs">Overall Rubric</span>
-                                </label>
-                                <label className="flex items-center">
-                                  <input
-                                    type="radio"
-                                    name={`nested-rubric-type-${question.id}-${subIndex}`}
-                                    checked={subq.rubricType === 'per-subquestion'}
-                                    onChange={() => handleSubquestionChange(subIndex, 'rubricType', 'per-subquestion')}
-                                    className="text-blue-500 focus:ring-blue-500 mr-2"
-                                  />
-                                  <span className="text-white text-xs">Per Sub-part Rubric</span>
-                                </label>
+                              <div className="text-blue-300 text-xs bg-blue-900/20 p-2 rounded border border-blue-700/30">
+                                <p className="font-medium mb-1">Per Sub-part Rubrics</p>
+                                <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-part below.</p>
                               </div>
-                              
-                              {(subq.rubricType === 'overall' || !subq.rubricType) && (
-                                <div>
-                                  <label className="block text-xs font-medium text-blue-300 mb-1">
-                                    Overall Rubric for Part {subIndex + 1}
-                                  </label>
-                                  <textarea
-                                    value={subq.rubric || ''}
-                                    onChange={(e) => handleSubquestionChange(subIndex, 'rubric', e.target.value)}
-                                    placeholder={`Enter overall grading criteria for part ${subIndex + 1}...`}
-                                    rows={2}
-                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                                  />
-                                </div>
-                              )}
-                              
-                              {subq.rubricType === 'per-subquestion' && (
-                                <div className="text-blue-300 text-xs bg-blue-900/20 p-2 rounded border border-blue-700/30">
-                                  <p className="font-medium mb-1">Per Sub-part Rubrics</p>
-                                  <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-part below.</p>
-                                </div>
-                              )}
                             </div>
                           </div>
 
@@ -2369,7 +2289,7 @@ const QuestionCard = ({
                                 {!['multiple-choice', 'true-false'].includes(subSubq.type) && (
                                   <div className="mt-2">
                                     <label className="block text-xs font-medium text-teal-300 mb-1">
-                                      {subSubq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Optional)'}
+                                      {subSubq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Required)'}
                                     </label>
                                     <textarea
                                       value={subSubq.correctAnswer || ''}
@@ -2526,7 +2446,7 @@ const QuestionCard = ({
           {question.type !== 'multi-part' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Rubric (Optional)
+                Rubric (Required)
               </label>
               <textarea
                 value={question.rubric}

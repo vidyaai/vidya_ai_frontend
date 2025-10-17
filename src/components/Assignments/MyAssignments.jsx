@@ -46,48 +46,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
     } catch (err) {
       console.error('Failed to load assignments:', err);
       setError('Failed to load assignments. Please try again.');
-      // Fallback to mock data for development
-      setAssignments([
-        {
-          id: 1,
-          title: "Control Systems Design",
-          description: "Temperature regulation system with MATLAB implementation, block diagrams, and multi-part analysis including PID controller design and stability analysis",
-          created_at: "2024-01-15T00:00:00Z",
-          due_date: "2024-02-01T00:00:00Z",
-          total_questions: "4",
-          total_points: "15",
-          shared_count: "25",
-          status: "published",
-          question_types: ["multiple-choice", "code-writing", "diagram-analysis", "multi-part"],
-          engineering_level: "undergraduate"
-        },
-        {
-          id: 2,
-          title: "Digital Signal Processing",
-          description: "Audio filter design with Python implementation, frequency analysis, and nested multi-part questions covering filter theory and practical implementation",
-          created_at: "2024-01-10T00:00:00Z",
-          due_date: "2024-01-25T00:00:00Z",
-          total_questions: "5",
-          total_points: "12",
-          shared_count: "18",
-          status: "draft",
-          question_types: ["code-writing", "multi-part", "numerical"],
-          engineering_level: "graduate"
-        },
-        {
-          id: 3,
-          title: "Circuit Analysis & Design",
-          description: "Comprehensive electrical engineering assignment with circuit diagrams, impedance calculations, and design challenges",
-          created_at: "2024-01-05T00:00:00Z",
-          due_date: "2024-01-20T00:00:00Z",
-          total_questions: "6",
-          total_points: "8",
-          shared_count: "32",
-          status: "published",
-          question_types: ["diagram-analysis", "multiple-choice", "numerical"],
-          engineering_level: "undergraduate"
-        }
-      ]);
+      setAssignments([]);
     } finally {
       setLoading(false);
     }

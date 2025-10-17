@@ -14,7 +14,9 @@ import {
   Send,
   Filter,
   Search,
-  Loader2
+  Loader2,
+  RefreshCw,
+  Image as ImageIcon
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { assignmentApi } from './assignmentApi';
@@ -30,6 +32,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [error, setError] = useState(null);
   const [userDetails, setUserDetails] = useState({});
   const [assignmentQuestions, setAssignmentQuestions] = useState([]);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // Load submissions from API
   useEffect(() => {
@@ -67,65 +70,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     } catch (err) {
       console.error('Failed to load submissions:', err);
       setError('Failed to load submissions. Please try again.');
-      // Fallback to mock data for development
-      setSubmissions([
-    {
-      id: 1,
-      studentName: "Alice Johnson",
-      studentEmail: "alice.johnson@university.edu",
-      submittedAt: "2024-01-20T14:30:00",
-      submissionType: "in-app",
-      status: "submitted",
-      score: null,
-      answers: {
-        1: "Mathematics",
-        2: "true",
-        3: "The key concepts include differential calculus, integral calculus, and the fundamental theorem of calculus.",
-        4: "5",
-        5: "Calculus is a branch of mathematics that studies continuous change..."
-      },
-      gradingStatus: "pending"
-    },
-    {
-      id: 2,
-      studentName: "Bob Smith",
-      studentEmail: "bob.smith@university.edu", 
-      submittedAt: "2024-01-21T09:15:00",
-      submissionType: "pdf",
-      status: "submitted",
-      score: 85,
-      pdfUrl: "/submissions/bob_smith_assignment.pdf",
-      gradingStatus: "graded"
-    },
-    {
-      id: 3,
-      studentName: "Carol Davis",
-      studentEmail: "carol.davis@university.edu",
-      submittedAt: "2024-01-21T16:45:00", 
-      submissionType: "in-app",
-      status: "submitted",
-      score: null,
-      answers: {
-        1: "Physics",
-        2: "false",
-        3: "The content covers basic principles of motion and energy conservation.",
-        4: "7",
-        5: "Physics deals with matter, energy, and their interactions in the universe..."
-      },
-      gradingStatus: "pending"
-    },
-    {
-      id: 4,
-      studentName: "David Wilson",
-      studentEmail: "david.wilson@university.edu",
-      submittedAt: "2024-01-22T11:20:00",
-      submissionType: "pdf",
-      status: "submitted", 
-      score: 92,
-      pdfUrl: "/submissions/david_wilson_assignment.pdf",
-        gradingStatus: "graded"
-      }
-      ]);
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -151,6 +96,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     const matchesStatus = filterStatus === 'all' || 
       (filterStatus === 'submitted' && submission.status === 'submitted') ||
       (filterStatus === 'graded' && submission.status === 'graded') ||
+      (filterStatus === 'grading' && submission.status === 'grading') ||
       (filterStatus === 'pending' && submission.status === 'submitted' && !submission.score);
     
     const user = userDetails[submission.user_id];
@@ -183,13 +129,54 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     setGradingModalOpen(true);
   };
 
-  const confirmAIGrading = () => {
-    // TODO: Implement AI grading API call
-    console.log('Sending submissions for AI grading:', selectedForGrading);
-    setGradingModalOpen(false);
-    setSelectedForGrading([]);
-    // Show success message
-    alert(`${selectedForGrading.length} submissions sent for AI grading`);
+  const confirmAIGrading = async () => {
+    try {
+      setGradingModalOpen(false);
+      // Call batch grading API
+      await assignmentApi.batchGradeSubmissions(assignment.id, selectedForGrading);
+      
+      // Show success message
+      alert(`${selectedForGrading.length} submissions queued for AI grading. Use the refresh button to check status.`);
+      
+      setSelectedForGrading([]);
+      
+      // Refresh submissions after a short delay
+      setTimeout(() => {
+        loadSubmissions();
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to start AI grading:', error);
+      alert('Failed to start AI grading. Please try again.');
+    }
+  };
+
+  const handleDownloadPDF = async (submission) => {
+    try {
+      setPdfLoading(true);
+      
+      // Get the first file from submitted_files (PDF submissions typically have one file)
+      const fileInfo = submission.submitted_files?.[0];
+      if (!fileInfo || !fileInfo.file_id) {
+        alert('No PDF file found in this submission.');
+        return;
+      }
+
+      // Get presigned URL from backend
+      const response = await assignmentApi.getSubmissionFileUrl(
+        assignment.id,
+        submission.id,
+        fileInfo.file_id
+      );
+
+      // Open PDF in new tab
+      window.open(response.url, '_blank');
+
+    } catch (error) {
+      console.error('Failed to open PDF:', error);
+      alert('Failed to open PDF. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -659,6 +646,86 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     }
   };
 
+  // Helper function to render answer with diagrams
+  const renderAnswerWithDiagram = (answer) => {
+    const answerText = typeof answer === 'string' ? answer : (answer?.text || '');
+    const diagram = typeof answer === 'object' ? answer?.diagram : null;
+    
+    return (
+      <div className="space-y-3">
+        {answerText && (
+          <div className="bg-gray-700 rounded p-3">
+            <p className="text-white whitespace-pre-wrap">{answerText}</p>
+          </div>
+        )}
+        {diagram && diagram.s3_key && (
+          <div className="bg-gray-800 p-3 rounded border border-gray-700">
+            <div className="flex items-center space-x-2 mb-2">
+              <ImageIcon size={16} className="text-teal-400" />
+              <span className="text-sm text-gray-300">Attached Diagram</span>
+            </div>
+            <DiagramImage diagramData={diagram} displayName={diagram.filename || 'Student diagram'} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Component for displaying diagram images with URL fetching
+  const DiagramImage = ({ diagramData, displayName }) => {
+    const [imageUrl, setImageUrl] = useState(null);
+    const [imageLoading, setImageLoading] = useState(!!diagramData.s3_key);
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        if (imageUrl || !diagramData.s3_key) return;
+
+        try {
+          setImageLoading(true);
+          setImageError(false);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('Failed to load diagram URL:', error);
+          setImageError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.s3_key, imageUrl]);
+
+    if (imageLoading) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+          <Loader2 size={24} className="text-teal-500 animate-spin" />
+        </div>
+      );
+    }
+
+    if (imageError || !imageUrl) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+          <div className="text-center">
+            <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">Failed to load image</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={imageUrl} 
+        alt={displayName}
+        className="w-full max-h-64 object-contain bg-gray-900 rounded"
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
   // Submission Detail Modal
   const SubmissionDetailModal = ({ submission, onClose }) => {
     if (!submission) return null;
@@ -721,6 +788,37 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
             </div>
 
+            {/* Grading Results - Show if graded */}
+            {submission.status === 'graded' && submission.feedback && (
+              <div className="mb-6 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl p-6 border border-green-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <CheckCircle size={24} className="text-green-400 mr-2" />
+                    Grading Results
+                  </h3>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-green-400">
+                      {submission.score && submission.percentage ? `${submission.percentage}%` : submission.score || 'N/A'}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {submission.score ? `${submission.score} points` : ''}
+                    </div>
+                  </div>
+                </div>
+                
+                {submission.overall_feedback && (
+                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                    <p className="text-gray-300 font-medium mb-2">Overall Feedback:</p>
+                    <p className="text-gray-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
+                  </div>
+                )}
+                
+                <div className="text-sm text-gray-400">
+                  Graded at: {submission.graded_at ? formatDate(submission.graded_at) : 'N/A'}
+                </div>
+              </div>
+            )}
+
             {/* Submission Content */}
             {submission.submission_method === 'in-app' || !submission.submission_method ? (
               <div className="space-y-6">
@@ -729,24 +827,36 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   Object.entries(submission.answers).map(([questionId, answer]) => {
                     const question = getQuestionById(questionId);
                     const questionNumber = getQuestionNumber(questionId);
+                    const questionFeedback = submission.feedback?.[questionId];
                     
                     return (
                       <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         {/* Question Header */}
                         <div className="mb-4">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                              Question {questionNumber}
-                            </span>
-                            {question?.type && (
-                              <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
-                                {question.type.replace('_', ' ')}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Question {questionNumber}
                               </span>
-                            )}
-                            {question?.points && (
-                              <span className="text-gray-400 text-sm">
-                                {question.points} {question.points === 1 ? 'point' : 'points'}
-                              </span>
+                              {question?.type && (
+                                <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                                  {question.type.replace('_', ' ')}
+                                </span>
+                              )}
+                              {question?.points && (
+                                <span className="text-gray-400 text-sm">
+                                  {question.points} {question.points === 1 ? 'point' : 'points'}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Show score for this question if available */}
+                            {questionFeedback && (
+                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                <span className="text-green-400 font-bold">
+                                  {questionFeedback.score || 0}/{questionFeedback.max_points || question?.points || 0}
+                                </span>
+                              </div>
                             )}
                           </div>
                           
@@ -770,10 +880,44 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         </div>
                         
                         {/* Answer Section */}
-                        <div>
+                        <div className="mb-4">
                           <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
-                          {renderAnswer(question, answer)}
+                          {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
+                            ? renderAnswerWithDiagram(answer)
+                            : renderAnswer(question, answer)
+                          }
                         </div>
+                        
+                        {/* Question Feedback */}
+                        {questionFeedback && (
+                          <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                            <p className="text-green-400 font-medium mb-3 flex items-center">
+                              <Brain size={16} className="mr-2" />
+                              AI Feedback
+                            </p>
+                            
+                            {questionFeedback.breakdown && (
+                              <div className="mb-3">
+                                <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
+                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                              </div>
+                            )}
+                            
+                            {questionFeedback.strengths && (
+                              <div className="mb-3">
+                                <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
+                                <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                              </div>
+                            )}
+                            
+                            {questionFeedback.areas_for_improvement && (
+                              <div>
+                                <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
+                                <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   }) :
@@ -781,18 +925,99 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 }
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <FileText size={40} className="text-gray-400" />
+              <div className="space-y-6">
+                {/* PDF Submission Header */}
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText size={40} className="text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
+                  <p className="text-gray-400 mb-6">
+                    This student submitted their answers as a PDF file.
+                  </p>
+                  <button 
+                    onClick={() => handleDownloadPDF(submission)}
+                    disabled={pdfLoading}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {pdfLoading ? (
+                      <>
+                        <Loader2 size={18} className="mr-2 animate-spin" />
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download size={18} className="mr-2" />
+                        Download PDF
+                      </>
+                    )}
+                  </button>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
-                <p className="text-gray-400 mb-6">
-                  This student submitted their answers as a PDF file.
-                </p>
-                <button className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300">
-                  <Download size={18} className="mr-2" />
-                  Download PDF
-                </button>
+
+                {/* PDF Feedback by Question */}
+                {submission.feedback && Object.keys(submission.feedback).length > 0 && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-bold text-white flex items-center">
+                      <Brain size={24} className="text-green-400 mr-2" />
+                      Question-by-Question Feedback
+                    </h3>
+                    
+                    {Object.entries(submission.feedback)
+                      .sort(([a], [b]) => {
+                        // Sort questions numerically, handling decimal formats like 1.1, 1.2
+                        const aNum = parseFloat(a);
+                        const bNum = parseFloat(b);
+                        return aNum - bNum;
+                      })
+                      .map(([questionId, feedback]) => (
+                        <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                          {/* Question Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Question {questionId}
+                              </span>
+                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                <span className="text-green-400 font-bold">
+                                  {feedback.score || 0}/{feedback.max_points || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Feedback Content */}
+                          <div className="space-y-4">
+                            {feedback.breakdown && (
+                              <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
+                                <p className="text-gray-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
+                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
+                              </div>
+                            )}
+                            
+                            {feedback.strengths && (
+                              <div className="bg-green-900/20 rounded-lg p-4 border border-green-500/30">
+                                <p className="text-green-400 text-sm mb-2 font-medium flex items-center">
+                                  <CheckCircle size={16} className="mr-2" />
+                                  Strengths:
+                                </p>
+                                <p className="text-gray-200 text-sm">{feedback.strengths}</p>
+                              </div>
+                            )}
+                            
+                            {feedback.areas_for_improvement && feedback.areas_for_improvement !== "None." && (
+                              <div className="bg-orange-900/20 rounded-lg p-4 border border-orange-500/30">
+                                <p className="text-orange-400 text-sm mb-2 font-medium flex items-center">
+                                  <AlertCircle size={16} className="mr-2" />
+                                  Areas for Improvement:
+                                </p>
+                                <p className="text-gray-200 text-sm">{feedback.areas_for_improvement}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -855,27 +1080,38 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center space-x-4 min-w-0 flex-1">
               <button
                 onClick={onBack}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-400 hover:text-white transition-colors flex-shrink-0"
               >
                 <ArrowLeft size={24} />
               </button>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{assignment.title}</h1>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-3xl font-bold text-white truncate">{assignment.title}</h1>
                 <p className="text-gray-400 mt-2">Assignment Submissions</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
+              <button
+                onClick={loadSubmissions}
+                disabled={loading}
+                className="inline-flex items-center justify-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors border border-gray-700 whitespace-nowrap"
+                title="Refresh submissions"
+              >
+                <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
+                <span className="sm:hidden">↻</span>
+              </button>
               {selectedForGrading.length > 0 && (
                 <button
                   onClick={handleSendForAIGrading}
-                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 whitespace-nowrap"
                 >
                   <Brain size={18} className="mr-2" />
-                  Grade with AI ({selectedForGrading.length})
+                  <span className="hidden sm:inline">Grade with AI ({selectedForGrading.length})</span>
+                  <span className="sm:hidden">AI ({selectedForGrading.length})</span>
                 </button>
               )}
             </div>
@@ -886,8 +1122,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters and Search */}
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800 mb-6">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -902,14 +1138,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Filter size={20} className="text-gray-400" />
+              <Filter size={20} className="text-gray-400 flex-shrink-0" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Submissions</option>
                 <option value="submitted">Submitted</option>
+                <option value="grading">Grading in Progress</option>
                 <option value="graded">Graded</option>
                 <option value="pending">Pending Grade</option>
               </select>
@@ -918,57 +1155,66 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <FileText size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">{submissions.length}</p>
-                <p className="text-gray-400">Total Submissions</p>
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">{submissions.length}</p>
+                <p className="text-gray-400 text-sm sm:text-base">Total Submissions</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <CheckCircle size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CheckCircle size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">
-                  {submissions.filter(s => s.gradingStatus === 'graded').length}
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">
+                  {submissions.filter(s => s.status === 'graded').length}
                 </p>
-                <p className="text-gray-400">Graded</p>
+                <p className="text-gray-400 text-sm sm:text-base">Graded</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
-                <Clock size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">
-                  {submissions.filter(s => s.gradingStatus === 'pending').length}
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">
+                  {submissions.filter(s => s.status === 'pending').length}
                 </p>
-                <p className="text-gray-400">Pending</p>
+                <p className="text-gray-400 text-sm sm:text-base">Pending</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <Brain size={24} className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Brain size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-white">
-                  {Math.round((submissions.filter(s => s.score).reduce((sum, s) => sum + s.score, 0) / submissions.filter(s => s.score).length) || 0)}
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xl sm:text-2xl font-bold text-white">
+                  {
+                    (() => {
+                      const scores = submissions
+                        .map(s => typeof s.score === 'number' ? s.score : parseFloat(s.score))
+                        .filter(score => !isNaN(score));
+                      if (scores.length === 0) return 'N/A';
+                      const avg = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+                      return Math.round(avg);
+                    })()
+                  }
                 </p>
-                <p className="text-gray-400">Avg Score</p>
+                <p className="text-gray-400 text-sm sm:text-base">Avg Score</p>
               </div>
             </div>
           </div>
@@ -1013,15 +1259,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             </div>
             
             <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[800px]">
               <thead className="bg-gray-800">
                 <tr>
-                  <th className="px-6 py-4 text-left">
+                  <th className="px-3 sm:px-6 py-4 text-left">
                     <input
                       type="checkbox"
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedForGrading(filteredSubmissions.filter(s => s.status === 'submitted' && !s.score).map(s => s.id));
+                          setSelectedForGrading(filteredSubmissions.filter(s => s.status === 'submitted' && !s.score && s.status !== 'grading').map(s => s.id));
                         } else {
                           setSelectedForGrading([]);
                         }
@@ -1029,22 +1275,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       className="text-teal-500 focus:ring-teal-500"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Student
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Submitted
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden md:table-cell">
                     Type
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Score
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -1052,55 +1298,58 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               <tbody className="divide-y divide-gray-800">
                 {filteredSubmissions.map((submission) => (
                   <tr key={submission.id} className="hover:bg-gray-800/50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <input
                         type="checkbox"
                         checked={selectedForGrading.includes(submission.id)}
                         onChange={() => handleSelectForGrading(submission.id)}
-                        disabled={submission.status === 'graded' || submission.score}
+                        disabled={submission.status === 'graded' || submission.status === 'grading' || submission.score}
                         className="text-teal-500 focus:ring-teal-500"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-white font-medium">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate">
                           {userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User'}
                         </p>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-gray-400 text-sm truncate">
                           {userDetails[submission.user_id]?.email || `User ID: ${submission.user_id}`}
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-300 text-sm">
+                    <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
                       {submission.submitted_at ? formatDate(submission.submitted_at) : 'Not submitted'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="flex items-center">
                         <FileText size={16} className="text-gray-400 mr-2" />
                         <span className="text-gray-300 text-sm capitalize">{submission.submission_method || 'in-app'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                    <td className="px-3 sm:px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
                         submission.status === 'graded' || submission.score
                           ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                          : submission.status === 'grading'
+                          ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
                           : submission.status === 'submitted'
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                           : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                       }`}>
+                        {/* {(submission.status === 'grading') ? <><Loader2 size={16} className="animate-spin" /></> : <></>} */}
                         {submission.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-300">
+                    <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
                       {submission.score ? `${submission.score}${submission.percentage ? ` (${submission.percentage}%)` : ''}` : '-'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <button
                         onClick={() => handleViewSubmission(submission)}
-                        className="inline-flex items-center px-3 py-1 bg-gray-700 text-white text-sm font-medium rounded hover:bg-gray-600 transition-colors"
+                        className="inline-flex items-center px-2 py-1 bg-gray-700 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
                       >
-                        <Eye size={14} className="mr-1" />
-                        View
+                        <Eye size={12} className="mr-1" />
+                        <span className="hidden sm:inline">View</span>
                       </button>
                     </td>
                   </tr>

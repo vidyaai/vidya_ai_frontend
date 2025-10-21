@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   reactStrictMode: true,
   images: {
     domains: ['via.placeholder.com', 'devapi.vidyaai.co', 'api.vidyaai.co'],

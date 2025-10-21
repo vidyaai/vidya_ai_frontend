@@ -33,7 +33,6 @@ export default function HomeRoute() {
         }
       }}
       onNavigateToTranslate={() => router.push('/translate')}
-      onNavigateToGallery={() => router.push('/gallery')}
       onNavigateToAssignments={() => router.push('/assignments')}
       onNavigateToPricing={() => router.push('/pricing')}
     />

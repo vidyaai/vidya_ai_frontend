@@ -1,6 +1,6 @@
 // src/components/generic/TopBar.jsx
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, Menu, X, Settings, CreditCard, XCircle, RefreshCw } from 'lucide-react';
+import { User, LogOut, Menu, X, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const TopBar = ({ onNavigateToHome }) => {

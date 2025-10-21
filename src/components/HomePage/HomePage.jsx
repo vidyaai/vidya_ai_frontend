@@ -9,11 +9,9 @@ import {
   ArrowRight,
   ClipboardList
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 import TopBar from '../generic/TopBar';
 
-const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery, onNavigateToAssignments, onNavigateToPricing }) => {
-  const { currentUser } = useAuth();
+const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToAssignments, onNavigateToPricing }) => {
 
   const features = [
     {

@@ -8,10 +8,8 @@ import {
   Lock, 
   Copy, 
   Check, 
-  Mail, 
   UserPlus, 
   Trash2,
-  Calendar,
   FileText,
   Settings
 } from 'lucide-react';

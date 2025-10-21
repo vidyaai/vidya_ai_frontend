@@ -10,10 +10,7 @@ import {
   Edit3,
   Code,
   Image as ImageIcon,
-  Calculator,
   Layers,
-  FileText,
-  Zap,
   Upload,
   Loader2,
   Eye

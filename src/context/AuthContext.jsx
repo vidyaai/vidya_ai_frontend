@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     return { user: mockUser };
   };
 
-  const demoLogin = async (email, password) => {
+  const demoLogin = async (email) => {
     // Simulate login delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     

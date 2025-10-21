@@ -1,13 +1,10 @@
 // src/components/Assignments/AssignmentBuilder.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft, 
   Plus, 
   Save, 
   Eye, 
-  GripVertical,
-  Trash2,
-  Edit,
   ChevronDown
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
@@ -23,7 +20,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [assignmentDescription, setAssignmentDescription] = useState(preloadedData?.description || '');
   const [assignmentDueDate, setAssignmentDueDate] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
   const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
 
   const questionTypes = [
@@ -80,7 +76,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   useEffect(() => {
     const validation = validateAssignmentForPublishing();
     setValidationStatus(validation);
-  }, [questions, assignmentTitle]);
+  }, [questions, assignmentTitle, validateAssignmentForPublishing]);
 
   const addQuestion = (type) => {
     const baseQuestion = {
@@ -164,7 +160,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   };
 
   // Validation function for publishing
-  const validateAssignmentForPublishing = () => {
+  const validateAssignmentForPublishing = useCallback(() => {
     const errors = [];
     
     // Check if at least one question is present
@@ -351,7 +347,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       isValid: errors.length === 0,
       errors
     };
-  };
+  }, [questions]);
 
   const saveAssignment = async (status = 'draft') => {
     if (!assignmentTitle.trim()) {

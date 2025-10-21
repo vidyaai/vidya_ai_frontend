@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Share2, Users, Globe, Lock, Copy, Check, Mail, UserPlus, Trash2 } from 'lucide-react';
+import { X, Share2, Globe, Lock, Copy, Check, UserPlus, Trash2 } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 
 const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = null }) => {

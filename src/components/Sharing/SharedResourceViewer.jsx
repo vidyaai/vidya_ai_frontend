@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, Eye, AlertCircle, Loader, LogIn, Play } from 'lucide-react';
+import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, AlertCircle, Loader, LogIn } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import SharedChatPage from './SharedChatPage';

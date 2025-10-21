@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Play, Clock, AlertCircle, Loader, LogIn, Share2, User, Calendar } from 'lucide-react';
+import { AlertCircle, Loader, LogIn, MessageSquare } from 'lucide-react';
 import { parseMarkdown, formatTime, api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import PlayerComponent from '../Chat/PlayerComponent';

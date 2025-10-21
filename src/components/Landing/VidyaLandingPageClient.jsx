@@ -2,17 +2,6 @@
 
 import { useState } from 'react';
 import {
-  BookOpen,
-  GraduationCap,
-  Video,
-  Brain,
-  Globe,
-  Clock,
-  CheckCircle,
-  Zap,
-  Users,
-  TrendingUp,
-  Star,
   ArrowRight,
   Menu,
   X,

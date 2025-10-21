@@ -1,5 +1,5 @@
 // src/components/Assignments/AIAssignmentGenerator.jsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   ArrowLeft, 
   Upload, 
@@ -11,10 +11,8 @@ import {
   AlertCircle,
   Link,
   Plus,
-  Trash2
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
-import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { assignmentApi } from './assignmentApi';
 import { fileToBase64 } from './ImportFromDocumentModal';

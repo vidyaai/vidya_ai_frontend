@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignedToMe.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft, 
   Clock, 
@@ -8,7 +8,6 @@ import {
   CheckCircle,
   AlertTriangle,
   FileText,
-  Eye,
   Loader2
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
@@ -26,9 +25,9 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   // Load assigned assignments from API
   useEffect(() => {
     loadAssignedAssignments();
-  }, []);
+  }, [loadAssignedAssignments]);
 
-  const loadAssignedAssignments = async () => {
+  const loadAssignedAssignments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +43,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const loadAssignmentStatuses = async (assignments) => {
     try {

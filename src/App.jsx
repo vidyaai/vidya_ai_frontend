@@ -11,7 +11,6 @@ import ProtectedRoute from './components/generic/ProtectedRoute';
 import TopBar from './components/generic/TopBar';
 import PageHeader from './components/generic/PageHeader';
 import SharedResourceViewer from './components/Sharing/SharedResourceViewer';
-import SharedChatPage from './components/Sharing/SharedChatPage';
 import AssignmentManager from './components/Assignments/AssignmentManager';
 import './App.css';
 
@@ -31,20 +30,13 @@ const TranslatePagePlaceholder = ({ onNavigateToHome }) => (
   </div>
 );
 
-// Try to import TranslatePage, use placeholder if it fails
-let TranslatePage;
-try {
-  TranslatePage = require('./components/TranslatePage').default;
-} catch (e) {
-  console.warn('TranslatePage component not found, using placeholder');
-  TranslatePage = TranslatePagePlaceholder;
-}
+// Use placeholder for TranslatePage since the component doesn't exist yet
+const TranslatePage = TranslatePagePlaceholder;
 
 // Utility function to get initial page from URL
 const getInitialPage = () => {
   const path = window.location.pathname;
   const urlParams = new URLSearchParams(window.location.search);
-  const returnUrl = urlParams.get('returnUrl');
   
   // Only set to shared if we're actually on a shared URL, not just have it in returnUrl
   // The returnUrl will be handled by the redirect logic after login
@@ -204,7 +196,7 @@ const AppContent = () => {
         handleNavigateToHome();
       }
     }
-  }, [currentUser]);
+  }, [currentUser, currentPage]);
 
   // NOW AFTER ALL HOOKS, CHECK AUTHENTICATION
   // Check if user wants to login (from shared link redirect)

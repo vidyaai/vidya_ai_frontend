@@ -7,8 +7,6 @@ import {
   Clock, 
   CheckCircle,
   AlertCircle,
-  FileText,
-  Download,
   Image as ImageIcon
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';

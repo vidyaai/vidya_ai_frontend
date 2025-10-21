@@ -1,18 +1,16 @@
 // ImprovedYoutubePlayer.jsx - Main component with Quiz integration (STABLE FIX)
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Youtube, Menu, Home, MessageSquare, Globe, Upload } from 'lucide-react';
+import { Youtube, Upload } from 'lucide-react';
 import YoutubeDownloader from './YoutubeDownloader';
 import PlayerComponent from './PlayerComponent';
 import TranscriptComponent from './TranscriptComponent';
 import ChatBoxComponent from './ChatBoxComponent';
-import ChatHistory from './ChatHistory.jsx';
 import QuizPanel from './QuizPanel';
 import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import VideoUploader from './VideoUploader.jsx';
 
-const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, selectedVideo }) => {
-  const { currentUser } = useAuth();
+const ImprovedYoutubePlayer = ({ selectedVideo }) => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +20,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [transcript, setTranscript] = useState(() => {
     return loadFromLocalStorage('transcript', '');
   });
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState(() => {
     return loadFromLocalStorage('chatMessages', []);
   });
@@ -33,11 +30,9 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [activeSessionId, setActiveSessionId] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [player, setPlayer] = useState(null);
   
   // Quiz state
   const [isQuizOpen, setIsQuizOpen] = useState(false);
-  const [systemMessages, setSystemMessages] = useState([]);
   const [isUploadCompleting, setIsUploadCompleting] = useState(false);
   const [showVideoUploader, setShowVideoUploader] = useState(true);
   

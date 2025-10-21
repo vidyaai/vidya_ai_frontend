@@ -1,11 +1,9 @@
 // src/components/Assignments/AssignmentManager.jsx
 import { useState } from 'react';
 import { 
-  ClipboardList, 
   UserCheck, 
   ArrowRight,
-  Plus,
-  Sparkles
+  Plus
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import MyAssignments from './MyAssignments';

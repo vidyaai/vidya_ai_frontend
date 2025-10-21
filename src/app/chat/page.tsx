@@ -1,13 +1,13 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import ProtectedRouteWrapper from '@/components/generic/ProtectedRouteWrapper'
 import ImprovedYoutubePlayer from '@/components/Chat/ImprovedYouTubePlayer'
 import TopBar from '@/components/generic/TopBar'
 import PageHeader from '@/components/generic/PageHeader'
 
-export default function ChatRoute() {
+function ChatContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const videoId = searchParams.get('v')
@@ -34,12 +34,20 @@ export default function ChatRoute() {
             onNavigateToPricing={() => router.push('/pricing')}
           />
           <ImprovedYoutubePlayer
-            onNavigateToHome={() => router.push('/home')}
-            onNavigateToTranslate={() => router.push('/translate')}
             selectedVideo={selectedVideo}
           />
         </div>
       </div>
     </ProtectedRouteWrapper>
+  )
+}
+
+export default function ChatRoute() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+    </div>}>
+      <ChatContent />
+    </Suspense>
   )
 }

@@ -7,7 +7,6 @@ import TranscriptComponent from './TranscriptComponent';
 import ChatBoxComponent from './ChatBoxComponent';
 import QuizPanel from './QuizPanel';
 import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
-import { useAuth } from '../../context/AuthContext';
 import VideoUploader from './VideoUploader.jsx';
 
 const ImprovedYoutubePlayer = ({ selectedVideo }) => {
@@ -170,7 +169,6 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
       // Reset chat/quiz state
       setChatMessages([]);
       setIsQuizOpen(false);
-      setSystemMessages([]);
 
     } catch (error) {
       console.error("Error loading selected video:", error);
@@ -242,7 +240,6 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
       
       setChatMessages([]);
       setIsQuizOpen(false);
-      setSystemMessages([]);
       
     } catch (error) {
       console.error("Error loading video:", error);
@@ -306,7 +303,6 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
         // Reset state
         setChatMessages([]);
         setIsQuizOpen(false);
-        setSystemMessages([]);
 
         // Update refs to prevent conflicts
         lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
@@ -328,7 +324,8 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
   }, []);
 
   const handlePlayerReady = (playerInstance) => {
-    setPlayer(playerInstance);
+    // Player instance is managed by PlayerComponent, no need to store it here
+    console.log('Player ready:', playerInstance);
   };
 
   const handleTimeUpdate = (time) => {
@@ -506,7 +503,8 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
   }, [currentVideo.videoId]);
 
   const handleQuizSystemMessage = (message) => {
-    setSystemMessages(prev => [...prev, message]);
+    // System messages functionality removed - quiz messages are handled internally
+    console.log('Quiz system message:', message);
   };
 
   const handleStartQuiz = () => {

@@ -9,6 +9,20 @@ const nextConfig = {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
     NEXT_PUBLIC_NODE_ENV: process.env.NEXT_PUBLIC_NODE_ENV,
   },
+  // // Proxy API requests to backend in development
+  // async rewrites() {
+  //   const isLocal = process.env.NEXT_PUBLIC_NODE_ENV === 'local' || process.env.NODE_ENV === 'local';
+    
+  //   if (isLocal) {
+  //     return [
+  //       {
+  //         source: '/api/:path*',
+  //         destination: 'http://127.0.0.1:8000/api/:path*',
+  //       },
+  //     ];
+  //   }
+  //   return [];
+  // },
   // Enable CORS for API routes if needed
   async headers() {
     return [

@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignedToMe.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Clock, 
@@ -21,29 +21,6 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   const [assignmentStatuses, setAssignmentStatuses] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Load assigned assignments from API
-  useEffect(() => {
-    loadAssignedAssignments();
-  }, [loadAssignedAssignments]);
-
-  const loadAssignedAssignments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await assignmentApi.getAssignedToMeAssignments();
-      setAssignedAssignments(data);
-      
-      // Load status for each assignment
-      await loadAssignmentStatuses(data);
-    } catch (err) {
-      console.error('Failed to load shared assignments:', err);
-      setError('Failed to load assignments. Please try again.');
-      setAssignedAssignments([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const loadAssignmentStatuses = async (assignments) => {
     try {
@@ -77,6 +54,30 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
       console.error('Failed to load assignment statuses:', error);
     }
   };
+
+  const loadAssignedAssignments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await assignmentApi.getAssignedToMeAssignments();
+      setAssignedAssignments(data);
+      
+      // Load status for each assignment
+      await loadAssignmentStatuses(data);
+    } catch (err) {
+      console.error('Failed to load shared assignments:', err);
+      setError('Failed to load assignments. Please try again.');
+      setAssignedAssignments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load assigned assignments from API
+  useEffect(() => {
+    loadAssignedAssignments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getStudentStatus = (assignment) => {
     const assignmentId = assignment.id;

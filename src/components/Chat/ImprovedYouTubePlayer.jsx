@@ -76,7 +76,6 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
     setTranscript('');
     setChatMessages([]);
     setIsQuizOpen(false);
-    setSystemMessages([]);
     setErrorMessage('');
     setIsLoading(false);
     // Clear localStorage as well so it doesn't persist

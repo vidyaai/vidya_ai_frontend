@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   reactStrictMode: true,
   images: {
     domains: ['via.placeholder.com', 'devapi.vidyaai.co', 'api.vidyaai.co'],
-    unoptimized: process.env.NODE_ENV === 'development',
+    unoptimized: true,
   },
+  trailingSlash: true,
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
     NEXT_PUBLIC_NODE_ENV: process.env.NEXT_PUBLIC_NODE_ENV,

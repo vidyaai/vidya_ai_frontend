@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import LandingPageWrapper from './LandingPageWrapper'
+import LandingPageWrapper from './(landing)/LandingPageWrapper'
 
 export const metadata: Metadata = {
   title: 'VidyaAI - Transform STEM Learning with AI-Powered Education',
@@ -70,3 +70,4 @@ export const metadata: Metadata = {
 export default function Home() {
   return <LandingPageWrapper />
 }
+

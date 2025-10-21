@@ -14,13 +14,27 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentVideo, setCurrentVideo] = useState(() => {
-    return loadFromLocalStorage('currentVideo', { title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+    // Only load from localStorage if there's a video ID in the URL (page refresh scenario)
+    // Otherwise start with empty state to prevent stale videos from appearing
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasVideoIdInUrl = urlParams.get('v');
+    
+    if (hasVideoIdInUrl) {
+      return loadFromLocalStorage('currentVideo', { title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+    }
+    return { title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' };
   });
   const [transcript, setTranscript] = useState(() => {
-    return loadFromLocalStorage('transcript', '');
+    // Only load transcript if there's a video ID in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasVideoIdInUrl = urlParams.get('v');
+    return hasVideoIdInUrl ? loadFromLocalStorage('transcript', '') : '';
   });
   const [chatMessages, setChatMessages] = useState(() => {
-    return loadFromLocalStorage('chatMessages', []);
+    // Only load chat messages if there's a video ID in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasVideoIdInUrl = urlParams.get('v');
+    return hasVideoIdInUrl ? loadFromLocalStorage('chatMessages', []) : [];
   });
   // Per-video chat sessions
   const [chatSessionsByVideo, setChatSessionsByVideo] = useState(() => {
@@ -61,11 +75,13 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
           lastSelectedRef.current = selectedVideo;
           loadSelectedVideo(selectedVideo);
         }
-      } else if (selectedVideo === null && lastSelectedRef.current?.sourceType !== 'uploaded') {
+      } else if (selectedVideo === null) {
         // Clear state when explicitly navigating without a video (from PageHeader/HomePage)
-        // But don't clear if we just uploaded a video
-        lastSelectedRef.current = null;
-        clearVideoState();
+        // Only clear if we're not just finishing an upload
+        if (lastSelectedRef.current?.sourceType !== 'uploaded') {
+          lastSelectedRef.current = null;
+          clearVideoState();
+        }
       }
     }
   }, [selectedVideo, isUploadCompleting]);
@@ -101,64 +117,91 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
     setShowVideoUploader(true);
 
     try {
-      if (videoData.sourceType === 'youtube') {
-        const response = await api.post(`/api/youtube/info`, {
-          url: `https://www.youtube.com/watch?v=${videoData.videoId}`
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
-          }
-        });
+      // Determine if we need to detect the source type
+      const needsDetection = !videoData.sourceType || videoData.sourceType === undefined;
+      
+      // Try YouTube first if sourceType is 'youtube' or needs detection
+      if (videoData.sourceType === 'youtube' || needsDetection) {
+        try {
+          const response = await api.post(`/api/youtube/info`, {
+            url: `https://www.youtube.com/watch?v=${videoData.videoId}`
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
 
-        setTranscript(response.data.transcript || "No transcript available for this video.");
+          setTranscript(response.data.transcript || "No transcript available for this video.");
+          setCurrentVideo({
+            title: response.data.title || videoData.title || "YouTube Video",
+            source: videoData.source || `https://www.youtube.com/embed/${videoData.videoId}?enablejsapi=1&origin=${window.location.origin}&controls=0`,
+            videoId: videoData.videoId,
+            sourceType: 'youtube',
+            videoUrl: '',
+            isShared: videoData.isShared || false,
+            shareToken: videoData.shareToken || null,
+            shareId: videoData.shareId || null,
+            loadTimestamp: Date.now()
+          });
+
+          // Update URL
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.set('v', videoData.videoId);
+          window.history.replaceState({}, '', newUrl);
+
+          // Reset chat/quiz state
+          setChatMessages([]);
+          setIsQuizOpen(false);
+          
+          return; // Successfully loaded as YouTube video
+        } catch (youtubeError) {
+          console.log("YouTube API failed:", youtubeError);
+          
+          // If sourceType was explicitly 'youtube', don't try uploaded
+          if (videoData.sourceType === 'youtube') {
+            throw youtubeError;
+          }
+          
+          // Otherwise, fall through to try uploaded video API
+          console.log("Trying uploaded video API as fallback...");
+        }
+      }
+      
+      // Try uploaded video API (if sourceType is 'uploaded' or YouTube failed)
+      const response = await api.get(`/api/user-videos/info`, {
+        params: { 
+          video_id: videoData.videoId,
+          ...(videoData.shareToken && { share_token: videoData.shareToken })
+        },
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+
+      if (response.data) {
+        setTranscript(response.data.transcript || '');
         setCurrentVideo({
-          title: response.data.title || videoData.title || "YouTube Video",
-          source: videoData.source,
+          title: response.data.title || videoData.title || 'Uploaded Video',
           videoId: videoData.videoId,
-          sourceType: 'youtube',
-          videoUrl: '',
+          source: '',
+          sourceType: 'uploaded',
+          videoUrl: buildAbsoluteVideoUrl(response.data.video_url || videoData.videoUrl),
           isShared: videoData.isShared || false,
           shareToken: videoData.shareToken || null,
           shareId: videoData.shareId || null,
           loadTimestamp: Date.now()
         });
       } else {
-        // For uploaded videos
-        const response = await api.get(`/api/user-videos/info`, {
-          params: { 
-            video_id: videoData.videoId,
-            ...(videoData.shareToken && { share_token: videoData.shareToken })
-          },
-          headers: { 'ngrok-skip-browser-warning': 'true' }
+        setCurrentVideo({
+          title: videoData.title || 'Uploaded Video',
+          videoId: videoData.videoId,
+          source: '',
+          sourceType: 'uploaded',
+          videoUrl: videoData.videoUrl,
+          isShared: videoData.isShared || false,
+          shareToken: videoData.shareToken || null,
+          shareId: videoData.shareId || null,
+          loadTimestamp: Date.now()
         });
-
-        if (response.data) {
-          setTranscript(response.data.transcript || '');
-          setCurrentVideo({
-            title: response.data.title || videoData.title || 'Uploaded Video',
-            videoId: videoData.videoId,
-            source: '',
-            sourceType: 'uploaded',
-            videoUrl: buildAbsoluteVideoUrl(response.data.video_url || videoData.videoUrl),
-            isShared: videoData.isShared || false,
-            shareToken: videoData.shareToken || null,
-            shareId: videoData.shareId || null,
-            loadTimestamp: Date.now()
-          });
-        } else {
-          setCurrentVideo({
-            title: videoData.title || 'Uploaded Video',
-            videoId: videoData.videoId,
-            source: '',
-            sourceType: 'uploaded',
-            videoUrl: videoData.videoUrl,
-            isShared: videoData.isShared || false,
-            shareToken: videoData.shareToken || null,
-            shareId: videoData.shareId || null,
-            loadTimestamp: Date.now()
-          });
-        }
       }
 
       // Update URL
@@ -552,11 +595,17 @@ const ImprovedYoutubePlayer = ({ selectedVideo }) => {
     saveToLocalStorage('chatMessages', chatMessages);
   }, [chatMessages]);
 
-  // Handle URL parameters - only on initial load
+  // Handle URL parameters - only on initial load when no other video loading mechanism is active
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const videoIdFromUrl = urlParams.get('v');
     
+    // Only set YouTube URL if:
+    // 1. There's a video ID in the URL
+    // 2. No current video is loaded
+    // 3. No YouTube URL is already set
+    // 4. No selectedVideo prop is present (handled by parent)
+    // 5. Not currently loading
     if (videoIdFromUrl && !currentVideo.videoId && !youtubeUrl && !selectedVideo && !isLoadingRef.current) {
       setYoutubeUrl(`https://www.youtube.com/watch?v=${videoIdFromUrl}`);
     }

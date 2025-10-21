@@ -15,8 +15,37 @@ function ChatContent() {
 
   useEffect(() => {
     if (videoId) {
-      // You might want to fetch video details here or construct video data
-      setSelectedVideo({ videoId })
+      // Try to get full video metadata from sessionStorage first
+      let videoData = null;
+      
+      // Look for recent video metadata entries in sessionStorage
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith(`video_metadata_${videoId}_`)) {
+          try {
+            const storedData = sessionStorage.getItem(key);
+            if (storedData) {
+              videoData = JSON.parse(storedData);
+              // Clean up after retrieval
+              sessionStorage.removeItem(key);
+              break;
+            }
+          } catch (e) {
+            console.error('Error parsing video metadata from sessionStorage:', e);
+          }
+        }
+      }
+      
+      // If we found metadata in sessionStorage, use it; otherwise fall back to just videoId
+      if (videoData) {
+        setSelectedVideo(videoData);
+      } else {
+        // Fall back to just videoId for direct URLs (source detection will handle this)
+        setSelectedVideo({ videoId });
+      }
+    } else {
+      // Clear selected video when no videoId in URL
+      setSelectedVideo(null);
     }
   }, [videoId])
 

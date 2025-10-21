@@ -230,7 +230,11 @@ const Gallery = ({ onNavigateToChat }) => {
       console.log('Regular video data prepared:', videoData);
     }
     
-    // Navigate to chat with video data
+    // Store complete video metadata in sessionStorage for chat page to retrieve
+    const videoMetadataKey = `video_metadata_${video.id}_${Date.now()}`;
+    sessionStorage.setItem(videoMetadataKey, JSON.stringify(videoData));
+    
+    // Navigate to chat with video data (pass metadata key for retrieval)
     if (onNavigateToChat) {
       onNavigateToChat(videoData);
     }

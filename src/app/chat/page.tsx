@@ -1,13 +1,13 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import ProtectedRouteWrapper from '@/components/generic/ProtectedRouteWrapper'
 import ImprovedYoutubePlayer from '@/components/Chat/ImprovedYouTubePlayer'
 import TopBar from '@/components/generic/TopBar'
 import PageHeader from '@/components/generic/PageHeader'
 
-export default function ChatRoute() {
+function ChatContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const videoId = searchParams.get('v')
@@ -41,5 +41,13 @@ export default function ChatRoute() {
         </div>
       </div>
     </ProtectedRouteWrapper>
+  )
+}
+
+export default function ChatRoute() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ChatContent />
+    </Suspense>
   )
 }

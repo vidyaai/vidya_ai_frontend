@@ -3,9 +3,9 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthForm from '@/components/Login/AuthForm'
 import { useAuth } from '@/context/AuthContext'
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 
-export default function LoginRoute() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { currentUser } = useAuth()
@@ -32,4 +32,12 @@ export default function LoginRoute() {
   }
 
   return <AuthForm onNavigateToLanding={() => router.push('/')} returnUrl={returnUrl || undefined} />
+}
+
+export default function LoginRoute() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
+  )
 }

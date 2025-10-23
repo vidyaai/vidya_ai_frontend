@@ -11,13 +11,15 @@ console.log("API_BASE_URL from env", API_BASE_URL);
 // Use environment variable or fallback to hardcoded for backward compatibility
 let API_URL = API_BASE_URL || 'https://api.vidyaai.co';
 
+/*
 if (NODE_ENV === 'development') {
   API_URL = 'https://devapi.vidyaai.co';
 } else if (NODE_ENV === 'production') {
   API_URL = 'https://api.vidyaai.co';
 } else if (NODE_ENV === 'local') {
-  API_URL = ' http://127.0.0.1:8000';
-}
+  API_URL = 'http://127.0.0.1:8000';
+}*/
+API_URL = 'http://127.0.0.1:8000';
 console.log("Final API_URL", API_URL);
 export { API_URL };
 

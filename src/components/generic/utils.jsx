@@ -2,8 +2,9 @@
 import { auth } from '../../firebase/config';
 import axios from 'axios';
 
-const NODE_ENV = import.meta.env.VITE_NODE_ENV;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Next.js environment variables
+const NODE_ENV = process.env.NEXT_PUBLIC_NODE_ENV || process.env.NODE_ENV;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 console.log("NODE_ENV", NODE_ENV);
 console.log("API_BASE_URL from env", API_BASE_URL);
@@ -16,7 +17,7 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'production') {
   API_URL = 'https://api.vidyaai.co';
 } else if (NODE_ENV === 'local') {
-  API_URL = ' http://127.0.0.1:8000';
+  API_URL = 'http://127.0.0.1:8000';
 }
 console.log("Final API_URL", API_URL);
 export { API_URL };

@@ -1,0 +1,12 @@
+# Allow all bots to crawl
+User-agent: *
+Allow: /
+
+# Disallow sensitive or dynamic pages
+Disallow: /api/
+Disallow: /chat?
+Disallow: /login
+Disallow: /shared/
+
+# Sitemap
+Sitemap: https://vidyaai.co/sitemap.xml

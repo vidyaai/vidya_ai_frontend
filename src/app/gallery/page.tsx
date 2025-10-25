@@ -24,7 +24,7 @@ export default function GalleryRoute() {
           />
           <Gallery onNavigateToChat={(videoData) => {
             if (videoData?.videoId) {
-              router.push(`/chat?v=${videoData.videoId}`)
+              router.push(`/chat?v=${videoData.videoId}&type=${videoData.sourceType || 'youtube'}`)
             } else {
               router.push('/chat')
             }

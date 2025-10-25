@@ -16,16 +16,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentVideo, setCurrentVideo] = useState(() => {
-    return loadFromLocalStorage('currentVideo', { title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
-  });
-  const [transcript, setTranscript] = useState(() => {
-    return loadFromLocalStorage('transcript', '');
-  });
+  const [currentVideo, setCurrentVideo] = useState({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
+  const [transcript, setTranscript] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState(() => {
-    return loadFromLocalStorage('chatMessages', []);
-  });
+  const [chatMessages, setChatMessages] = useState([]);
   // Per-video chat sessions
   const [chatSessionsByVideo, setChatSessionsByVideo] = useState(() => {
     return loadFromLocalStorage('chatSessionsByVideo', {});
@@ -67,9 +61,10 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           lastSelectedRef.current = selectedVideo;
           loadSelectedVideo(selectedVideo);
         }
-      } else if (selectedVideo === null && lastSelectedRef.current?.sourceType !== 'uploaded') {
-        // Clear state when explicitly navigating without a video (from PageHeader/HomePage)
-        // But don't clear if we just uploaded a video
+      } else if (selectedVideo === null) {
+        // Clear state when explicitly navigating without a video
+        // This happens when user navigates to /chat without URL parameters
+        console.log("No video selected, clearing state");
         lastSelectedRef.current = null;
         clearVideoState();
       }
@@ -171,6 +166,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       // Update URL
       const newUrl = new URL(window.location);
       newUrl.searchParams.set('v', videoData.videoId);
+      newUrl.searchParams.set('type', videoData.sourceType || 'youtube');
       window.history.replaceState({}, '', newUrl);
 
       // Reset chat/quiz state
@@ -244,6 +240,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
       const newUrl = new URL(window.location);
       newUrl.searchParams.set('v', videoId);
+      newUrl.searchParams.set('type', 'youtube');
       window.history.replaceState({}, '', newUrl);
       
       setChatMessages([]);
@@ -307,6 +304,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         // Update URL
         const newUrl = new URL(window.location);
         newUrl.searchParams.set('v', videoId);
+        newUrl.searchParams.set('type', 'uploaded');
         window.history.replaceState({}, '', newUrl);
 
         // Reset state
@@ -559,16 +557,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   useEffect(() => {
     saveToLocalStorage('chatMessages', chatMessages);
   }, [chatMessages]);
-
-  // Handle URL parameters - only on initial load
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoIdFromUrl = urlParams.get('v');
-    
-    if (videoIdFromUrl && !currentVideo.videoId && !youtubeUrl && !selectedVideo && !isLoadingRef.current) {
-      setYoutubeUrl(`https://www.youtube.com/watch?v=${videoIdFromUrl}`);
-    }
-  }, []);
   
   return (
     <div className="w-full">

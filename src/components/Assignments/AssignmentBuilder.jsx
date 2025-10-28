@@ -38,19 +38,67 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' }
   ];
 
+  // Helper function to normalize question diagrams (for multi-part questions)
+  const normalizeSubquestionDiagrams = (question) => {
+    // Handle main diagram for multi-part questions
+    if (question.type === 'multi-part') {
+      // Map main question 'diagram' to 'mainDiagram' if it exists and mainDiagram doesn't
+      if (question.diagram && !question.mainDiagram) {
+        question.mainDiagram = question.diagram;
+        question.hasMainDiagram = true;
+      }
+      // Set hasMainDiagram if diagram exists
+      if (question.mainDiagram || question.diagram) {
+        question.hasMainDiagram = true;
+      }
+    }
+
+    // Handle subquestion diagrams
+    if (question.type === 'multi-part' && question.subquestions) {
+      const normalizedSubquestions = question.subquestions.map(subq => {
+        // Map 'diagram' to 'subDiagram' for frontend compatibility
+        if (subq.diagram && !subq.subDiagram) {
+          subq.subDiagram = subq.diagram;
+          // Set hasDiagram flag if not already set
+          if (!('hasDiagram' in subq)) {
+            subq.hasDiagram = true;
+          }
+        }
+        // Set hasDiagram flag based on diagram presence
+        if (subq.subDiagram || subq.diagram) {
+          subq.hasDiagram = true;
+        }
+        
+        // Recursively handle nested subquestions
+        if (subq.type === 'multi-part' && subq.subquestions) {
+          const normalizedNested = normalizeSubquestionDiagrams(subq);
+          subq.subquestions = normalizedNested.subquestions;
+        }
+        
+        return subq;
+      });
+      return { ...question, subquestions: normalizedSubquestions };
+    }
+    return question;
+  };
+
   // Update state when preloadedData changes
   useEffect(() => {
     if (preloadedData) {
       console.log('AssignmentBuilder: Loading preloaded data:', preloadedData);
       
       // Process questions to ensure they have proper IDs for the frontend
-      const processedQuestions = (preloadedData.questions || []).map((question, index) => ({
-        ...question,
-        // Ensure each question has a unique ID that works with the frontend
-        id: question.id || Date.now() + index,
-        // Ensure order is set
-        order: question.order || index + 1
-      }));
+      const processedQuestions = (preloadedData.questions || []).map((question, index) => {
+        // Normalize subquestion diagrams
+        const normalizedQ = normalizeSubquestionDiagrams(question);
+        return {
+          ...normalizedQ,
+          // Ensure each question has a unique ID that works with the frontend
+          id: question.id || Date.now() + index,
+          // Ensure order is set
+          order: question.order || index + 1
+        };
+      });
       
       console.log('AssignmentBuilder: Processed questions:', processedQuestions);
       
@@ -109,8 +157,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         hasMainCode: false,
         hasMainDiagram: false,
         mainCodeLanguage: 'python',
-        mainDiagram: null,
-        rubricType: 'per-subquestion'
+        mainDiagram: null
       }
     };
 
@@ -218,15 +265,13 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         }
       }
       
-      // Check Rubric requirement (varies for multi-part vs other questions)
+      // Check Rubric requirement
       if (question.type === 'multi-part') {
         // Check if multi-part question has sub-questions
         if (!question.subquestions || question.subquestions.length === 0) {
           errors.push(`Question ${questionNum}: Multi-part questions must have at least one sub-question`);
         }
-        
-        // Multi-part questions now only use per-subquestion rubrics
-        // No overall rubric required
+        // Multi-part questions use per-subquestion rubrics only - no overall rubric needed
       } else {
         // For non-multi-part questions, always require rubric
         if (!question.rubric || question.rubric.trim() === '') {
@@ -287,20 +332,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             if (!subQ.subquestions || subQ.subquestions.length === 0) {
               errors.push(`Sub-question ${subNum}: Multi-part sub-questions must have at least one sub-part`);
             }
-            
-            // Multi-part sub-questions now only use per-subquestion rubrics
-            // No overall rubric required
-          }
-          
-          // Check sub-question rubric (if using per-subquestion rubrics)
-          if (question.rubricType === 'per-subquestion') {
-            if (subQ.type !== 'multi-part') {
-              // For non-multi-part sub-questions, always require rubric when parent uses per-subquestion
-              if (!subQ.rubric || subQ.rubric.trim() === '') {
-                errors.push(`Sub-question ${subNum}: Rubric cannot be empty when using per-subquestion rubrics`);
-              }
+            // Multi-part sub-questions use per-subquestion rubrics only - no overall rubric needed
+          } else {
+            // For non-multi-part sub-questions, always require rubric
+            if (!subQ.rubric || subQ.rubric.trim() === '') {
+              errors.push(`Sub-question ${subNum}: Rubric cannot be empty`);
             }
-            // Note: Multi-part sub-questions are handled in the block above
           }
           
           // Validate sub-sub-questions
@@ -337,9 +374,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 }
               }
               
-              // Check sub-sub-question rubric (only required if parent sub-question uses per-subquestion rubrics)
-              if (subQ.rubricType === 'per-subquestion' && (!subSubQ.rubric || subSubQ.rubric.trim() === '')) {
-                errors.push(`Sub-sub-question ${subSubNum}: Rubric cannot be empty when using per-subquestion rubrics`);
+              // Check sub-sub-question rubric (always required for non-multi-part sub-sub-questions)
+              if (subSubQ.type !== 'multi-part' && (!subSubQ.rubric || subSubQ.rubric.trim() === '')) {
+                errors.push(`Sub-sub-question ${subSubNum}: Rubric cannot be empty`);
               }
             });
           }
@@ -351,6 +388,42 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       isValid: errors.length === 0,
       errors
     };
+  };
+
+  // Helper function to convert subDiagram back to diagram for backend
+  const denormalizeSubquestionDiagrams = (question) => {
+    // Handle main diagram for multi-part questions
+    if (question.type === 'multi-part') {
+      // Map 'mainDiagram' back to 'diagram' for backend compatibility
+      if (question.mainDiagram && !question.diagram) {
+        question.diagram = question.mainDiagram;
+      }
+      // Keep both fields for backwards compatibility
+      // if (question.mainDiagram) {
+      //   question.diagram = question.mainDiagram;
+      // }
+    }
+
+    // Handle subquestion diagrams
+    if (question.type === 'multi-part' && question.subquestions) {
+      const denormalizedSubquestions = question.subquestions.map(subq => {
+        // Map 'subDiagram' back to 'diagram' for backend compatibility
+        if (subq.subDiagram && !subq.diagram) {
+          subq.diagram = subq.subDiagram;
+        }
+        // Remove hasDiagram flag if exporting to backend (backend derives it from diagram presence)
+        
+        // Recursively handle nested subquestions
+        if (subq.type === 'multi-part' && subq.subquestions) {
+          const denormalizedNested = denormalizeSubquestionDiagrams(subq);
+          subq.subquestions = denormalizedNested.subquestions;
+        }
+        
+        return subq;
+      });
+      return { ...question, subquestions: denormalizedSubquestions };
+    }
+    return question;
   };
 
   const saveAssignment = async (status = 'draft') => {
@@ -373,11 +446,22 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     setSaveError(null);
 
     try {
+      // Process questions for backend: convert to diagram format and set rubricType
+      const processedQuestions = questions.map(q => {
+        // Denormalize subquestion diagrams for backend
+        const denormalizedQ = denormalizeSubquestionDiagrams(q);
+        
+        if (denormalizedQ.type === 'multi-part') {
+          return { ...denormalizedQ, rubricType: 'per-subquestion' };
+        }
+        return denormalizedQ;
+      });
+
       const assignmentData = {
         title: assignmentTitle.trim(),
         description: assignmentDescription.trim() || null,
         due_date: assignmentDueDate ? new Date(assignmentDueDate).toISOString() : null,
-        questions: questions,
+        questions: processedQuestions,
         status: status,
         engineering_level: preloadedData?.engineering_level || 'undergraduate',
         engineering_discipline: preloadedData?.engineering_discipline || 'general',

@@ -27,13 +27,20 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
   // Component for handling diagram images with URL fetching in preview
   const DiagramPreviewImage = ({ diagramData, displayName }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [loading, setLoading] = useState(!!diagramData.s3_key);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [error, setError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
         // If we already have a URL (cached), use it
         if (imageUrl) return;
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setLoading(false);
+          return;
+        }
         
         // If no s3_key, we can't fetch from server
         if (!diagramData.s3_key) {
@@ -56,7 +63,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, imageUrl]);
+    }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
     if (loading) {
       return (
@@ -378,11 +385,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                           <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
                           
                           {/* Nested sub-question diagram */}
-                          {nestedSubq.diagram && (
+                          {(nestedSubq.subDiagram || nestedSubq.diagram) && (
                             <div className="mt-2 bg-gray-700 rounded p-2 border border-orange-500/30">
                               <div className="text-orange-300 text-xs font-medium mb-1">Diagram</div>
                               <div className="max-h-16 overflow-hidden">
-                                {renderDiagramPreview(nestedSubq.diagram)}
+                                {nestedSubq.subDiagram ? renderDiagramPreview(nestedSubq.subDiagram) :
+                                 nestedSubq.diagram ? renderDiagramPreview(nestedSubq.diagram) : null}
                               </div>
                             </div>
                           )}

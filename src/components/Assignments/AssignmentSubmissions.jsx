@@ -674,12 +674,25 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   // Component for displaying diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [imageLoading, setImageLoading] = useState(!!diagramData.s3_key);
+    const [imageLoading, setImageLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
-        if (imageUrl || !diagramData.s3_key) return;
+        if (imageUrl) return;
+
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setImageLoading(false);
+          return;
+        }
+
+        if (!diagramData.s3_key) {
+          setImageError(true);
+          setImageLoading(false);
+          return;
+        }
 
         try {
           setImageLoading(true);
@@ -695,7 +708,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, imageUrl]);
+    }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
     if (imageLoading) {
       return (

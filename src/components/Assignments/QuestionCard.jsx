@@ -489,7 +489,7 @@ const QuestionCard = ({
   // Component for handling diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName, onError }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [loading, setLoading] = useState(!!diagramData.s3_key);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [error, setError] = useState(false);
 
     useEffect(() => {
@@ -500,6 +500,13 @@ const QuestionCard = ({
         // Check if we have a cached URL for this diagram
         if (diagramData.file_id && imageUrls[diagramData.file_id]) {
           setImageUrl(imageUrls[diagramData.file_id]);
+          setLoading(false);
+          return;
+        }
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
           setLoading(false);
           return;
         }
@@ -534,7 +541,7 @@ const QuestionCard = ({
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, diagramData.file_id, imageUrl, imageUrls]);
+    }, [diagramData.s3_key, diagramData.s3_url, diagramData.file_id, imageUrl, imageUrls]);
 
     if (loading) {
       return (
@@ -1653,18 +1660,6 @@ const QuestionCard = ({
               />
             </div>
 
-            {/* Rubric Configuration for Multi-part Questions */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Rubric Configuration
-              </label>
-              <div className="space-y-3">
-                <div className="text-blue-300 text-sm bg-blue-900/20 p-3 rounded-lg border border-blue-700/30">
-                  <p className="font-medium mb-1">Per Sub-question Rubrics</p>
-                  <p className="text-xs text-blue-200">Individual rubrics should be added to each sub-question below.</p>
-                </div>
-              </div>
-            </div>
 
             {/* Main Question Enhancements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
@@ -1717,7 +1712,7 @@ const QuestionCard = ({
                     Include Diagram in Main Question
                   </span>
                 </label>
-                {question.hasMainDiagram && (
+                {(question.hasMainDiagram || question.mainDiagram || question.diagram) && (
                   <div className="mt-3">
                     <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
                       <input
@@ -1733,17 +1728,20 @@ const QuestionCard = ({
                         disabled={uploadingDiagram}
                         id={`main-diagram-upload-${question.id}`}
                       />
-                      <label
-                        htmlFor={`main-diagram-upload-${question.id}`}
-                        className="cursor-pointer flex flex-col items-center"
-                      >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
-                        <p className="text-white font-medium text-sm mb-1">Upload Main Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
-                      </label>
+                      {/* Show upload section only if no main diagram exists */}
+                      {!question.mainDiagram && !question.diagram && !uploadingDiagram && (
+                        <label
+                          htmlFor={`main-diagram-upload-${question.id}`}
+                          className="cursor-pointer flex flex-col items-center"
+                        >
+                          <ImageIcon size={24} className="text-gray-500 mb-2" />
+                          <p className="text-white font-medium text-sm mb-1">Upload Main Diagram</p>
+                          <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        </label>
+                      )}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
-                      {question.mainDiagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.mainDiagram, 
+                      {(question.mainDiagram || question.diagram) && !uploadingDiagram && renderDiagramDisplay(
+                        question.mainDiagram || question.diagram, 
                         false, 
                         () => handleDiagramDelete('mainDiagram'),
                         (file) => handleDiagramReplace(file, 'mainDiagram'),
@@ -1906,7 +1904,7 @@ const QuestionCard = ({
                               id={`subq-diagram-upload-${question.id}-${subIndex}`}
                             />
                             {/* Show upload section only if no sub-diagram exists */}
-                            {!subq.subDiagram && !uploadingDiagram && (
+                            {!subq.subDiagram && !subq.diagram && !uploadingDiagram && (
                             <label
                               htmlFor={`subq-diagram-upload-${question.id}-${subIndex}`}
                               className="cursor-pointer flex flex-col items-center"
@@ -1916,10 +1914,10 @@ const QuestionCard = ({
                               <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                             </label>
                             )}
-                            {subq.subDiagram && !uploadingDiagram && (
+                            {(subq.subDiagram || subq.diagram) && !uploadingDiagram && (
                               <div className="mt-2">
                                 {renderDiagramDisplay(
-                                  subq.subDiagram, 
+                                  subq.subDiagram || subq.diagram, 
                                   false, 
                                   () => handleSubquestionDiagramDelete(subIndex),
                                   (file) => handleSubquestionDiagramReplace(file, subIndex),
@@ -2053,8 +2051,8 @@ const QuestionCard = ({
                         </div>
                       )}
 
-                      {/* Per sub-question rubric */}
-                      {question.rubricType === 'per-subquestion' && (
+                      {/* Sub-question rubric */}
+                      {subq.type !== 'multi-part' && (
                         <div className="mt-3">
                           <label className="block text-xs font-medium text-blue-300 mb-2">
                             Rubric for Part {subIndex + 1}
@@ -2072,18 +2070,6 @@ const QuestionCard = ({
                       {/* Nested multi-part sub-questions */}
                       {subq.type === 'multi-part' && (
                         <div className="mt-3 border-l-2 border-blue-400/30 pl-4 ml-2">
-                          {/* Rubric Configuration for Nested Multi-part Sub-questions */}
-                          <div className="bg-gray-700 rounded-lg p-3 border border-gray-600 mb-3">
-                            <label className="block text-xs font-medium text-blue-300 mb-2">
-                              Rubric Configuration for Part {subIndex + 1}
-                            </label>
-                            <div className="space-y-2">
-                              <div className="text-blue-300 text-xs bg-blue-900/20 p-2 rounded border border-blue-700/30">
-                                <p className="font-medium mb-1">Per Sub-part Rubrics</p>
-                                <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-part below.</p>
-                              </div>
-                            </div>
-                          </div>
 
                           <div className="flex items-center justify-between mb-2">
                             <label className="block text-xs font-medium text-blue-300">
@@ -2305,8 +2291,8 @@ const QuestionCard = ({
                                   </div>
                                 )}
 
-                                {/* Per sub-sub-question rubric for nested multi-part */}
-                                {subq.rubricType === 'per-subquestion' && (
+                                {/* Sub-sub-question rubric */}
+                                {subSubq.type !== 'multi-part' && (
                                   <div className="mt-2">
                                     <label className="block text-xs font-medium text-blue-300 mb-1">
                                       Rubric for Part {subIndex + 1}.{subSubIndex + 1}

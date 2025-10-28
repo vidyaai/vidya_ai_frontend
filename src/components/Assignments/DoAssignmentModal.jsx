@@ -16,12 +16,19 @@ import { assignmentApi } from './assignmentApi';
 // Component for handling diagram images with URL fetching
 const DiagramImage = memo(({ diagramData, displayName }) => {
   const [imageUrl, setImageUrl] = useState(null);
-  const [loading, setLoading] = useState(!!diagramData.s3_key);
+  const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const loadImageUrl = async () => {
       if (imageUrl) return;
+
+      // If s3_url is present, use it directly (bypass presigned URL generation)
+      if (diagramData.s3_url) {
+        setImageUrl(diagramData.s3_url);
+        setLoading(false);
+        return;
+      }
 
       // If no s3_key, we can't fetch from server
       if (!diagramData.s3_key) {
@@ -44,7 +51,7 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
     };
 
     loadImageUrl();
-  }, [diagramData.s3_key, imageUrl]);
+  }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
   if (loading) {
     return (

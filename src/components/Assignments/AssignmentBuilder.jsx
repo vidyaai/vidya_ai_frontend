@@ -46,9 +46,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       if (question.diagram && !question.mainDiagram) {
         question.mainDiagram = question.diagram;
         question.hasMainDiagram = true;
+        // Clear the diagram field to avoid duplicates
+        question.diagram = null;
       }
       // Set hasMainDiagram if diagram exists
-      if (question.mainDiagram || question.diagram) {
+      if (question.mainDiagram) {
         question.hasMainDiagram = true;
       }
     }
@@ -59,13 +61,15 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         // Map 'diagram' to 'subDiagram' for frontend compatibility
         if (subq.diagram && !subq.subDiagram) {
           subq.subDiagram = subq.diagram;
+          // Clear the diagram field to avoid duplicates
+          subq.diagram = null;
           // Set hasDiagram flag if not already set
           if (!('hasDiagram' in subq)) {
             subq.hasDiagram = true;
           }
         }
         // Set hasDiagram flag based on diagram presence
-        if (subq.subDiagram || subq.diagram) {
+        if (subq.subDiagram) {
           subq.hasDiagram = true;
         }
         

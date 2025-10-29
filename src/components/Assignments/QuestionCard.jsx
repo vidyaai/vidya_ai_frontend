@@ -249,8 +249,14 @@ const QuestionCard = ({
         [uploadResult.file_id]: uploadResult.url
       }));
 
-      // Update the question with the diagram data
-      onUpdate({ [field]: diagramData });
+      // Update the question with the diagram data and set the appropriate flag
+      if (field === 'mainDiagram') {
+        onUpdate({ [field]: diagramData, hasMainDiagram: true });
+      } else if (field === 'diagram') {
+        onUpdate({ [field]: diagramData, hasDiagram: true });
+      } else {
+        onUpdate({ [field]: diagramData });
+      }
       
     } catch (error) {
       console.error('Error uploading diagram:', error);
@@ -261,9 +267,28 @@ const QuestionCard = ({
   };
 
   // Handle diagram deletion
-  const handleDiagramDelete = async (field = 'diagram') => {
-    const diagramData = question[field];
-    if (!diagramData?.file_id) return;
+  const handleDiagramDelete = async (field = 'diagram', keepCheckbox = false) => {
+    // Check both the primary field and fallback field
+    let diagramData = question[field];
+    
+    // For mainDiagram, also check diagram field as fallback
+    if (field === 'mainDiagram' && !diagramData) {
+      diagramData = question.diagram;
+    }
+    
+    if (!diagramData?.file_id) {
+      // No diagram to delete, but still clear the fields
+      if (field === 'mainDiagram') {
+        // For multi-part, keep hasMainDiagram if requested
+        onUpdate({ mainDiagram: null, diagram: null, hasMainDiagram: keepCheckbox ? question.hasMainDiagram : false });
+      } else if (field === 'diagram') {
+        // For regular questions, keep hasDiagram if requested
+        onUpdate({ diagram: null, hasDiagram: keepCheckbox ? question.hasDiagram : false });
+      } else {
+        onUpdate({ [field]: null });
+      }
+      return;
+    }
 
     setDeletingDiagram(true);
     setUploadError(null);
@@ -272,7 +297,15 @@ const QuestionCard = ({
       await assignmentApi.deleteDiagram(diagramData.file_id, assignmentId);
       
       // Clear the diagram from the question
-      onUpdate({ [field]: null });
+      if (field === 'mainDiagram') {
+        // For multi-part, keep hasMainDiagram if requested (delete button clicked, not unchecking)
+        onUpdate({ mainDiagram: null, diagram: null, hasMainDiagram: keepCheckbox ? question.hasMainDiagram : false });
+      } else if (field === 'diagram') {
+        // For regular questions, keep hasDiagram if requested
+        onUpdate({ diagram: null, hasDiagram: keepCheckbox ? question.hasDiagram : false });
+      } else {
+        onUpdate({ [field]: null });
+      }
       
       // Clear from cache
       setImageUrls(prev => {
@@ -286,7 +319,13 @@ const QuestionCard = ({
       console.error('Error deleting diagram:', error);
       setUploadError('Failed to delete diagram');
       // Note: We still remove it from UI even if backend deletion fails
-      onUpdate({ [field]: null });
+      if (field === 'mainDiagram') {
+        onUpdate({ mainDiagram: null, diagram: null, hasMainDiagram: keepCheckbox ? question.hasMainDiagram : false });
+      } else if (field === 'diagram') {
+        onUpdate({ diagram: null, hasDiagram: keepCheckbox ? question.hasDiagram : false });
+      } else {
+        onUpdate({ [field]: null });
+      }
     } finally {
       setDeletingDiagram(false);
     }
@@ -303,7 +342,13 @@ const QuestionCard = ({
       return;
     }
 
-    const oldDiagramData = question[field];
+    // Check both the primary field and fallback field for old diagram
+    let oldDiagramData = question[field];
+    
+    // For mainDiagram, also check diagram field as fallback
+    if (field === 'mainDiagram' && !oldDiagramData) {
+      oldDiagramData = question.diagram;
+    }
     
     setUploadingDiagram(true);
     setUploadError(null);
@@ -330,13 +375,24 @@ const QuestionCard = ({
       }));
 
       // Update the question with the new diagram data
-      onUpdate({ [field]: newDiagramData });
+      // For mainDiagram, also clear diagram to avoid conflicts
+      if (field === 'mainDiagram') {
+        onUpdate({ mainDiagram: newDiagramData, diagram: null });
+      } else {
+        onUpdate({ [field]: newDiagramData });
+      }
 
       // Delete the old diagram (best effort - don't fail if this doesn't work)
       if (oldDiagramData?.file_id) {
         try {
           await assignmentApi.deleteDiagram(oldDiagramData.file_id, assignmentId);
           console.log('Successfully deleted old diagram:', oldDiagramData.file_id);
+          // Clear from cache
+          setImageUrls(prev => {
+            const newUrls = { ...prev };
+            delete newUrls[oldDiagramData.file_id];
+            return newUrls;
+          });
         } catch (deleteError) {
           console.warn('Failed to delete old diagram (non-critical):', deleteError);
         }
@@ -384,8 +440,14 @@ const QuestionCard = ({
         [uploadResult.file_id]: uploadResult.url
       }));
 
-      // Update the subquestion with the diagram data
-      handleSubquestionChange(subIndex, 'subDiagram', diagramData);
+      // Update the subquestion with the diagram data and set hasDiagram flag
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: diagramData,
+        hasDiagram: true
+      };
+      onUpdate({ subquestions: newSubquestions });
       
     } catch (error) {
       console.error('Error uploading subquestion diagram:', error);
@@ -396,23 +458,48 @@ const QuestionCard = ({
   };
 
   // Handle subquestion diagram deletion
-  const handleSubquestionDiagramDelete = async (subIndex) => {
+  const handleSubquestionDiagramDelete = async (subIndex, keepCheckbox = false) => {
     const subq = question.subquestions?.[subIndex];
-    if (!subq?.subDiagram?.file_id) return;
+    
+    // Check both subDiagram and diagram fields
+    let diagramData = subq?.subDiagram;
+    if (!diagramData) {
+      diagramData = subq?.diagram;
+    }
+    
+    if (!diagramData?.file_id) {
+      // No diagram to delete, but still clear the fields
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: null,
+        diagram: null,
+        hasDiagram: keepCheckbox ? subq.hasDiagram : false
+      };
+      onUpdate({ subquestions: newSubquestions });
+      return;
+    }
 
     setDeletingDiagram(true);
     setUploadError(null);
 
     try {
-      await assignmentApi.deleteDiagram(subq.subDiagram.file_id, assignmentId);
+      await assignmentApi.deleteDiagram(diagramData.file_id, assignmentId);
       
-      // Update the subquestion to remove the diagram
-      handleSubquestionChange(subIndex, 'subDiagram', null);
+      // Update the subquestion to remove both diagram fields
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: null,
+        diagram: null,
+        hasDiagram: keepCheckbox ? subq.hasDiagram : false
+      };
+      onUpdate({ subquestions: newSubquestions });
       
       // Clear from cache
       setImageUrls(prev => {
         const newUrls = { ...prev };
-        delete newUrls[subq.subDiagram.file_id];
+        delete newUrls[diagramData.file_id];
         return newUrls;
       });
       
@@ -421,7 +508,14 @@ const QuestionCard = ({
       console.error('Error deleting subquestion diagram:', error);
       setUploadError('Failed to delete diagram');
       // Still remove from UI
-      handleSubquestionChange(subIndex, 'subDiagram', null);
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: null,
+        diagram: null,
+        hasDiagram: keepCheckbox ? subq.hasDiagram : false
+      };
+      onUpdate({ subquestions: newSubquestions });
     } finally {
       setDeletingDiagram(false);
     }
@@ -439,7 +533,12 @@ const QuestionCard = ({
     }
 
     const subq = question.subquestions?.[subIndex];
-    const oldDiagramData = subq?.subDiagram;
+    
+    // Check both subDiagram and diagram fields for old data
+    let oldDiagramData = subq?.subDiagram;
+    if (!oldDiagramData) {
+      oldDiagramData = subq?.diagram;
+    }
     
     setUploadingDiagram(true);
     setUploadError(null);
@@ -465,8 +564,14 @@ const QuestionCard = ({
         [uploadResult.file_id]: uploadResult.url
       }));
 
-      // Update the subquestion with the new diagram data
-      handleSubquestionChange(subIndex, 'subDiagram', newDiagramData);
+      // Update the subquestion with the new diagram data and clear diagram field
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: newDiagramData,
+        diagram: null
+      };
+      onUpdate({ subquestions: newSubquestions });
 
       // Delete the old diagram (best effort - don't fail if this doesn't work)
       if (oldDiagramData?.file_id) {
@@ -650,7 +755,7 @@ const QuestionCard = ({
                 )}
                 {onDelete && (
                   <button
-                    onClick={() => onDelete()}
+                    onClick={onDelete}
                     className="p-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
                     title="Delete diagram"
                   >
@@ -733,9 +838,9 @@ const QuestionCard = ({
               <button
                 onClick={() => {
                   if (isSubquestion) {
-                    handleSubquestionDiagramDelete(subIndex);
+                    handleSubquestionDiagramDelete(subIndex, true);
                   } else {
-                    handleDiagramDelete(field);
+                    handleDiagramDelete(field, true);
                   }
                   setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null });
                 }}
@@ -858,8 +963,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -898,7 +1012,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1032,8 +1146,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1072,7 +1195,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1173,8 +1296,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1213,7 +1345,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1299,8 +1431,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1339,7 +1480,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1426,8 +1567,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1466,7 +1616,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1704,8 +1854,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasMainDiagram || false}
-                    onChange={(e) => onUpdate({ hasMainDiagram: e.target.checked })}
+                    checked={!!question.hasMainDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, clear both diagram fields and flag
+                        handleDiagramDelete('mainDiagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasMainDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1740,10 +1899,11 @@ const QuestionCard = ({
                         </label>
                       )}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
+                      {/* Show diagram, prioritizing mainDiagram over diagram */}
                       {(question.mainDiagram || question.diagram) && !uploadingDiagram && renderDiagramDisplay(
                         question.mainDiagram || question.diagram, 
                         false, 
-                        () => handleDiagramDelete('mainDiagram'),
+                        () => handleDiagramDelete('mainDiagram', true),
                         (file) => handleDiagramReplace(file, 'mainDiagram'),
                         'mainDiagram'
                       )}
@@ -1856,8 +2016,17 @@ const QuestionCard = ({
                         <label className="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={subq.hasDiagram || false}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'hasDiagram', e.target.checked)}
+                            checked={!!subq.hasDiagram}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              if (!checked) {
+                                // When unchecking, delete the diagram and clear flag
+                                handleSubquestionDiagramDelete(subIndex, false);
+                              } else {
+                                // When checking, just set the flag
+                                handleSubquestionChange(subIndex, 'hasDiagram', true);
+                              }
+                            }}
                             className="text-orange-600 bg-gray-600 border-gray-500 rounded focus:ring-orange-500 focus:ring-2"
                           />
                           <span className="text-sm text-gray-300">Include Diagram</span>
@@ -1919,7 +2088,7 @@ const QuestionCard = ({
                                 {renderDiagramDisplay(
                                   subq.subDiagram || subq.diagram, 
                                   false, 
-                                  () => handleSubquestionDiagramDelete(subIndex),
+                                  () => handleSubquestionDiagramDelete(subIndex, true),
                                   (file) => handleSubquestionDiagramReplace(file, subIndex),
                                   'subDiagram',
                                   subIndex

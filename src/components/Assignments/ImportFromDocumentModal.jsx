@@ -98,12 +98,10 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
     setError('');
 
     try {
-      // Convert file to base64
-      const fileContent = await fileToBase64(selectedFile);
-      
-      // Call the backend API to extract questions from the document
+      // Send the raw file directly (no base64 conversion needed)
+      // The API will handle multipart/form-data upload
       const parsedData = await assignmentApi.importFromDocument(
-        fileContent,
+        selectedFile,  // Send File object directly
         selectedFile.name,
         selectedFile.type,
         null  // No generation options needed for extraction

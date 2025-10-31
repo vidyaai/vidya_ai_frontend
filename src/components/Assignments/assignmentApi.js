@@ -217,10 +217,30 @@ export const assignmentApi = {
     }
   },
 
-  // Import assignment from document
-  async importFromDocument(fileContent, fileName, fileType, generationOptions = null) {
+  // Import assignment from document (accepts File object or base64 content for backward compatibility)
+  async importFromDocument(fileOrContent, fileName, fileType, generationOptions = null) {
+    // If fileOrContent is a File object, use multipart/form-data (preferred)
+    if (fileOrContent instanceof File) {
+      const formData = new FormData();
+      formData.append('file', fileOrContent);
+      formData.append('file_name', fileOrContent.name);
+      formData.append('file_type', fileOrContent.type);
+      if (generationOptions) {
+        formData.append('generation_options', JSON.stringify(generationOptions));
+      }
+
+      const response = await api.post('/api/assignments/import-document', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'ngrok-skip-browser-warning': 'true' 
+        }
+      });
+      return response.data;
+    }
+    
+    // Legacy support: base64 encoded content (backward compatibility)
     const importData = {
-      file_content: fileContent,  // Base64 encoded file content
+      file_content: fileOrContent,  // Base64 encoded file content
       file_name: fileName,
       file_type: fileType,
       generation_options: generationOptions

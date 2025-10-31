@@ -6,18 +6,25 @@ import { assignmentApi } from './assignmentApi';
 const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
   const calculateQuestionPoints = (question) => {
     if (question.type === 'multi-part') {
-      // For multi-part questions, sum up all sub-question points
-      const subQuestionPoints = (question.subquestions || []).reduce((sum, subq) => {
+      const subquestions = question.subquestions || [];
+      if (subquestions.length === 0) return question.points || 0;
+      
+      // Calculate points for each subquestion (recursively for nested multipart)
+      const subqPoints = subquestions.map(subq => {
         if (subq.type === 'multi-part') {
-          // Handle nested multi-part questions
-          const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
-            return nestedSum + (nestedSubq.points || 1);
-          }, 0);
-          return sum + nestedPoints;
+          return calculateQuestionPoints(subq); // Recursive call
         }
-        return sum + (subq.points || 1);
-      }, 0);
-      return subQuestionPoints;
+        return subq.points || 1;
+      });
+      
+      // For optional parts, only count required number of highest-point parts
+      if (question.optionalParts && question.requiredPartsCount > 0) {
+        const sortedPoints = [...subqPoints].sort((a, b) => b - a);
+        return sortedPoints.slice(0, question.requiredPartsCount).reduce((sum, pts) => sum + pts, 0);
+      }
+      
+      // For non-optional, sum all parts
+      return subqPoints.reduce((sum, pts) => sum + pts, 0);
     }
     return question.points || 1;
   };
@@ -27,13 +34,20 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
   // Component for handling diagram images with URL fetching in preview
   const DiagramPreviewImage = ({ diagramData, displayName }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [loading, setLoading] = useState(!!diagramData.s3_key);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [error, setError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
         // If we already have a URL (cached), use it
         if (imageUrl) return;
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setLoading(false);
+          return;
+        }
         
         // If no s3_key, we can't fetch from server
         if (!diagramData.s3_key) {
@@ -56,7 +70,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, imageUrl]);
+    }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
     if (loading) {
       return (
@@ -326,9 +340,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                       </span>
                       <span className="text-blue-400 text-xs">
                         {subq.type === 'multi-part' 
-                          ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                          ? calculateQuestionPoints(subq)
                           : subq.points || 1
                         } pts
+                        {subq.type === 'multi-part' && subq.optionalParts && (
+                          <span className="ml-1 text-blue-300">(best {subq.requiredPartsCount})</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -378,11 +395,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                           <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
                           
                           {/* Nested sub-question diagram */}
-                          {nestedSubq.diagram && (
+                          {(nestedSubq.subDiagram || nestedSubq.diagram) && (
                             <div className="mt-2 bg-gray-700 rounded p-2 border border-orange-500/30">
                               <div className="text-orange-300 text-xs font-medium mb-1">Diagram</div>
                               <div className="max-h-16 overflow-hidden">
-                                {renderDiagramPreview(nestedSubq.diagram)}
+                                {nestedSubq.subDiagram ? renderDiagramPreview(nestedSubq.subDiagram) :
+                                 nestedSubq.diagram ? renderDiagramPreview(nestedSubq.diagram) : null}
                               </div>
                             </div>
                           )}

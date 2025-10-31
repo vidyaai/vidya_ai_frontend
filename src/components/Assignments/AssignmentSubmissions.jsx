@@ -674,12 +674,25 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   // Component for displaying diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [imageLoading, setImageLoading] = useState(!!diagramData.s3_key);
+    const [imageLoading, setImageLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
-        if (imageUrl || !diagramData.s3_key) return;
+        if (imageUrl) return;
+
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setImageLoading(false);
+          return;
+        }
+
+        if (!diagramData.s3_key) {
+          setImageError(true);
+          setImageLoading(false);
+          return;
+        }
 
         try {
           setImageLoading(true);
@@ -695,7 +708,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, imageUrl]);
+    }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
     if (imageLoading) {
       return (
@@ -860,6 +873,30 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                             )}
                           </div>
                           
+                          {/* Optional Parts Indicator */}
+                          {question?.type === 'multi-part' && question?.optionalParts && (
+                            <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                              <div className="flex items-center space-x-2 text-sm">
+                                <span className="text-blue-300 font-medium">Optional Parts:</span>
+                                <span className="text-gray-300">
+                                  Student answered {answer?.subAnswers ? Object.keys(answer.subAnswers).filter(k => answer.subAnswers[k]).length : 0} of {question.requiredPartsCount} required parts
+                                  {question.subquestions ? ` (${question.subquestions.length} total)` : ''}
+                                </span>
+                              </div>
+                              {answer?.subAnswers && (
+                                <div className="mt-2 text-xs text-blue-200">
+                                  Answered parts: {Object.keys(answer.subAnswers)
+                                    .filter(k => answer.subAnswers[k])
+                                    .map(id => {
+                                      const subq = question.subquestions?.find(sq => String(sq.id) === String(id));
+                                      return subq ? `Part ${question.subquestions.indexOf(subq) + 1}` : id;
+                                    })
+                                    .join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           {/* Question Text */}
                           {question?.question && (
                             <div className="bg-gray-700 rounded-lg p-4 mb-4">
@@ -977,6 +1014,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                                 Question {questionId}
                               </span>
+                              {/* Optional Part Indicator for sub-questions */}
+                              {questionId.includes('.') && (
+                                <span className="text-blue-400 text-xs bg-blue-900/20 px-2 py-1 rounded">
+                                  Selected Part
+                                </span>
+                              )}
                               <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
                                 <span className="text-green-400 font-bold">
                                   {feedback.score || 0}/{feedback.max_points || 0}

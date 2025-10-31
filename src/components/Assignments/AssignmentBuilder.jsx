@@ -161,7 +161,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         hasMainCode: false,
         hasMainDiagram: false,
         mainCodeLanguage: 'python',
-        mainDiagram: null
+        mainDiagram: null,
+        optionalParts: false,
+        requiredPartsCount: 0
       }
     };
 
@@ -275,6 +277,29 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         if (!question.subquestions || question.subquestions.length === 0) {
           errors.push(`Question ${questionNum}: Multi-part questions must have at least one sub-question`);
         }
+        // Validate optional parts settings
+        if (question.optionalParts) {
+          const subqCount = (question.subquestions || []).length;
+          if (question.requiredPartsCount <= 0 || question.requiredPartsCount > subqCount) {
+            errors.push(`Question ${questionNum}: Required parts count must be between 1 and ${subqCount}`);
+          }
+          if (question.requiredPartsCount === subqCount) {
+            errors.push(`Question ${questionNum}: Optional parts requires student to answer fewer than all parts (currently ${question.requiredPartsCount} of ${subqCount})`);
+          }
+          
+          // Validate that all optional parts have equal points
+          const subqPoints = (question.subquestions || []).map(sq => {
+            if (sq.type === 'multi-part') {
+              // Calculate points for nested multi-part
+              return (sq.subquestions || []).reduce((sum, ssq) => sum + (ssq.points || 1), 0);
+            }
+            return sq.points || 1;
+          });
+          const uniquePoints = [...new Set(subqPoints)];
+          if (uniquePoints.length > 1) {
+            errors.push(`Question ${questionNum}: All optional parts must have equal points (found: ${uniquePoints.join(', ')})`);
+          }
+        }
         // Multi-part questions use per-subquestion rubrics only - no overall rubric needed
       } else {
         // For non-multi-part questions, always require rubric
@@ -335,6 +360,23 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
           if (subQ.type === 'multi-part') {
             if (!subQ.subquestions || subQ.subquestions.length === 0) {
               errors.push(`Sub-question ${subNum}: Multi-part sub-questions must have at least one sub-part`);
+            }
+            // Validate optional parts for nested multi-part
+            if (subQ.optionalParts) {
+              const nestedSubqCount = (subQ.subquestions || []).length;
+              if (subQ.requiredPartsCount <= 0 || subQ.requiredPartsCount > nestedSubqCount) {
+                errors.push(`Sub-question ${subNum}: Required parts count must be between 1 and ${nestedSubqCount}`);
+              }
+              if (subQ.requiredPartsCount === nestedSubqCount) {
+                errors.push(`Sub-question ${subNum}: Optional parts requires student to answer fewer than all parts`);
+              }
+              
+              // Validate that all optional parts have equal points
+              const nestedSubqPoints = (subQ.subquestions || []).map(ssq => ssq.points || 1);
+              const uniqueNestedPoints = [...new Set(nestedSubqPoints)];
+              if (uniqueNestedPoints.length > 1) {
+                errors.push(`Sub-question ${subNum}: All optional parts must have equal points (found: ${uniqueNestedPoints.join(', ')})`);
+              }
             }
             // Multi-part sub-questions use per-subquestion rubrics only - no overall rubric needed
           } else {

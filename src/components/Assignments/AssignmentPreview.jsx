@@ -6,18 +6,25 @@ import { assignmentApi } from './assignmentApi';
 const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
   const calculateQuestionPoints = (question) => {
     if (question.type === 'multi-part') {
-      // For multi-part questions, sum up all sub-question points
-      const subQuestionPoints = (question.subquestions || []).reduce((sum, subq) => {
+      const subquestions = question.subquestions || [];
+      if (subquestions.length === 0) return question.points || 0;
+      
+      // Calculate points for each subquestion (recursively for nested multipart)
+      const subqPoints = subquestions.map(subq => {
         if (subq.type === 'multi-part') {
-          // Handle nested multi-part questions
-          const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
-            return nestedSum + (nestedSubq.points || 1);
-          }, 0);
-          return sum + nestedPoints;
+          return calculateQuestionPoints(subq); // Recursive call
         }
-        return sum + (subq.points || 1);
-      }, 0);
-      return subQuestionPoints;
+        return subq.points || 1;
+      });
+      
+      // For optional parts, only count required number of highest-point parts
+      if (question.optionalParts && question.requiredPartsCount > 0) {
+        const sortedPoints = [...subqPoints].sort((a, b) => b - a);
+        return sortedPoints.slice(0, question.requiredPartsCount).reduce((sum, pts) => sum + pts, 0);
+      }
+      
+      // For non-optional, sum all parts
+      return subqPoints.reduce((sum, pts) => sum + pts, 0);
     }
     return question.points || 1;
   };
@@ -333,9 +340,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                       </span>
                       <span className="text-blue-400 text-xs">
                         {subq.type === 'multi-part' 
-                          ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                          ? calculateQuestionPoints(subq)
                           : subq.points || 1
                         } pts
+                        {subq.type === 'multi-part' && subq.optionalParts && (
+                          <span className="ml-1 text-blue-300">(best {subq.requiredPartsCount})</span>
+                        )}
                       </span>
                     </div>
                   </div>

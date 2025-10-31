@@ -35,6 +35,28 @@ const QuestionCard = ({
   const [uploadError, setUploadError] = useState(null);
   const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '', subIndex: null });
   const [imageUrls, setImageUrls] = useState({}); // Cache for presigned URLs
+  
+  // Helper function to calculate points for multipart questions with optional parts support
+  const calculateMultipartPoints = (subquestions, optionalParts = false, requiredPartsCount = 0) => {
+    if (!subquestions || subquestions.length === 0) return 0;
+    
+    const subqPoints = subquestions.map(sq => {
+      if (sq.type === 'multi-part') {
+        // Recursively calculate for nested multipart
+        return calculateMultipartPoints(sq.subquestions, sq.optionalParts, sq.requiredPartsCount);
+      }
+      return sq.points || 1;
+    });
+    
+    if (optionalParts && requiredPartsCount > 0) {
+      // For optional parts, sum only the required number of highest-point parts
+      const sortedPoints = [...subqPoints].sort((a, b) => b - a);
+      return sortedPoints.slice(0, requiredPartsCount).reduce((sum, pts) => sum + pts, 0);
+    }
+    
+    // For non-optional, sum all parts
+    return subqPoints.reduce((sum, pts) => sum + pts, 0);
+  };
 
   // Enhanced file validation
   const validateFile = (file) => {
@@ -1811,6 +1833,58 @@ const QuestionCard = ({
             </div>
 
 
+            {/* Optional Parts Configuration */}
+            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={question.optionalParts || false}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    if (checked) {
+                      // When enabling, set default required count to half of subquestions (min 1)
+                      const defaultCount = Math.max(1, Math.floor((question.subquestions || []).length / 2));
+                      onUpdate({ optionalParts: true, requiredPartsCount: defaultCount });
+                    } else {
+                      onUpdate({ optionalParts: false, requiredPartsCount: 0 });
+                    }
+                  }}
+                  className="text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-sm font-medium text-blue-300">
+                  Allow Optional Parts (Students select which parts to answer)
+                </span>
+              </label>
+              {question.optionalParts && (
+                <div className="mt-3 ml-8">
+                  <label className="block text-xs font-medium text-blue-200 mb-2">
+                    Number of Parts Student Must Answer
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max={(question.subquestions || []).length}
+                      value={question.requiredPartsCount || 1}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1;
+                        const maxParts = (question.subquestions || []).length;
+                        const validValue = Math.max(1, Math.min(value, maxParts));
+                        onUpdate({ requiredPartsCount: validValue });
+                      }}
+                      className="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-blue-200">
+                      of {(question.subquestions || []).length} total parts
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-blue-300">
+                    Example: "Answer any 2 of the following 3 parts"
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Main Question Enhancements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
               <div>
@@ -1936,7 +2010,7 @@ const QuestionCard = ({
                         <input
                           type="number"
                           value={subq.type === 'multi-part' 
-                            ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                            ? calculateMultipartPoints(subq.subquestions, subq.optionalParts, subq.requiredPartsCount)
                             : subq.points || 1
                           }
                           onChange={(e) => handleSubquestionChange(subIndex, 'points', parseInt(e.target.value) || 1)}
@@ -1946,7 +2020,9 @@ const QuestionCard = ({
                         />
                         <span className="text-gray-400 text-sm">pts</span>
                         {subq.type === 'multi-part' && (
-                          <span className="text-xs text-gray-500">(auto-calc)</span>
+                          <span className="text-xs text-gray-500">
+                            (auto{subq.optionalParts ? `, best ${subq.requiredPartsCount}` : ''})
+                          </span>
                         )}
                         <button
                           onClick={() => removeSubquestion(subIndex)}
@@ -2239,6 +2315,69 @@ const QuestionCard = ({
                       {/* Nested multi-part sub-questions */}
                       {subq.type === 'multi-part' && (
                         <div className="mt-3 border-l-2 border-blue-400/30 pl-4 ml-2">
+
+                          {/* Optional Parts Configuration for Nested Multi-part */}
+                          <div className="mb-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={subq.optionalParts || false}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  const newSubquestions = [...(question.subquestions || [])];
+                                  if (checked) {
+                                    const defaultCount = Math.max(1, Math.floor(((subq.subquestions || []).length) / 2));
+                                    newSubquestions[subIndex] = { 
+                                      ...newSubquestions[subIndex], 
+                                      optionalParts: true, 
+                                      requiredPartsCount: defaultCount 
+                                    };
+                                  } else {
+                                    newSubquestions[subIndex] = { 
+                                      ...newSubquestions[subIndex], 
+                                      optionalParts: false, 
+                                      requiredPartsCount: 0 
+                                    };
+                                  }
+                                  onUpdate({ subquestions: newSubquestions });
+                                }}
+                                className="text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                              />
+                              <span className="text-xs font-medium text-blue-300">
+                                Allow Optional Parts
+                              </span>
+                            </label>
+                            {subq.optionalParts && (
+                              <div className="mt-2 ml-6">
+                                <label className="block text-xs font-medium text-blue-200 mb-1">
+                                  Required Parts
+                                </label>
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max={(subq.subquestions || []).length}
+                                    value={subq.requiredPartsCount || 1}
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 1;
+                                      const maxParts = (subq.subquestions || []).length;
+                                      const validValue = Math.max(1, Math.min(value, maxParts));
+                                      const newSubquestions = [...(question.subquestions || [])];
+                                      newSubquestions[subIndex] = { 
+                                        ...newSubquestions[subIndex], 
+                                        requiredPartsCount: validValue 
+                                      };
+                                      onUpdate({ subquestions: newSubquestions });
+                                    }}
+                                    className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                  <span className="text-xs text-blue-200">
+                                    of {(subq.subquestions || []).length}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
 
                           <div className="flex items-center justify-between mb-2">
                             <label className="block text-xs font-medium text-blue-300">
@@ -2534,16 +2673,7 @@ const QuestionCard = ({
             <input
               type="number"
               value={question.type === 'multi-part' 
-                ? (question.subquestions || []).reduce((sum, subq) => {
-                    if (subq.type === 'multi-part') {
-                      // Handle nested multi-part questions - sum their sub-questions
-                      const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
-                        return nestedSum + (nestedSubq.points || 1);
-                      }, 0);
-                      return sum + nestedPoints;
-                    }
-                    return sum + (subq.points || 1);
-                  }, 0)
+                ? calculateMultipartPoints(question.subquestions, question.optionalParts, question.requiredPartsCount)
                 : question.points
               }
               onChange={(e) => handlePointsChange(e.target.value)}
@@ -2555,7 +2685,9 @@ const QuestionCard = ({
             <span className="text-gray-400 text-sm">pts</span>
           </div>
           {question.type === 'multi-part' && (
-            <span className="text-xs text-gray-500">(auto-calculated)</span>
+            <span className="text-xs text-gray-500">
+              (auto-calculated{question.optionalParts ? `, best ${question.requiredPartsCount} of ${(question.subquestions || []).length}` : ''})
+            </span>
           )}
           
           <button

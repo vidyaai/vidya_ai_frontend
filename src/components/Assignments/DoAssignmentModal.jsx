@@ -90,123 +90,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
+  const [isGraded, setIsGraded] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfUploading, setPdfUploading] = useState(false);
 
-  // Extract the actual assignment data from the shared assignment
   const actualAssignment = assignment.assignment || assignment;
   
-  // Use actual assignment questions or fallback to mock data for development
   const questions = actualAssignment.questions && actualAssignment.questions.length > 0 
     ? actualAssignment.questions 
-    : [
-    {
-      id: 1,
-      type: 'multiple-choice',
-      question: 'What is the primary consideration when designing a digital filter?',
-      options: ['Frequency response', 'Power consumption', 'Cost', 'All of the above'],
-      points: 2
-    },
-    {
-      id: 2,
-      type: 'code-writing',
-      question: 'Write a Python function to implement the Fast Fourier Transform (FFT) algorithm.',
-      codeLanguage: 'python',
-      outputType: 'function',
-      points: 10
-    },
-    {
-      id: 3,
-      type: 'diagram-analysis',
-      question: 'Analyze the given circuit diagram and calculate the total impedance.',
-      diagram: { file: 'circuit_diagram.png', url: '/mock-circuit.png' },
-      points: 8
-    },
-    {
-      id: 4,
-      type: 'multi-part',
-      question: 'Design and analyze a control system for temperature regulation in a smart building.',
-      hasMainCode: true,
-      mainCodeLanguage: 'matlab',
-      mainCode: '% Transfer function for temperature control system\n% Plant model: G(s) = K / (tau*s + 1)\ns = tf(\'s\');\nK = 2.5;  % System gain\ntau = 300; % Time constant (seconds)\nG_plant = K / (tau*s + 1);\n\n% Display plant characteristics\nfprintf(\'Plant DC Gain: %.2f\\n\', K);\nfprintf(\'Plant Time Constant: %.0f seconds\\n\', tau);',
-      hasMainDiagram: true,
-      mainDiagram: { file: 'control_system_block_diagram.png', url: '/mock-control-diagram.png' },
-      subquestions: [
-        { 
-          id: 1, 
-          question: 'Part A: Based on the given plant model, what is the steady-state response to a unit step input?', 
-          points: 4, 
-          type: 'multiple-choice',
-          options: ['2.5', '1.0', '0.5', 'Depends on time constant'],
-          hasSubCode: false,
-          hasDiagram: false
-        },
-        { 
-          id: 2, 
-          question: 'Part B: Implement a PID controller for the system', 
-          points: 6, 
-          type: 'code-writing', 
-          codeLanguage: 'matlab',
-          hasSubCode: true,
-          subCode: '% Starter code for PID controller\n% Tune the PID parameters\nKp = 0; % Proportional gain\nKi = 0; % Integral gain\nKd = 0; % Derivative gain',
-          hasDiagram: false
-        },
-        { 
-          id: 3, 
-          question: 'Part C: Analyze the closed-loop system stability', 
-          points: 5, 
-          type: 'diagram-analysis',
-          hasSubCode: false,
-          hasDiagram: true,
-          subDiagram: { file: 'root_locus_plot.png', url: '/mock-root-locus.png' }
-        },
-        {
-          id: 4,
-          question: 'Part D: System Performance Analysis',
-          points: 8,
-          type: 'multi-part',
-          subquestions: [
-            { id: 1, question: 'Calculate the settling time for 2% criteria', points: 3, type: 'numerical' },
-            { id: 2, question: 'True or False: The system is overdamped', points: 2, type: 'true-false' },
-            { id: 3, question: 'Fill in the blank: The damping ratio is ___', points: 3, type: 'fill-blank' }
-          ]
-        }
-      ],
-      points: 23
-    },
-    {
-      id: 5,
-      type: 'multi-part',
-      question: 'Digital Signal Processing: Design and implement a digital filter for audio processing.',
-      hasMainCode: true,
-      mainCodeLanguage: 'python',
-      mainCode: 'import numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy import signal\n\n# Sample audio signal parameters\nfs = 44100  # Sampling frequency (Hz)\nt = np.linspace(0, 1, fs, endpoint=False)\n\n# Create a test signal with noise\nf_signal = 1000  # Signal frequency (Hz)\nf_noise = 8000   # Noise frequency (Hz)\ntest_signal = np.sin(2*np.pi*f_signal*t) + 0.3*np.sin(2*np.pi*f_noise*t)',
-      hasMainDiagram: true,
-      mainDiagram: { file: 'frequency_spectrum.png', url: '/mock-spectrum.png' },
-      subquestions: [
-        {
-          id: 1,
-          question: 'Part A: Filter Design Theory',
-          points: 12,
-          type: 'multi-part',
-          subquestions: [
-            { id: 1, question: 'What type of filter is most appropriate for removing high-frequency noise?', points: 3, type: 'multiple-choice', options: ['Low-pass', 'High-pass', 'Band-pass', 'Band-stop'] },
-            { id: 2, question: 'Calculate the Nyquist frequency for the given sampling rate', points: 4, type: 'numerical' },
-            { id: 3, question: 'The cutoff frequency should be set to ___ Hz to preserve the signal', points: 5, type: 'fill-blank' }
-          ]
-        },
-        {
-          id: 2,
-          question: 'Part B: Implement the digital filter using Python',
-          points: 10,
-          type: 'code-writing',
-          codeLanguage: 'python',
-          hasSubCode: true,
-          subCode: '# Design a Butterworth low-pass filter\n# Your task: Complete the filter design and application\n\nfrom scipy.signal import butter, filtfilt\n\ndef design_lowpass_filter(cutoff, fs, order=5):\n    # TODO: Implement filter design\n    pass\n\ndef apply_filter(data, cutoff, fs):\n    # TODO: Apply filter to data\n    pass',
-          hasDiagram: false
-        }
-      ],
-      points: 22
-    }
-  ];
+    : [];
 
   // Load existing draft/submission on component mount
   useEffect(() => {
@@ -220,8 +112,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         setAnswers(submission.answers);
         setSubmissionMethod(submission.submission_method || 'in-app');
         // Check if assignment is already submitted
-        if (submission.status === 'submitted') {
+        if (submission.status === 'submitted' || submission.status === 'graded') {
           setIsAlreadySubmitted(true);
+        }
+        if (submission.status === 'graded') {
+          setIsGraded(true);
         }
       }
     } catch (error) {
@@ -235,6 +130,108 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       ...prev,
       [questionId]: answer
     }));
+  };
+
+  // Handle diagram upload for a question
+  const handleDiagramUpload = async (questionId, file, isSubQuestion = false, subqId = null) => {
+    try {
+      const uploadResult = await assignmentApi.uploadDiagram(file, actualAssignment.id);
+      
+      if (isSubQuestion && subqId) {
+        // For subquestions
+        const currentAnswer = answers[questionId] || {};
+        const currentSubAnswers = currentAnswer.subAnswers || {};
+        const currentSubAnswer = currentSubAnswers[subqId];
+        
+        const newSubAnswer = {
+          text: typeof currentSubAnswer === 'string' ? currentSubAnswer : (currentSubAnswer?.text || ''),
+          diagram: {
+            s3_key: uploadResult.s3_key,
+            file_id: uploadResult.file_id,
+            filename: uploadResult.filename,
+          }
+        };
+        
+        handleAnswerChange(questionId, {
+          ...currentAnswer,
+          subAnswers: {
+            ...currentSubAnswers,
+            [subqId]: newSubAnswer
+          }
+        });
+      } else {
+        // For main questions
+        const currentAnswer = answers[questionId];
+        const newAnswer = {
+          text: typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || ''),
+          diagram: {
+            s3_key: uploadResult.s3_key,
+            file_id: uploadResult.file_id,
+            filename: uploadResult.filename,
+          }
+        };
+        handleAnswerChange(questionId, newAnswer);
+      }
+    } catch (error) {
+      console.error('Failed to upload diagram:', error);
+      alert('Failed to upload diagram. Please try again.');
+    }
+  };
+
+  // Remove diagram from answer
+  const handleRemoveDiagram = (questionId, isSubQuestion = false, subqId = null) => {
+    if (isSubQuestion && subqId) {
+      const currentAnswer = answers[questionId] || {};
+      const currentSubAnswers = currentAnswer.subAnswers || {};
+      const currentSubAnswer = currentSubAnswers[subqId];
+      
+      const newSubAnswer = {
+        text: typeof currentSubAnswer === 'string' ? currentSubAnswer : (currentSubAnswer?.text || ''),
+        diagram: null
+      };
+      
+      handleAnswerChange(questionId, {
+        ...currentAnswer,
+        subAnswers: {
+          ...currentSubAnswers,
+          [subqId]: newSubAnswer
+        }
+      });
+    } else {
+      const currentAnswer = answers[questionId];
+      const newAnswer = {
+        text: typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || ''),
+        diagram: null
+      };
+      handleAnswerChange(questionId, newAnswer);
+    }
+  };
+
+  // Handle text change for diagram-enabled questions
+  const handleTextChangeWithDiagram = (questionId, text, isSubQuestion = false, subqId = null) => {
+    if (isSubQuestion && subqId) {
+      const currentAnswer = answers[questionId] || {};
+      const currentSubAnswers = currentAnswer.subAnswers || {};
+      const currentSubAnswer = currentSubAnswers[subqId];
+      
+      const newSubAnswer = typeof currentSubAnswer === 'object' && currentSubAnswer !== null
+        ? { ...currentSubAnswer, text }
+        : { text, diagram: null };
+      
+      handleAnswerChange(questionId, {
+        ...currentAnswer,
+        subAnswers: {
+          ...currentSubAnswers,
+          [subqId]: newSubAnswer
+        }
+      });
+    } else {
+      const currentAnswer = answers[questionId];
+      const newAnswer = typeof currentAnswer === 'object' && currentAnswer !== null
+        ? { ...currentAnswer, text }
+        : { text, diagram: null };
+      handleAnswerChange(questionId, newAnswer);
+    }
   };
 
 
@@ -400,17 +397,57 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }
   };
 
+  const handlePdfFileChange = (event) => {
+    // Prevent file changes if assignment is already submitted
+    if (isAlreadySubmitted) {
+      return;
+    }
+    
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+    } else {
+      alert('Please select a valid PDF file');
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       
-      const submissionData = {
+      let submissionData = {
         answers,
         submission_method: submissionMethod,
-        time_spent: "0" // Could track actual time spent
+        time_spent: "0", // Could track actual time spent
+        submitted_files: null
       };
 
-      await assignmentApi.submitAssignment(actualAssignment.id, submissionData);
+      // Handle PDF submission
+      if (submissionMethod === 'pdf') {
+        if (!pdfFile) {
+          alert('Please upload a PDF file first');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Build minimal payload; backend will extract answers from PDF
+        setPdfUploading(true);
+        try {
+          submissionData = {
+            answers: {},
+            submission_method: 'pdf',
+            time_spent: "0",
+          };
+        } finally {
+          setPdfUploading(false);
+        }
+      }
+
+      await assignmentApi.submitAssignment(
+        actualAssignment.id,
+        submissionData,
+        submissionMethod === 'pdf' ? pdfFile : null
+      );
       setSubmitted(true);
       
       // Notify parent component to refresh assignment status
@@ -552,8 +589,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
-              value={currentAnswer}
-              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
               rows={4}
               readOnly={isAlreadySubmitted}
@@ -561,6 +598,47 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
+            
+            {/* Diagram upload */}
+            {!isAlreadySubmitted && (
+              <div className="space-y-2">
+                {currentAnswer?.diagram ? (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <button
+                        onClick={() => handleRemoveDiagram(question.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id={`diagram-upload-${question.id}`}
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleDiagramUpload(question.id, e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`diagram-upload-${question.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      Attach Diagram (Optional)
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -577,7 +655,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <input
-              type="number"
+              type="text"
               value={currentAnswer}
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your numerical answer..."}
@@ -602,8 +680,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
-              value={currentAnswer}
-              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your detailed answer here..."}
               rows={8}
               readOnly={isAlreadySubmitted}
@@ -611,6 +689,47 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
+            
+            {/* Diagram upload */}
+            {!isAlreadySubmitted && (
+              <div className="space-y-2">
+                {currentAnswer?.diagram ? (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <button
+                        onClick={() => handleRemoveDiagram(question.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id={`diagram-upload-${question.id}`}
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleDiagramUpload(question.id, e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`diagram-upload-${question.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      Attach Diagram (Optional)
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -661,8 +780,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
-              value={currentAnswer}
-              onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
               placeholder={isAlreadySubmitted ? "Submitted analysis" : "Enter your analysis here..."}
               rows={8}
               readOnly={isAlreadySubmitted}
@@ -670,6 +789,47 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
+            
+            {/* Diagram upload */}
+            {!isAlreadySubmitted && (
+              <div className="space-y-2">
+                {currentAnswer?.diagram ? (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <button
+                        onClick={() => handleRemoveDiagram(question.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id={`diagram-upload-${question.id}`}
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleDiagramUpload(question.id, e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`diagram-upload-${question.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      Attach Diagram (Optional)
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -844,7 +1004,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     </div>
                   ) : subq.type === 'numerical' ? (
                     <input
-                      type="number"
+                      type="text"
                       value={(currentAnswer?.subAnswers || {})[subq.id] || ''}
                       onChange={(e) => {
                         const newAnswer = {
@@ -881,23 +1041,57 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm font-mono"
                       />
                     </div>
-                  ) : subq.type === 'diagram-analysis' ? (
-                    <textarea
-                      value={(currentAnswer?.subAnswers || {})[subq.id] || ''}
-                      onChange={(e) => {
-                        const newAnswer = {
-                          ...currentAnswer,
-                          subAnswers: {
-                            ...(currentAnswer?.subAnswers || {}),
-                            [subq.id]: e.target.value
-                          }
-                        };
-                        handleAnswerChange(question.id, newAnswer);
-                      }}
-                      placeholder="Enter your diagram analysis..."
-                      rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm"
-                    />
+                  ) : subq.type === 'diagram-analysis' || subq.type === 'short-answer' || subq.type === 'long-answer' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? (currentAnswer?.subAnswers || {})[subq.id] : ((currentAnswer?.subAnswers || {})[subq.id]?.text || '')}
+                        onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value, true, subq.id)}
+                        placeholder={subq.type === 'diagram-analysis' ? "Enter your diagram analysis..." : "Enter your answer..."}
+                        rows={subq.type === 'long-answer' ? 6 : 4}
+                        readOnly={isAlreadySubmitted}
+                        className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                      />
+                      {/* Diagram upload for subquestions */}
+                      {!isAlreadySubmitted && (
+                        <div>
+                          {(currentAnswer?.subAnswers || {})[subq.id]?.diagram ? (
+                            <div className="bg-gray-800 p-2 rounded border border-gray-600">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs text-gray-400">Attached Diagram:</span>
+                                <button
+                                  onClick={() => handleRemoveDiagram(question.id, true, subq.id)}
+                                  className="text-red-400 hover:text-red-300 text-xs"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              {renderDiagram((currentAnswer?.subAnswers || {})[subq.id]?.diagram, "Your diagram")}
+                            </div>
+                          ) : (
+                            <div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id={`diagram-upload-${question.id}-${subq.id}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleDiagramUpload(question.id, e.target.files[0], true, subq.id);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`diagram-upload-${question.id}-${subq.id}`}
+                                className="inline-flex items-center px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded cursor-pointer transition-colors text-xs"
+                              >
+                                <ImageIcon size={12} className="mr-1" />
+                                Attach Diagram
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ) : subq.type === 'multi-part' ? (
                     <div className="space-y-3 ml-4 border-l-2 border-blue-400/30 pl-4">
                       {(subq.subquestions || []).map((subSubq, subSubIndex) => (
@@ -1025,7 +1219,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             />
                           ) : subSubq.type === 'numerical' ? (
                             <input
-                              type="number"
+                              type="text"
                               value={(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] || ''}
                               onChange={(e) => {
                                 const newAnswer = {
@@ -1246,23 +1440,57 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-4">Upload PDF Answer Sheet</h3>
                 <p className="text-gray-400 mb-6">
-                  Upload a PDF file containing your complete answers to all questions.
+                  Upload a PDF containing your answers. Diagrams will be automatically extracted and analyzed.
                 </p>
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 hover:border-gray-600 transition-colors">
+                <div className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
+                  isAlreadySubmitted 
+                    ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed' 
+                    : 'border-gray-700 hover:border-gray-600'
+                }`}>
                   <input
                     type="file"
                     accept=".pdf"
                     className="hidden"
                     id="pdf-upload"
+                    onChange={handlePdfFileChange}
+                    disabled={isAlreadySubmitted}
                   />
-                  <label
-                    htmlFor="pdf-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <Upload size={32} className="text-gray-400 mb-3" />
-                    <p className="text-white font-medium mb-1">Click to upload PDF</p>
-                    <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
-                  </label>
+                  {isAlreadySubmitted ? (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle size={32} className="text-yellow-400" />
+                      </div>
+                      <p className="text-yellow-400 font-medium mb-1">Assignment Already Submitted</p>
+                      <p className="text-gray-300 text-sm mb-2">
+                        PDF upload is disabled for submitted assignments
+                      </p>
+                    </div>
+                  ) : pdfFile ? (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-green-400 font-medium mb-1">✓ PDF Selected</p>
+                      <p className="text-gray-300 text-sm mb-2">{pdfFile.name}</p>
+                      <button
+                        onClick={() => setPdfFile(null)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="pdf-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload size={32} className="text-gray-400 mb-3" />
+                      <p className="text-white font-medium mb-1">Click to upload PDF</p>
+                      <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
@@ -1287,20 +1515,21 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   <option value="pdf">Upload PDF</option>
                 </select>
               </div>
-              <div className="text-sm text-gray-400">
-                {isAlreadySubmitted ? (
-                  <span className="text-green-400 font-medium">✓ Assignment submitted - viewing submission</span>
-                ) : (
-                  <>
-                    {Object.keys(answers).length} of {questions.length} questions answered
-                    {actualAssignment.total_points && (
-                      <span className="ml-2">
-                        • {actualAssignment.total_points} total points
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
+            </div>
+            
+            <div className="text-sm text-gray-400">
+              {isAlreadySubmitted ? (
+                <span className="text-green-400 font-medium">{isGraded ? '✓ Assignment graded - viewing submission' : '✓ Assignment submitted - viewing submission'}</span>
+              ) : (
+                <>
+                  {Object.keys(answers).length} of {questions.length} questions answered
+                  {actualAssignment.total_points && (
+                    <span className="ml-2">
+                      • {actualAssignment.total_points} total points
+                    </span>
+                  )}
+                </>
+              )}
             </div>
             
             <div className="flex space-x-3">
@@ -1325,14 +1554,19 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || isAlreadySubmitted}
+                disabled={isSubmitting || isAlreadySubmitted || pdfUploading}
                 className={`px-6 py-2 font-medium rounded-lg transition-all duration-300 ${
-                  isSubmitting || isAlreadySubmitted
+                  isSubmitting || isAlreadySubmitted || pdfUploading
                     ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
                 }`}
               >
-                {isSubmitting ? (
+                {pdfUploading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing PDF...
+                  </div>
+                ) : isSubmitting ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Submitting...

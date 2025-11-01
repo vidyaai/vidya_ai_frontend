@@ -11,14 +11,27 @@ function ChatContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const videoId = searchParams.get('v')
+  const sourceType = searchParams.get('type') || 'youtube' // Default to youtube for backward compatibility
   const [selectedVideo, setSelectedVideo] = useState(null)
 
   useEffect(() => {
     if (videoId) {
-      // You might want to fetch video details here or construct video data
-      setSelectedVideo({ videoId })
+      // Construct video data with proper sourceType
+      const videoData = {
+        videoId,
+        sourceType,
+        source: sourceType === 'youtube' 
+          ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://vidyaai.co&controls=0`
+          : '',
+        title: '', // Will be fetched by ImprovedYouTubePlayer
+        videoUrl: '' // Will be fetched for uploaded videos
+      }
+      setSelectedVideo(videoData)
+    } else {
+      // No video in URL - clear selection
+      setSelectedVideo(null)
     }
-  }, [videoId])
+  }, [videoId, sourceType])
 
   return (
     <ProtectedRouteWrapper>

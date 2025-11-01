@@ -282,16 +282,16 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
             </div>
 
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-gray-900">
-              Chat With Your
+              Understand STEM Faster
               <br />
               <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                VLSI & Engineering Videos
+                By Chatting With Your Videos
               </span>
             </h1>
 
             <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-10 leading-relaxed">
               Chip design, circuit analysis, semiconductor physics—the lectures move fast.
-              VidyaAI lets me ask questions about any moment in the video and get instant technical answers.
+              VidyaAI lets you ask questions about any moment in the video and get instant technical answers.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -441,7 +441,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
               The VidyaAI Solution
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Paste a Video URL. Ask Technical Questions. Get Instant Answers.
+              Paste a YouTube URL. Ask Technical Questions. Get Instant Answers.
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               VidyaAI's "Chat with Videos" lets you have a conversation with any VLSI, circuit design, or engineering lecture. Clarify doubts the moment they appear.
@@ -524,7 +524,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
                 <MessageCircle size={24} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Timestamp-Specific</h3>
+              <h3 className="text-xl font-bold mb-2">Frame Specific</h3>
               <p className="text-gray-600">
                 Ask about any moment in the video. Get answers that reference exactly what's on screen at that timestamp.
               </p>
@@ -568,7 +568,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              From Video URL to Clarified Doubts in Minutes
+              From YouTube URL to Clarified Doubts in Minutes
             </h2>
           </div>
 
@@ -641,7 +641,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              What STEM Students Chat About
+              What Students Can Chat About
             </h2>
           </div>
 
@@ -893,7 +893,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              STEM Students Clarifying Technical Doubts
+              What Students Are Saying
             </h2>
           </div>
 

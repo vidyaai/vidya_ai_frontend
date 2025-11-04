@@ -19,6 +19,9 @@ import {
   Eye
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { TextWithEquations, EquationList } from './EquationRenderer';
+import { updateEquationLatex } from './utils/equationParser';
+import EditableTextWithEquations from './EditableTextWithEquations';
 
 const QuestionCard = ({ 
   question, 
@@ -139,6 +142,13 @@ const QuestionCard = ({
 
   const handleRubricChange = (value) => {
     onUpdate({ rubric: value });
+  };
+
+  // Handle equation editing
+  const handleEquationSave = (equationId, newLatex) => {
+    const equations = question.equations || [];
+    const updatedEquations = updateEquationLatex(equations, equationId, newLatex);
+    onUpdate({ equations: updatedEquations });
   };
 
   const handleSubquestionChange = (subIndex, field, value) => {
@@ -931,12 +941,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your question..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1060,41 +1071,51 @@ const QuestionCard = ({
                 </label>
               </div>
               <div className="space-y-2">
-                {question.options.map((option, optionIndex) => (
-                  <div key={optionIndex} className="flex items-center space-x-2">
-                    {question.allowMultipleCorrect ? (
-                      <input
-                        type="checkbox"
-                        checked={(question.multipleCorrectAnswers || []).includes(optionIndex.toString())}
-                        onChange={(e) => handleMultipleCorrectChange(optionIndex, e.target.checked)}
-                        className="text-teal-500 focus:ring-teal-500"
-                      />
-                    ) : (
-                      <input
-                        type="radio"
-                        name={`correct-${question.id}`}
-                        checked={question.correctAnswer === optionIndex.toString()}
-                        onChange={() => handleCorrectAnswerChange(optionIndex.toString())}
-                        className="text-teal-500 focus:ring-teal-500"
-                      />
-                    )}
-                    <textarea
-                      value={option}
-                      onChange={(e) => handleOptionChange(optionIndex, e.target.value)}
-                      placeholder={`Option ${optionIndex + 1}`}
-                      rows={1}
-                      className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
-                    />
-                    {question.options.length > 2 && (
-                      <button
-                        onClick={() => removeOption(optionIndex)}
-                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {question.options.map((option, optionIndex) => {
+                  // Get equations for this specific option
+                  const optionEquations = (question.equations || []).filter(
+                    eq => eq.position?.context === 'options' && 
+                         eq.position?.option_index === optionIndex
+                  );
+
+                  return (
+                    <div key={optionIndex} className="flex items-center space-x-2">
+                      {question.allowMultipleCorrect ? (
+                        <input
+                          type="checkbox"
+                          checked={(question.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                          onChange={(e) => handleMultipleCorrectChange(optionIndex, e.target.checked)}
+                          className="text-teal-500 focus:ring-teal-500"
+                        />
+                      ) : (
+                        <input
+                          type="radio"
+                          name={`correct-${question.id}`}
+                          checked={question.correctAnswer === optionIndex.toString()}
+                          onChange={() => handleCorrectAnswerChange(optionIndex.toString())}
+                          className="text-teal-500 focus:ring-teal-500"
+                        />
+                      )}
+                      <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg">
+                        <TextWithEquations 
+                          text={option}
+                          equations={optionEquations}
+                          onEquationSave={handleEquationSave}
+                          editable={true}
+                          className="text-white"
+                        />
+                      </div>
+                      {question.options.length > 2 && (
+                        <button
+                          onClick={() => removeOption(optionIndex)}
+                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
                 <button
                   onClick={addOption}
                   className="inline-flex items-center px-3 py-2 text-sm text-teal-400 hover:text-teal-300 transition-colors"
@@ -1114,12 +1135,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your true/false question..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1264,12 +1286,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question with Blanks
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your question with blanks (use ___ for blanks)..."
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -1381,13 +1404,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Correct Answers (one per line)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter correct answers, one per line..."
-                rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
-              />
+              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <TextWithEquations 
+                  text={question.correctAnswer}
+                  equations={question.equations || []}
+                  onEquationSave={handleEquationSave}
+                  editable={true}
+                  className="text-white"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1399,12 +1424,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your numerical question..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1516,13 +1542,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Correct Answer
               </label>
-              <input
-                type="text"
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter the correct numerical answer..."
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
+              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <TextWithEquations 
+                  text={question.correctAnswer}
+                  equations={question.equations || []}
+                  onEquationSave={handleEquationSave}
+                  editable={true}
+                  className="text-white"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1535,12 +1563,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder={`Enter your ${question.type === 'long-answer' ? 'long answer' : 'short answer'} question...`}
-                rows={question.type === 'long-answer' ? 3 : 2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1652,12 +1681,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Answer (Required)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter a sample answer or key points..."
-                rows={question.type === 'long-answer' ? 4 : 2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter sample answer... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={4}
               />
             </div>
           </div>
@@ -1670,12 +1700,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Programming Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your programming problem description..."
-                rows={4}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
             
@@ -1734,13 +1765,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Solution (Required)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter sample solution code..."
-                rows={6}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
-              />
+              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <TextWithEquations 
+                  text={question.correctAnswer}
+                  equations={question.equations || []}
+                  onEquationSave={handleEquationSave}
+                  editable={true}
+                  className="text-white font-mono text-sm"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1752,12 +1785,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your diagram analysis question..."
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-vertical"
               />
             </div>
             
@@ -1805,12 +1839,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Answer (Required)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter sample analysis or key points..."
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter sample answer... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={4}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-vertical"
               />
             </div>
           </div>
@@ -1823,12 +1858,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Main Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter the main question or problem statement..."
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -2032,13 +2068,18 @@ const QuestionCard = ({
                         </button>
                       </div>
                     </div>
-                    <textarea
-                      value={subq.question || ''}
-                      onChange={(e) => handleSubquestionChange(subIndex, 'question', e.target.value)}
-                      placeholder={`Enter part ${subIndex + 1} question...`}
-                      rows={2}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
-                    />
+                    <div className="p-3 bg-gray-600 border border-gray-500 rounded-lg">
+                      <TextWithEquations 
+                        text={subq.question || ''}
+                        equations={subq.equations || []}
+                        onEquationSave={(eqId, newLatex) => {
+                          const updatedEqs = updateEquationLatex(subq.equations || [], eqId, newLatex);
+                          handleSubquestionChange(subIndex, 'equations', updatedEqs);
+                        }}
+                        editable={true}
+                        className="text-white text-sm"
+                      />
+                    </div>
                     
                     {/* Sub-question type selection */}
                     <div className="mt-3 space-y-3">
@@ -2193,48 +2234,57 @@ const QuestionCard = ({
                             </label>
                           </div>
                           <div className="space-y-2">
-                            {(subq.options || ['', '', '', '']).map((option, optionIndex) => (
-                              <div key={optionIndex} className="flex items-center space-x-2">
-                                {subq.allowMultipleCorrect ? (
-                                  <input
-                                    type="checkbox"
-                                    checked={(subq.multipleCorrectAnswers || []).includes(optionIndex.toString())}
-                                    onChange={(e) => handleSubquestionMultipleCorrectChange(subIndex, optionIndex, e.target.checked)}
-                                    className="text-teal-500 focus:ring-teal-500"
-                                  />
-                                ) : (
-                                  <input
-                                    type="radio"
-                                    name={`correct-sub-${question.id}-${subIndex}`}
-                                    checked={subq.correctAnswer === optionIndex.toString()}
-                                    onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
-                                    className="text-teal-500 focus:ring-teal-500"
-                                  />
-                                )}
-                                <textarea
-                                  value={option}
-                                  onChange={(e) => {
-                                    const newOptions = [...(subq.options || ['', '', '', ''])];
-                                    newOptions[optionIndex] = e.target.value;
-                                    handleSubquestionChange(subIndex, 'options', newOptions);
-                                  }}
-                                  placeholder={`Option ${optionIndex + 1}`}
-                                  rows={1}
-                                  className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-vertical"
-                                />
-                                {(subq.options || ['', '', '', '']).length > 2 && (
-                                  <button
-                                    onClick={() => {
-                                      const newOptions = (subq.options || ['', '', '', '']).filter((_, i) => i !== optionIndex);
-                                      handleSubquestionChange(subIndex, 'options', newOptions);
-                                    }}
-                                    className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
+                            {(subq.options || ['', '', '', '']).map((option, optionIndex) => {
+                              // Get equations for this specific option
+                              const optionEquations = (subq.equations || []).filter(
+                                eq => eq.position?.context === 'options' && 
+                                     eq.position?.option_index === optionIndex
+                              );
+
+                              return (
+                                <div key={optionIndex} className="flex items-center space-x-2">
+                                  {subq.allowMultipleCorrect ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={(subq.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                                      onChange={(e) => handleSubquestionMultipleCorrectChange(subIndex, optionIndex, e.target.checked)}
+                                      className="text-teal-500 focus:ring-teal-500"
+                                    />
+                                  ) : (
+                                    <input
+                                      type="radio"
+                                      name={`correct-sub-${question.id}-${subIndex}`}
+                                      checked={subq.correctAnswer === optionIndex.toString()}
+                                      onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
+                                      className="text-teal-500 focus:ring-teal-500"
+                                    />
+                                  )}
+                                  <div className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">
+                                    <TextWithEquations 
+                                      text={option}
+                                      equations={optionEquations}
+                                      onEquationSave={(eqId, newLatex) => {
+                                        const updatedEqs = updateEquationLatex(subq.equations || [], eqId, newLatex);
+                                        handleSubquestionChange(subIndex, 'equations', updatedEqs);
+                                      }}
+                                      editable={true}
+                                      className="text-white text-sm"
+                                    />
+                                  </div>
+                                  {(subq.options || ['', '', '', '']).length > 2 && (
+                                    <button
+                                      onClick={() => {
+                                        const newOptions = (subq.options || ['', '', '', '']).filter((_, i) => i !== optionIndex);
+                                        handleSubquestionChange(subIndex, 'options', newOptions);
+                                      }}
+                                      className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                             <button
                               onClick={() => {
                                 const newOptions = [...(subq.options || ['', '', '', '']), ''];
@@ -2286,12 +2336,16 @@ const QuestionCard = ({
                           <label className="block text-xs font-medium text-teal-300 mb-2">
                             {subq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Required)'}
                           </label>
-                          <textarea
-                            value={subq.correctAnswer || ''}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'correctAnswer', e.target.value)}
-                            placeholder={subq.type === 'numerical' ? 'Enter the correct numerical answer...' : 'Enter sample answer or key points...'}
+                          <EditableTextWithEquations 
+                            text={subq.correctAnswer || ''}
+                            equations={subq.equations || []}
+                            onChange={({text, equations}) => {
+                              handleSubquestionChange(subIndex, 'correctAnswer', text);
+                              handleSubquestionChange(subIndex, 'equations', equations);
+                            }}
+                            placeholder={subq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
+                            multiline={true}
                             rows={2}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical text-sm"
                           />
                         </div>
                       )}
@@ -2429,17 +2483,20 @@ const QuestionCard = ({
                                     </button>
                                   </div>
                                 </div>
-                                <textarea
-                                  value={subSubq.question || ''}
-                                  onChange={(e) => {
-                                    const newSubSubquestions = [...(subq.subquestions || [])];
-                                    newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], question: e.target.value };
-                                    handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
-                                  }}
-                                  placeholder={`Enter part ${subIndex + 1}.${subSubIndex + 1} question...`}
-                                  rows={1}
-                                  className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs mb-2 resize-vertical"
-                                />
+                                <div className="p-2 bg-gray-500 border border-gray-400 rounded mb-2">
+                                  <TextWithEquations 
+                                    text={subSubq.question || ''}
+                                    equations={subSubq.equations || []}
+                                    onEquationSave={(eqId, newLatex) => {
+                                      const updatedEqs = updateEquationLatex(subSubq.equations || [], eqId, newLatex);
+                                      const newSubSubquestions = [...(subq.subquestions || [])];
+                                      newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], equations: updatedEqs };
+                                      handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                    }}
+                                    editable={true}
+                                    className="text-white text-xs"
+                                  />
+                                </div>
                                 <select
                                   value={subSubq.type || 'short-answer'}
                                   onChange={(e) => {
@@ -2585,16 +2642,21 @@ const QuestionCard = ({
                                     <label className="block text-xs font-medium text-teal-300 mb-1">
                                       {subSubq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Required)'}
                                     </label>
-                                    <textarea
-                                      value={subSubq.correctAnswer || ''}
-                                      onChange={(e) => {
+                                    <EditableTextWithEquations 
+                                      text={subSubq.correctAnswer || ''}
+                                      equations={subSubq.equations || []}
+                                      onChange={({text, equations}) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
-                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: e.target.value };
+                                        newSubSubquestions[subSubIndex] = { 
+                                          ...newSubSubquestions[subSubIndex], 
+                                          correctAnswer: text,
+                                          equations: equations
+                                        };
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
                                       placeholder={subSubq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
+                                      multiline={true}
                                       rows={1}
-                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs resize-vertical"
                                     />
                                   </div>
                                 )}

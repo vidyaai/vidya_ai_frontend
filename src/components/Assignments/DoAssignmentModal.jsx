@@ -12,6 +12,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { TextWithEquations, EquationList } from './EquationRenderer';
 
 // Component for handling diagram images with URL fetching
 const DiagramImage = memo(({ diagramData, displayName }) => {
@@ -555,7 +556,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -566,29 +578,46 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   Select all correct answers
                 </div>
               )}
-              {question.options.map((option, optionIndex) => (
-                <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type={question.allowMultipleCorrect ? "checkbox" : "radio"}
-                    name={question.allowMultipleCorrect ? undefined : `question-${question.id}`}
-                    value={optionIndex}
-                    checked={
-                      question.allowMultipleCorrect 
-                        ? (Array.isArray(currentAnswer) ? currentAnswer : []).includes(optionIndex.toString())
-                        : currentAnswer === optionIndex.toString()
-                    }
-                    onChange={(e) => !isAlreadySubmitted && handleMultipleChoiceChange(
-                      question.id, 
-                      optionIndex, 
-                      e.target.checked, 
-                      question.allowMultipleCorrect
-                    )}
-                    disabled={isAlreadySubmitted}
-                    className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
-                  />
-                  <span className="text-white">{option}</span>
-                </label>
-              ))}
+              {question.options.map((option, optionIndex) => {
+                // Find equations for this option
+                const optionEquations = question.equations?.filter(
+                  eq => eq.position.context === 'options' && 
+                       eq.position.option_index === optionIndex
+                ) || [];
+
+                return (
+                  <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type={question.allowMultipleCorrect ? "checkbox" : "radio"}
+                      name={question.allowMultipleCorrect ? undefined : `question-${question.id}`}
+                      value={optionIndex}
+                      checked={
+                        question.allowMultipleCorrect 
+                          ? (Array.isArray(currentAnswer) ? currentAnswer : []).includes(optionIndex.toString())
+                          : currentAnswer === optionIndex.toString()
+                      }
+                      onChange={(e) => !isAlreadySubmitted && handleMultipleChoiceChange(
+                        question.id, 
+                        optionIndex, 
+                        e.target.checked, 
+                        question.allowMultipleCorrect
+                      )}
+                      disabled={isAlreadySubmitted}
+                      className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                    />
+                    <span className="text-white">
+                      {optionEquations.length > 0 ? (
+                        <TextWithEquations 
+                          text={option} 
+                          equations={optionEquations} 
+                        />
+                      ) : (
+                        option
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         );
@@ -600,7 +629,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -625,7 +665,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -666,7 +717,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -732,7 +794,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -757,7 +830,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -823,7 +907,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-purple-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -931,7 +1026,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               </h3>
               <span className="text-blue-400 text-sm font-medium">{question.points} points total</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Optional Parts Selection UI */}
             {question.optionalParts && !isAlreadySubmitted && (
@@ -1018,8 +1124,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 return (
                 <div key={subq.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/30">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-blue-300 font-medium">{subq.question}</h4>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex-1 text-blue-300 font-medium">
+                      {subq.equations && subq.equations.length > 0 ? (
+                        <TextWithEquations 
+                          text={subq.question} 
+                          equations={subq.equations.filter(eq => eq.position.context === 'question_text' || eq.position.context === 'subquestion')} 
+                        />
+                      ) : (
+                        <h4>{subq.question}</h4>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
                       <span className={`px-2 py-1 rounded text-xs ${
                         subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                         subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
@@ -1064,32 +1179,49 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           Select all correct answers
                         </div>
                       )}
-                      {(subq.options || []).map((option, optionIndex) => (
-                        <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type={subq.allowMultipleCorrect ? "checkbox" : "radio"}
-                            name={subq.allowMultipleCorrect ? undefined : `subq-${question.id}-${subq.id}`}
-                            value={optionIndex}
-                            checked={
-                              subq.allowMultipleCorrect 
-                                ? (Array.isArray((currentAnswer?.subAnswers || {})[subq.id]) 
-                                   ? (currentAnswer?.subAnswers || {})[subq.id] 
-                                   : []).includes(optionIndex.toString())
-                                : (currentAnswer?.subAnswers || {})[subq.id] === optionIndex.toString()
-                            }
-                            onChange={(e) => !isAlreadySubmitted && handleSubquestionMultipleChoiceChange(
-                              question.id,
-                              subq.id,
-                              optionIndex,
-                              e.target.checked,
-                              subq.allowMultipleCorrect
-                            )}
-                            disabled={isAlreadySubmitted}
-                            className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
-                          />
-                          <span className="text-white text-sm">{option}</span>
-                        </label>
-                      ))}
+                      {(subq.options || []).map((option, optionIndex) => {
+                        // Find equations for this option
+                        const optionEquations = subq.equations?.filter(
+                          eq => eq.position.context === 'options' && 
+                               eq.position.option_index === optionIndex
+                        ) || [];
+                        
+                        return (
+                          <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type={subq.allowMultipleCorrect ? "checkbox" : "radio"}
+                              name={subq.allowMultipleCorrect ? undefined : `subq-${question.id}-${subq.id}`}
+                              value={optionIndex}
+                              checked={
+                                subq.allowMultipleCorrect 
+                                  ? (Array.isArray((currentAnswer?.subAnswers || {})[subq.id]) 
+                                     ? (currentAnswer?.subAnswers || {})[subq.id] 
+                                     : []).includes(optionIndex.toString())
+                                  : (currentAnswer?.subAnswers || {})[subq.id] === optionIndex.toString()
+                              }
+                              onChange={(e) => !isAlreadySubmitted && handleSubquestionMultipleChoiceChange(
+                                question.id,
+                                subq.id,
+                                optionIndex,
+                                e.target.checked,
+                                subq.allowMultipleCorrect
+                              )}
+                              disabled={isAlreadySubmitted}
+                              className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                            />
+                            <span className="text-white text-sm">
+                              {optionEquations.length > 0 ? (
+                                <TextWithEquations 
+                                  text={option} 
+                                  equations={optionEquations} 
+                                />
+                              ) : (
+                                option
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   ) : subq.type === 'true-false' ? (
                     <div className="flex space-x-6">

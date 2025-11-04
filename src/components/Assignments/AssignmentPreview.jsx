@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { TextWithEquations } from './EquationRenderer';
 
 const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
   const calculateQuestionPoints = (question) => {
@@ -112,6 +113,24 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
     return <DiagramPreviewImage diagramData={diagramData} displayName={displayName} />;
   };
 
+  // Helper function to render question text with equations
+  const renderQuestionText = (question) => {
+    if (question.equations && question.equations.length > 0) {
+      const textEquations = question.equations.filter(eq => eq.position.context === 'question_text');
+      if (textEquations.length > 0) {
+        return (
+          <div className="text-gray-300 mb-3">
+            <TextWithEquations 
+              text={question.question || 'Question text...'} 
+              equations={textEquations} 
+            />
+          </div>
+        );
+      }
+    }
+    return <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>;
+  };
+
   const renderQuestionPreview = (question, index) => {
     switch (question.type) {
       case 'multiple-choice':
@@ -121,18 +140,34 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
             
             <div className="space-y-2">
-              {question.options?.map((option, optionIndex) => (
-                <div key={optionIndex} className="flex items-center space-x-2">
-                  <input type="radio" disabled className="text-teal-500" />
-                  <span className="text-gray-400 text-sm">{option || `Option ${optionIndex + 1}`}</span>
-                </div>
-              ))}
+              {question.options?.map((option, optionIndex) => {
+                const optionEquations = question.equations?.filter(
+                  eq => eq.position.context === 'options' && 
+                       eq.position.option_index === optionIndex
+                ) || [];
+                
+                return (
+                  <div key={optionIndex} className="flex items-center space-x-2">
+                    <input type="radio" disabled className="text-teal-500" />
+                    <span className="text-gray-400 text-sm">
+                      {optionEquations.length > 0 ? (
+                        <TextWithEquations 
+                          text={option || `Option ${optionIndex + 1}`} 
+                          equations={optionEquations} 
+                        />
+                      ) : (
+                        option || `Option ${optionIndex + 1}`
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -144,7 +179,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -169,9 +204,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">
-              {question.question || 'Question with blanks...'}
-            </p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -189,7 +222,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -203,7 +236,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -217,7 +250,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -234,7 +267,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               </div>
               <span className="text-purple-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Programming question...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -265,7 +298,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                 </div>
               <span className="text-orange-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Diagram analysis question...'}</p>
+            {renderQuestionText(question)}
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
               {question.diagram ? renderDiagramPreview(question.diagram) : (
                 <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
@@ -289,7 +322,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               </div>
               <span className="text-blue-400 text-sm font-medium">{calculateQuestionPoints(question)} pts total</span>
             </div>
-            <p className="text-gray-300 mb-4">{question.question || 'Multi-part question...'}</p>
+            {renderQuestionText(question)}
             
             {/* Main Question Code Preview */}
             {((question.hasMainCode && question.mainCode) || (question.hasCode && question.code)) && (

@@ -210,7 +210,7 @@ const EditableTextWithEquations = ({
   return (
     <div 
       onClick={handleContainerClick}
-      className={`cursor-text min-h-[2.5rem] px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors ${className}`}
+      className={`cursor-text min-h-[2.5rem] px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors whitespace-pre-wrap ${className}`}
     >
       {segments.length === 0 && !text ? (
         <span className="text-gray-400">{placeholder}</span>

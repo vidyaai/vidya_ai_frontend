@@ -2356,12 +2356,21 @@ const QuestionCard = ({
                           <label className="block text-xs font-medium text-blue-300 mb-2">
                             Rubric for Part {subIndex + 1}
                           </label>
-                          <textarea
-                            value={subq.rubric || ''}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'rubric', e.target.value)}
-                            placeholder={`Enter grading criteria for part ${subIndex + 1}...`}
-                            rows={2}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
+                          <EditableTextWithEquations
+                            text={subq.rubric || ''}
+                            equations={subq.equations || []}
+                            onChange={({ text, equations }) => {
+                              const updatedSubquestions = [...(question.subquestions || [])];
+                              updatedSubquestions[subIndex] = { 
+                                ...updatedSubquestions[subIndex], 
+                                rubric: text, 
+                                equations: equations 
+                              };
+                              onUpdate({ subquestions: updatedSubquestions });
+                            }}
+                            placeholder={`Enter grading criteria for part ${subIndex + 1}... Use <eq {latex}> or <eq {}> to add equations`}
+                            multiline={true}
+                            rows={3}
                           />
                         </div>
                       )}
@@ -2667,16 +2676,21 @@ const QuestionCard = ({
                                     <label className="block text-xs font-medium text-blue-300 mb-1">
                                       Rubric for Part {subIndex + 1}.{subSubIndex + 1}
                                     </label>
-                                    <textarea
-                                      value={subSubq.rubric || ''}
-                                      onChange={(e) => {
+                                    <EditableTextWithEquations
+                                      text={subSubq.rubric || ''}
+                                      equations={subSubq.equations || []}
+                                      onChange={({ text, equations }) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
-                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], rubric: e.target.value };
+                                        newSubSubquestions[subSubIndex] = { 
+                                          ...newSubSubquestions[subSubIndex], 
+                                          rubric: text,
+                                          equations: equations
+                                        };
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
-                                      placeholder={`Enter grading criteria for part ${subIndex + 1}.${subSubIndex + 1}...`}
-                                      rows={1}
-                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs resize-vertical"
+                                      placeholder={`Enter grading criteria for part ${subIndex + 1}.${subSubIndex + 1}... Use <eq {latex}> or <eq {}> to add equations`}
+                                      multiline={true}
+                                      rows={2}
                                     />
                                   </div>
                                 )}
@@ -2797,12 +2811,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Rubric (Required)
               </label>
-              <textarea
-                value={question.rubric}
-                onChange={(e) => handleRubricChange(e.target.value)}
-                placeholder="Enter grading criteria or rubric..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations
+                text={question.rubric || ''}
+                equations={question.equations || []}
+                onChange={({ text, equations }) => 
+                  onUpdate({ rubric: text, equations: equations })
+                }
+                placeholder="Enter grading criteria or rubric... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={4}
               />
             </div>
           )}

@@ -19,6 +19,9 @@ import {
   Eye
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { TextWithEquations, EquationList } from './EquationRenderer';
+import { updateEquationLatex } from './utils/equationParser';
+import EditableTextWithEquations from './EditableTextWithEquations';
 
 const QuestionCard = ({ 
   question, 
@@ -35,6 +38,28 @@ const QuestionCard = ({
   const [uploadError, setUploadError] = useState(null);
   const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '', subIndex: null });
   const [imageUrls, setImageUrls] = useState({}); // Cache for presigned URLs
+  
+  // Helper function to calculate points for multipart questions with optional parts support
+  const calculateMultipartPoints = (subquestions, optionalParts = false, requiredPartsCount = 0) => {
+    if (!subquestions || subquestions.length === 0) return 0;
+    
+    const subqPoints = subquestions.map(sq => {
+      if (sq.type === 'multi-part') {
+        // Recursively calculate for nested multipart
+        return calculateMultipartPoints(sq.subquestions, sq.optionalParts, sq.requiredPartsCount);
+      }
+      return sq.points || 1;
+    });
+    
+    if (optionalParts && requiredPartsCount > 0) {
+      // For optional parts, sum only the required number of highest-point parts
+      const sortedPoints = [...subqPoints].sort((a, b) => b - a);
+      return sortedPoints.slice(0, requiredPartsCount).reduce((sum, pts) => sum + pts, 0);
+    }
+    
+    // For non-optional, sum all parts
+    return subqPoints.reduce((sum, pts) => sum + pts, 0);
+  };
 
   // Enhanced file validation
   const validateFile = (file) => {
@@ -117,6 +142,13 @@ const QuestionCard = ({
 
   const handleRubricChange = (value) => {
     onUpdate({ rubric: value });
+  };
+
+  // Handle equation editing
+  const handleEquationSave = (equationId, newLatex) => {
+    const equations = question.equations || [];
+    const updatedEquations = updateEquationLatex(equations, equationId, newLatex);
+    onUpdate({ equations: updatedEquations });
   };
 
   const handleSubquestionChange = (subIndex, field, value) => {
@@ -249,8 +281,14 @@ const QuestionCard = ({
         [uploadResult.file_id]: uploadResult.url
       }));
 
-      // Update the question with the diagram data
-      onUpdate({ [field]: diagramData });
+      // Update the question with the diagram data and set the appropriate flag
+      if (field === 'mainDiagram') {
+        onUpdate({ [field]: diagramData, hasMainDiagram: true });
+      } else if (field === 'diagram') {
+        onUpdate({ [field]: diagramData, hasDiagram: true });
+      } else {
+        onUpdate({ [field]: diagramData });
+      }
       
     } catch (error) {
       console.error('Error uploading diagram:', error);
@@ -261,9 +299,28 @@ const QuestionCard = ({
   };
 
   // Handle diagram deletion
-  const handleDiagramDelete = async (field = 'diagram') => {
-    const diagramData = question[field];
-    if (!diagramData?.file_id) return;
+  const handleDiagramDelete = async (field = 'diagram', keepCheckbox = false) => {
+    // Check both the primary field and fallback field
+    let diagramData = question[field];
+    
+    // For mainDiagram, also check diagram field as fallback
+    if (field === 'mainDiagram' && !diagramData) {
+      diagramData = question.diagram;
+    }
+    
+    if (!diagramData?.file_id) {
+      // No diagram to delete, but still clear the fields
+      if (field === 'mainDiagram') {
+        // For multi-part, keep hasMainDiagram if requested
+        onUpdate({ mainDiagram: null, diagram: null, hasMainDiagram: keepCheckbox ? question.hasMainDiagram : false });
+      } else if (field === 'diagram') {
+        // For regular questions, keep hasDiagram if requested
+        onUpdate({ diagram: null, hasDiagram: keepCheckbox ? question.hasDiagram : false });
+      } else {
+        onUpdate({ [field]: null });
+      }
+      return;
+    }
 
     setDeletingDiagram(true);
     setUploadError(null);
@@ -272,7 +329,15 @@ const QuestionCard = ({
       await assignmentApi.deleteDiagram(diagramData.file_id, assignmentId);
       
       // Clear the diagram from the question
-      onUpdate({ [field]: null });
+      if (field === 'mainDiagram') {
+        // For multi-part, keep hasMainDiagram if requested (delete button clicked, not unchecking)
+        onUpdate({ mainDiagram: null, diagram: null, hasMainDiagram: keepCheckbox ? question.hasMainDiagram : false });
+      } else if (field === 'diagram') {
+        // For regular questions, keep hasDiagram if requested
+        onUpdate({ diagram: null, hasDiagram: keepCheckbox ? question.hasDiagram : false });
+      } else {
+        onUpdate({ [field]: null });
+      }
       
       // Clear from cache
       setImageUrls(prev => {
@@ -286,7 +351,13 @@ const QuestionCard = ({
       console.error('Error deleting diagram:', error);
       setUploadError('Failed to delete diagram');
       // Note: We still remove it from UI even if backend deletion fails
-      onUpdate({ [field]: null });
+      if (field === 'mainDiagram') {
+        onUpdate({ mainDiagram: null, diagram: null, hasMainDiagram: keepCheckbox ? question.hasMainDiagram : false });
+      } else if (field === 'diagram') {
+        onUpdate({ diagram: null, hasDiagram: keepCheckbox ? question.hasDiagram : false });
+      } else {
+        onUpdate({ [field]: null });
+      }
     } finally {
       setDeletingDiagram(false);
     }
@@ -303,7 +374,13 @@ const QuestionCard = ({
       return;
     }
 
-    const oldDiagramData = question[field];
+    // Check both the primary field and fallback field for old diagram
+    let oldDiagramData = question[field];
+    
+    // For mainDiagram, also check diagram field as fallback
+    if (field === 'mainDiagram' && !oldDiagramData) {
+      oldDiagramData = question.diagram;
+    }
     
     setUploadingDiagram(true);
     setUploadError(null);
@@ -330,13 +407,24 @@ const QuestionCard = ({
       }));
 
       // Update the question with the new diagram data
-      onUpdate({ [field]: newDiagramData });
+      // For mainDiagram, also clear diagram to avoid conflicts
+      if (field === 'mainDiagram') {
+        onUpdate({ mainDiagram: newDiagramData, diagram: null });
+      } else {
+        onUpdate({ [field]: newDiagramData });
+      }
 
       // Delete the old diagram (best effort - don't fail if this doesn't work)
       if (oldDiagramData?.file_id) {
         try {
           await assignmentApi.deleteDiagram(oldDiagramData.file_id, assignmentId);
           console.log('Successfully deleted old diagram:', oldDiagramData.file_id);
+          // Clear from cache
+          setImageUrls(prev => {
+            const newUrls = { ...prev };
+            delete newUrls[oldDiagramData.file_id];
+            return newUrls;
+          });
         } catch (deleteError) {
           console.warn('Failed to delete old diagram (non-critical):', deleteError);
         }
@@ -384,8 +472,14 @@ const QuestionCard = ({
         [uploadResult.file_id]: uploadResult.url
       }));
 
-      // Update the subquestion with the diagram data
-      handleSubquestionChange(subIndex, 'subDiagram', diagramData);
+      // Update the subquestion with the diagram data and set hasDiagram flag
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: diagramData,
+        hasDiagram: true
+      };
+      onUpdate({ subquestions: newSubquestions });
       
     } catch (error) {
       console.error('Error uploading subquestion diagram:', error);
@@ -396,23 +490,48 @@ const QuestionCard = ({
   };
 
   // Handle subquestion diagram deletion
-  const handleSubquestionDiagramDelete = async (subIndex) => {
+  const handleSubquestionDiagramDelete = async (subIndex, keepCheckbox = false) => {
     const subq = question.subquestions?.[subIndex];
-    if (!subq?.subDiagram?.file_id) return;
+    
+    // Check both subDiagram and diagram fields
+    let diagramData = subq?.subDiagram;
+    if (!diagramData) {
+      diagramData = subq?.diagram;
+    }
+    
+    if (!diagramData?.file_id) {
+      // No diagram to delete, but still clear the fields
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: null,
+        diagram: null,
+        hasDiagram: keepCheckbox ? subq.hasDiagram : false
+      };
+      onUpdate({ subquestions: newSubquestions });
+      return;
+    }
 
     setDeletingDiagram(true);
     setUploadError(null);
 
     try {
-      await assignmentApi.deleteDiagram(subq.subDiagram.file_id, assignmentId);
+      await assignmentApi.deleteDiagram(diagramData.file_id, assignmentId);
       
-      // Update the subquestion to remove the diagram
-      handleSubquestionChange(subIndex, 'subDiagram', null);
+      // Update the subquestion to remove both diagram fields
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: null,
+        diagram: null,
+        hasDiagram: keepCheckbox ? subq.hasDiagram : false
+      };
+      onUpdate({ subquestions: newSubquestions });
       
       // Clear from cache
       setImageUrls(prev => {
         const newUrls = { ...prev };
-        delete newUrls[subq.subDiagram.file_id];
+        delete newUrls[diagramData.file_id];
         return newUrls;
       });
       
@@ -421,7 +540,14 @@ const QuestionCard = ({
       console.error('Error deleting subquestion diagram:', error);
       setUploadError('Failed to delete diagram');
       // Still remove from UI
-      handleSubquestionChange(subIndex, 'subDiagram', null);
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: null,
+        diagram: null,
+        hasDiagram: keepCheckbox ? subq.hasDiagram : false
+      };
+      onUpdate({ subquestions: newSubquestions });
     } finally {
       setDeletingDiagram(false);
     }
@@ -439,7 +565,12 @@ const QuestionCard = ({
     }
 
     const subq = question.subquestions?.[subIndex];
-    const oldDiagramData = subq?.subDiagram;
+    
+    // Check both subDiagram and diagram fields for old data
+    let oldDiagramData = subq?.subDiagram;
+    if (!oldDiagramData) {
+      oldDiagramData = subq?.diagram;
+    }
     
     setUploadingDiagram(true);
     setUploadError(null);
@@ -465,8 +596,14 @@ const QuestionCard = ({
         [uploadResult.file_id]: uploadResult.url
       }));
 
-      // Update the subquestion with the new diagram data
-      handleSubquestionChange(subIndex, 'subDiagram', newDiagramData);
+      // Update the subquestion with the new diagram data and clear diagram field
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = {
+        ...newSubquestions[subIndex],
+        subDiagram: newDiagramData,
+        diagram: null
+      };
+      onUpdate({ subquestions: newSubquestions });
 
       // Delete the old diagram (best effort - don't fail if this doesn't work)
       if (oldDiagramData?.file_id) {
@@ -489,7 +626,7 @@ const QuestionCard = ({
   // Component for handling diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName, onError }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [loading, setLoading] = useState(!!diagramData.s3_key);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [error, setError] = useState(false);
 
     useEffect(() => {
@@ -500,6 +637,13 @@ const QuestionCard = ({
         // Check if we have a cached URL for this diagram
         if (diagramData.file_id && imageUrls[diagramData.file_id]) {
           setImageUrl(imageUrls[diagramData.file_id]);
+          setLoading(false);
+          return;
+        }
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
           setLoading(false);
           return;
         }
@@ -534,7 +678,7 @@ const QuestionCard = ({
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, diagramData.file_id, imageUrl, imageUrls]);
+    }, [diagramData.s3_key, diagramData.s3_url, diagramData.file_id, imageUrl, imageUrls]);
 
     if (loading) {
       return (
@@ -643,7 +787,7 @@ const QuestionCard = ({
                 )}
                 {onDelete && (
                   <button
-                    onClick={() => onDelete()}
+                    onClick={onDelete}
                     className="p-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
                     title="Delete diagram"
                   >
@@ -726,9 +870,9 @@ const QuestionCard = ({
               <button
                 onClick={() => {
                   if (isSubquestion) {
-                    handleSubquestionDiagramDelete(subIndex);
+                    handleSubquestionDiagramDelete(subIndex, true);
                   } else {
-                    handleDiagramDelete(field);
+                    handleDiagramDelete(field, true);
                   }
                   setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null });
                 }}
@@ -797,12 +941,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your question..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -851,8 +996,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -891,7 +1045,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -917,41 +1071,51 @@ const QuestionCard = ({
                 </label>
               </div>
               <div className="space-y-2">
-                {question.options.map((option, optionIndex) => (
-                  <div key={optionIndex} className="flex items-center space-x-2">
-                    {question.allowMultipleCorrect ? (
-                      <input
-                        type="checkbox"
-                        checked={(question.multipleCorrectAnswers || []).includes(optionIndex.toString())}
-                        onChange={(e) => handleMultipleCorrectChange(optionIndex, e.target.checked)}
-                        className="text-teal-500 focus:ring-teal-500"
-                      />
-                    ) : (
-                      <input
-                        type="radio"
-                        name={`correct-${question.id}`}
-                        checked={question.correctAnswer === optionIndex.toString()}
-                        onChange={() => handleCorrectAnswerChange(optionIndex.toString())}
-                        className="text-teal-500 focus:ring-teal-500"
-                      />
-                    )}
-                    <textarea
-                      value={option}
-                      onChange={(e) => handleOptionChange(optionIndex, e.target.value)}
-                      placeholder={`Option ${optionIndex + 1}`}
-                      rows={1}
-                      className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
-                    />
-                    {question.options.length > 2 && (
-                      <button
-                        onClick={() => removeOption(optionIndex)}
-                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {question.options.map((option, optionIndex) => {
+                  // Get equations for this specific option
+                  const optionEquations = (question.equations || []).filter(
+                    eq => eq.position?.context === 'options' && 
+                         eq.position?.option_index === optionIndex
+                  );
+
+                  return (
+                    <div key={optionIndex} className="flex items-center space-x-2">
+                      {question.allowMultipleCorrect ? (
+                        <input
+                          type="checkbox"
+                          checked={(question.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                          onChange={(e) => handleMultipleCorrectChange(optionIndex, e.target.checked)}
+                          className="text-teal-500 focus:ring-teal-500"
+                        />
+                      ) : (
+                        <input
+                          type="radio"
+                          name={`correct-${question.id}`}
+                          checked={question.correctAnswer === optionIndex.toString()}
+                          onChange={() => handleCorrectAnswerChange(optionIndex.toString())}
+                          className="text-teal-500 focus:ring-teal-500"
+                        />
+                      )}
+                      <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg">
+                        <TextWithEquations 
+                          text={option}
+                          equations={optionEquations}
+                          onEquationSave={handleEquationSave}
+                          editable={true}
+                          className="text-white"
+                        />
+                      </div>
+                      {question.options.length > 2 && (
+                        <button
+                          onClick={() => removeOption(optionIndex)}
+                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
                 <button
                   onClick={addOption}
                   className="inline-flex items-center px-3 py-2 text-sm text-teal-400 hover:text-teal-300 transition-colors"
@@ -971,12 +1135,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your true/false question..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1025,8 +1190,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1065,7 +1239,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1112,12 +1286,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question with Blanks
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your question with blanks (use ___ for blanks)..."
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
               />
             </div>
 
@@ -1166,8 +1341,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1206,7 +1390,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1220,13 +1404,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Correct Answers (one per line)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter correct answers, one per line..."
-                rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
-              />
+              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <TextWithEquations 
+                  text={question.correctAnswer}
+                  equations={question.equations || []}
+                  onEquationSave={handleEquationSave}
+                  editable={true}
+                  className="text-white"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1238,12 +1424,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your numerical question..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1292,8 +1479,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1332,7 +1528,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1346,13 +1542,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Correct Answer
               </label>
-              <input
-                type="text"
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter the correct numerical answer..."
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
+              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <TextWithEquations 
+                  text={question.correctAnswer}
+                  equations={question.equations || []}
+                  onEquationSave={handleEquationSave}
+                  editable={true}
+                  className="text-white"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1365,12 +1563,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder={`Enter your ${question.type === 'long-answer' ? 'long answer' : 'short answer'} question...`}
-                rows={question.type === 'long-answer' ? 3 : 2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
 
@@ -1419,8 +1618,17 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasDiagram || false}
-                    onChange={(e) => onUpdate({ hasDiagram: e.target.checked })}
+                    checked={!!question.hasDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, delete the diagram and clear flag
+                        handleDiagramDelete('diagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
@@ -1459,7 +1667,7 @@ const QuestionCard = ({
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
                         question.diagram, 
                         false, 
-                        () => handleDiagramDelete('diagram'),
+                        () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
@@ -1473,12 +1681,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Answer (Required)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter a sample answer or key points..."
-                rows={question.type === 'long-answer' ? 4 : 2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter sample answer... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={4}
               />
             </div>
           </div>
@@ -1491,12 +1700,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Programming Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your programming problem description..."
-                rows={4}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
               />
             </div>
             
@@ -1555,13 +1765,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Solution (Required)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter sample solution code..."
-                rows={6}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
-              />
+              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <TextWithEquations 
+                  text={question.correctAnswer}
+                  equations={question.equations || []}
+                  onEquationSave={handleEquationSave}
+                  editable={true}
+                  className="text-white font-mono text-sm"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1573,12 +1785,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter your diagram analysis question..."
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-vertical"
               />
             </div>
             
@@ -1626,12 +1839,13 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Answer (Required)
               </label>
-              <textarea
-                value={question.correctAnswer}
-                onChange={(e) => handleCorrectAnswerChange(e.target.value)}
-                placeholder="Enter sample analysis or key points..."
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter sample answer... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={4}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-vertical"
               />
             </div>
           </div>
@@ -1644,26 +1858,67 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Main Question
               </label>
-              <textarea
-                value={question.question}
-                onChange={(e) => handleQuestionChange(e.target.value)}
-                placeholder="Enter the main question or problem statement..."
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
               />
             </div>
 
-            {/* Rubric Configuration for Multi-part Questions */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Rubric Configuration
+
+            {/* Optional Parts Configuration */}
+            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={question.optionalParts || false}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    if (checked) {
+                      // When enabling, set default required count to half of subquestions (min 1)
+                      const defaultCount = Math.max(1, Math.floor((question.subquestions || []).length / 2));
+                      onUpdate({ optionalParts: true, requiredPartsCount: defaultCount });
+                    } else {
+                      onUpdate({ optionalParts: false, requiredPartsCount: 0 });
+                    }
+                  }}
+                  className="text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-sm font-medium text-blue-300">
+                  Allow Optional Parts (Students select which parts to answer)
+                </span>
               </label>
-              <div className="space-y-3">
-                <div className="text-blue-300 text-sm bg-blue-900/20 p-3 rounded-lg border border-blue-700/30">
-                  <p className="font-medium mb-1">Per Sub-question Rubrics</p>
-                  <p className="text-xs text-blue-200">Individual rubrics should be added to each sub-question below.</p>
+              {question.optionalParts && (
+                <div className="mt-3 ml-8">
+                  <label className="block text-xs font-medium text-blue-200 mb-2">
+                    Number of Parts Student Must Answer
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max={(question.subquestions || []).length}
+                      value={question.requiredPartsCount || 1}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1;
+                        const maxParts = (question.subquestions || []).length;
+                        const validValue = Math.max(1, Math.min(value, maxParts));
+                        onUpdate({ requiredPartsCount: validValue });
+                      }}
+                      className="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-blue-200">
+                      of {(question.subquestions || []).length} total parts
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-blue-300">
+                    Example: "Answer any 2 of the following 3 parts"
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Main Question Enhancements */}
@@ -1709,15 +1964,24 @@ const QuestionCard = ({
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={question.hasMainDiagram || false}
-                    onChange={(e) => onUpdate({ hasMainDiagram: e.target.checked })}
+                    checked={!!question.hasMainDiagram}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        // When unchecking, clear both diagram fields and flag
+                        handleDiagramDelete('mainDiagram', false);
+                      } else {
+                        // When checking, just set the flag
+                        onUpdate({ hasMainDiagram: true });
+                      }
+                    }}
                     className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-sm font-medium text-gray-300">
                     Include Diagram in Main Question
                   </span>
                 </label>
-                {question.hasMainDiagram && (
+                {(question.hasMainDiagram || question.mainDiagram || question.diagram) && (
                   <div className="mt-3">
                     <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
                       <input
@@ -1733,19 +1997,23 @@ const QuestionCard = ({
                         disabled={uploadingDiagram}
                         id={`main-diagram-upload-${question.id}`}
                       />
-                      <label
-                        htmlFor={`main-diagram-upload-${question.id}`}
-                        className="cursor-pointer flex flex-col items-center"
-                      >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
-                        <p className="text-white font-medium text-sm mb-1">Upload Main Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
-                      </label>
+                      {/* Show upload section only if no main diagram exists */}
+                      {!question.mainDiagram && !question.diagram && !uploadingDiagram && (
+                        <label
+                          htmlFor={`main-diagram-upload-${question.id}`}
+                          className="cursor-pointer flex flex-col items-center"
+                        >
+                          <ImageIcon size={24} className="text-gray-500 mb-2" />
+                          <p className="text-white font-medium text-sm mb-1">Upload Main Diagram</p>
+                          <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        </label>
+                      )}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
-                      {question.mainDiagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.mainDiagram, 
+                      {/* Show diagram, prioritizing mainDiagram over diagram */}
+                      {(question.mainDiagram || question.diagram) && !uploadingDiagram && renderDiagramDisplay(
+                        question.mainDiagram || question.diagram, 
                         false, 
-                        () => handleDiagramDelete('mainDiagram'),
+                        () => handleDiagramDelete('mainDiagram', true),
                         (file) => handleDiagramReplace(file, 'mainDiagram'),
                         'mainDiagram'
                       )}
@@ -1778,7 +2046,7 @@ const QuestionCard = ({
                         <input
                           type="number"
                           value={subq.type === 'multi-part' 
-                            ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                            ? calculateMultipartPoints(subq.subquestions, subq.optionalParts, subq.requiredPartsCount)
                             : subq.points || 1
                           }
                           onChange={(e) => handleSubquestionChange(subIndex, 'points', parseInt(e.target.value) || 1)}
@@ -1788,7 +2056,9 @@ const QuestionCard = ({
                         />
                         <span className="text-gray-400 text-sm">pts</span>
                         {subq.type === 'multi-part' && (
-                          <span className="text-xs text-gray-500">(auto-calc)</span>
+                          <span className="text-xs text-gray-500">
+                            (auto{subq.optionalParts ? `, best ${subq.requiredPartsCount}` : ''})
+                          </span>
                         )}
                         <button
                           onClick={() => removeSubquestion(subIndex)}
@@ -1798,13 +2068,18 @@ const QuestionCard = ({
                         </button>
                       </div>
                     </div>
-                    <textarea
-                      value={subq.question || ''}
-                      onChange={(e) => handleSubquestionChange(subIndex, 'question', e.target.value)}
-                      placeholder={`Enter part ${subIndex + 1} question...`}
-                      rows={2}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
-                    />
+                    <div className="p-3 bg-gray-600 border border-gray-500 rounded-lg">
+                      <TextWithEquations 
+                        text={subq.question || ''}
+                        equations={subq.equations || []}
+                        onEquationSave={(eqId, newLatex) => {
+                          const updatedEqs = updateEquationLatex(subq.equations || [], eqId, newLatex);
+                          handleSubquestionChange(subIndex, 'equations', updatedEqs);
+                        }}
+                        editable={true}
+                        className="text-white text-sm"
+                      />
+                    </div>
                     
                     {/* Sub-question type selection */}
                     <div className="mt-3 space-y-3">
@@ -1858,8 +2133,17 @@ const QuestionCard = ({
                         <label className="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={subq.hasDiagram || false}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'hasDiagram', e.target.checked)}
+                            checked={!!subq.hasDiagram}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              if (!checked) {
+                                // When unchecking, delete the diagram and clear flag
+                                handleSubquestionDiagramDelete(subIndex, false);
+                              } else {
+                                // When checking, just set the flag
+                                handleSubquestionChange(subIndex, 'hasDiagram', true);
+                              }
+                            }}
                             className="text-orange-600 bg-gray-600 border-gray-500 rounded focus:ring-orange-500 focus:ring-2"
                           />
                           <span className="text-sm text-gray-300">Include Diagram</span>
@@ -1906,7 +2190,7 @@ const QuestionCard = ({
                               id={`subq-diagram-upload-${question.id}-${subIndex}`}
                             />
                             {/* Show upload section only if no sub-diagram exists */}
-                            {!subq.subDiagram && !uploadingDiagram && (
+                            {!subq.subDiagram && !subq.diagram && !uploadingDiagram && (
                             <label
                               htmlFor={`subq-diagram-upload-${question.id}-${subIndex}`}
                               className="cursor-pointer flex flex-col items-center"
@@ -1916,12 +2200,12 @@ const QuestionCard = ({
                               <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
                             </label>
                             )}
-                            {subq.subDiagram && !uploadingDiagram && (
+                            {(subq.subDiagram || subq.diagram) && !uploadingDiagram && (
                               <div className="mt-2">
                                 {renderDiagramDisplay(
-                                  subq.subDiagram, 
+                                  subq.subDiagram || subq.diagram, 
                                   false, 
-                                  () => handleSubquestionDiagramDelete(subIndex),
+                                  () => handleSubquestionDiagramDelete(subIndex, true),
                                   (file) => handleSubquestionDiagramReplace(file, subIndex),
                                   'subDiagram',
                                   subIndex
@@ -1950,48 +2234,57 @@ const QuestionCard = ({
                             </label>
                           </div>
                           <div className="space-y-2">
-                            {(subq.options || ['', '', '', '']).map((option, optionIndex) => (
-                              <div key={optionIndex} className="flex items-center space-x-2">
-                                {subq.allowMultipleCorrect ? (
-                                  <input
-                                    type="checkbox"
-                                    checked={(subq.multipleCorrectAnswers || []).includes(optionIndex.toString())}
-                                    onChange={(e) => handleSubquestionMultipleCorrectChange(subIndex, optionIndex, e.target.checked)}
-                                    className="text-teal-500 focus:ring-teal-500"
-                                  />
-                                ) : (
-                                  <input
-                                    type="radio"
-                                    name={`correct-sub-${question.id}-${subIndex}`}
-                                    checked={subq.correctAnswer === optionIndex.toString()}
-                                    onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
-                                    className="text-teal-500 focus:ring-teal-500"
-                                  />
-                                )}
-                                <textarea
-                                  value={option}
-                                  onChange={(e) => {
-                                    const newOptions = [...(subq.options || ['', '', '', ''])];
-                                    newOptions[optionIndex] = e.target.value;
-                                    handleSubquestionChange(subIndex, 'options', newOptions);
-                                  }}
-                                  placeholder={`Option ${optionIndex + 1}`}
-                                  rows={1}
-                                  className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-vertical"
-                                />
-                                {(subq.options || ['', '', '', '']).length > 2 && (
-                                  <button
-                                    onClick={() => {
-                                      const newOptions = (subq.options || ['', '', '', '']).filter((_, i) => i !== optionIndex);
-                                      handleSubquestionChange(subIndex, 'options', newOptions);
-                                    }}
-                                    className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
+                            {(subq.options || ['', '', '', '']).map((option, optionIndex) => {
+                              // Get equations for this specific option
+                              const optionEquations = (subq.equations || []).filter(
+                                eq => eq.position?.context === 'options' && 
+                                     eq.position?.option_index === optionIndex
+                              );
+
+                              return (
+                                <div key={optionIndex} className="flex items-center space-x-2">
+                                  {subq.allowMultipleCorrect ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={(subq.multipleCorrectAnswers || []).includes(optionIndex.toString())}
+                                      onChange={(e) => handleSubquestionMultipleCorrectChange(subIndex, optionIndex, e.target.checked)}
+                                      className="text-teal-500 focus:ring-teal-500"
+                                    />
+                                  ) : (
+                                    <input
+                                      type="radio"
+                                      name={`correct-sub-${question.id}-${subIndex}`}
+                                      checked={subq.correctAnswer === optionIndex.toString()}
+                                      onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', optionIndex.toString())}
+                                      className="text-teal-500 focus:ring-teal-500"
+                                    />
+                                  )}
+                                  <div className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">
+                                    <TextWithEquations 
+                                      text={option}
+                                      equations={optionEquations}
+                                      onEquationSave={(eqId, newLatex) => {
+                                        const updatedEqs = updateEquationLatex(subq.equations || [], eqId, newLatex);
+                                        handleSubquestionChange(subIndex, 'equations', updatedEqs);
+                                      }}
+                                      editable={true}
+                                      className="text-white text-sm"
+                                    />
+                                  </div>
+                                  {(subq.options || ['', '', '', '']).length > 2 && (
+                                    <button
+                                      onClick={() => {
+                                        const newOptions = (subq.options || ['', '', '', '']).filter((_, i) => i !== optionIndex);
+                                        handleSubquestionChange(subIndex, 'options', newOptions);
+                                      }}
+                                      className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                             <button
                               onClick={() => {
                                 const newOptions = [...(subq.options || ['', '', '', '']), ''];
@@ -2043,28 +2336,41 @@ const QuestionCard = ({
                           <label className="block text-xs font-medium text-teal-300 mb-2">
                             {subq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Required)'}
                           </label>
-                          <textarea
-                            value={subq.correctAnswer || ''}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'correctAnswer', e.target.value)}
-                            placeholder={subq.type === 'numerical' ? 'Enter the correct numerical answer...' : 'Enter sample answer or key points...'}
+                          <EditableTextWithEquations 
+                            text={subq.correctAnswer || ''}
+                            equations={subq.equations || []}
+                            onChange={({text, equations}) => {
+                              handleSubquestionChange(subIndex, 'correctAnswer', text);
+                              handleSubquestionChange(subIndex, 'equations', equations);
+                            }}
+                            placeholder={subq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
+                            multiline={true}
                             rows={2}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical text-sm"
                           />
                         </div>
                       )}
 
-                      {/* Per sub-question rubric */}
-                      {question.rubricType === 'per-subquestion' && (
+                      {/* Sub-question rubric */}
+                      {subq.type !== 'multi-part' && (
                         <div className="mt-3">
                           <label className="block text-xs font-medium text-blue-300 mb-2">
                             Rubric for Part {subIndex + 1}
                           </label>
-                          <textarea
-                            value={subq.rubric || ''}
-                            onChange={(e) => handleSubquestionChange(subIndex, 'rubric', e.target.value)}
-                            placeholder={`Enter grading criteria for part ${subIndex + 1}...`}
-                            rows={2}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm"
+                          <EditableTextWithEquations
+                            text={subq.rubric || ''}
+                            equations={subq.equations || []}
+                            onChange={({ text, equations }) => {
+                              const updatedSubquestions = [...(question.subquestions || [])];
+                              updatedSubquestions[subIndex] = { 
+                                ...updatedSubquestions[subIndex], 
+                                rubric: text, 
+                                equations: equations 
+                              };
+                              onUpdate({ subquestions: updatedSubquestions });
+                            }}
+                            placeholder={`Enter grading criteria for part ${subIndex + 1}... Use <eq {latex}> or <eq {}> to add equations`}
+                            multiline={true}
+                            rows={3}
                           />
                         </div>
                       )}
@@ -2072,17 +2378,68 @@ const QuestionCard = ({
                       {/* Nested multi-part sub-questions */}
                       {subq.type === 'multi-part' && (
                         <div className="mt-3 border-l-2 border-blue-400/30 pl-4 ml-2">
-                          {/* Rubric Configuration for Nested Multi-part Sub-questions */}
-                          <div className="bg-gray-700 rounded-lg p-3 border border-gray-600 mb-3">
-                            <label className="block text-xs font-medium text-blue-300 mb-2">
-                              Rubric Configuration for Part {subIndex + 1}
+
+                          {/* Optional Parts Configuration for Nested Multi-part */}
+                          <div className="mb-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={subq.optionalParts || false}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  const newSubquestions = [...(question.subquestions || [])];
+                                  if (checked) {
+                                    const defaultCount = Math.max(1, Math.floor(((subq.subquestions || []).length) / 2));
+                                    newSubquestions[subIndex] = { 
+                                      ...newSubquestions[subIndex], 
+                                      optionalParts: true, 
+                                      requiredPartsCount: defaultCount 
+                                    };
+                                  } else {
+                                    newSubquestions[subIndex] = { 
+                                      ...newSubquestions[subIndex], 
+                                      optionalParts: false, 
+                                      requiredPartsCount: 0 
+                                    };
+                                  }
+                                  onUpdate({ subquestions: newSubquestions });
+                                }}
+                                className="text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                              />
+                              <span className="text-xs font-medium text-blue-300">
+                                Allow Optional Parts
+                              </span>
                             </label>
-                            <div className="space-y-2">
-                              <div className="text-blue-300 text-xs bg-blue-900/20 p-2 rounded border border-blue-700/30">
-                                <p className="font-medium mb-1">Per Sub-part Rubrics</p>
-                                <p className="text-xs text-blue-200">Individual rubrics can be added to each sub-part below.</p>
+                            {subq.optionalParts && (
+                              <div className="mt-2 ml-6">
+                                <label className="block text-xs font-medium text-blue-200 mb-1">
+                                  Required Parts
+                                </label>
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max={(subq.subquestions || []).length}
+                                    value={subq.requiredPartsCount || 1}
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 1;
+                                      const maxParts = (subq.subquestions || []).length;
+                                      const validValue = Math.max(1, Math.min(value, maxParts));
+                                      const newSubquestions = [...(question.subquestions || [])];
+                                      newSubquestions[subIndex] = { 
+                                        ...newSubquestions[subIndex], 
+                                        requiredPartsCount: validValue 
+                                      };
+                                      onUpdate({ subquestions: newSubquestions });
+                                    }}
+                                    className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                  <span className="text-xs text-blue-200">
+                                    of {(subq.subquestions || []).length}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between mb-2">
@@ -2135,17 +2492,20 @@ const QuestionCard = ({
                                     </button>
                                   </div>
                                 </div>
-                                <textarea
-                                  value={subSubq.question || ''}
-                                  onChange={(e) => {
-                                    const newSubSubquestions = [...(subq.subquestions || [])];
-                                    newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], question: e.target.value };
-                                    handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
-                                  }}
-                                  placeholder={`Enter part ${subIndex + 1}.${subSubIndex + 1} question...`}
-                                  rows={1}
-                                  className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs mb-2 resize-vertical"
-                                />
+                                <div className="p-2 bg-gray-500 border border-gray-400 rounded mb-2">
+                                  <TextWithEquations 
+                                    text={subSubq.question || ''}
+                                    equations={subSubq.equations || []}
+                                    onEquationSave={(eqId, newLatex) => {
+                                      const updatedEqs = updateEquationLatex(subSubq.equations || [], eqId, newLatex);
+                                      const newSubSubquestions = [...(subq.subquestions || [])];
+                                      newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], equations: updatedEqs };
+                                      handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                    }}
+                                    editable={true}
+                                    className="text-white text-xs"
+                                  />
+                                </div>
                                 <select
                                   value={subSubq.type || 'short-answer'}
                                   onChange={(e) => {
@@ -2291,36 +2651,46 @@ const QuestionCard = ({
                                     <label className="block text-xs font-medium text-teal-300 mb-1">
                                       {subSubq.type === 'numerical' ? 'Correct Answer' : 'Sample Answer (Required)'}
                                     </label>
-                                    <textarea
-                                      value={subSubq.correctAnswer || ''}
-                                      onChange={(e) => {
+                                    <EditableTextWithEquations 
+                                      text={subSubq.correctAnswer || ''}
+                                      equations={subSubq.equations || []}
+                                      onChange={({text, equations}) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
-                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: e.target.value };
+                                        newSubSubquestions[subSubIndex] = { 
+                                          ...newSubSubquestions[subSubIndex], 
+                                          correctAnswer: text,
+                                          equations: equations
+                                        };
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
                                       placeholder={subSubq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
+                                      multiline={true}
                                       rows={1}
-                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs resize-vertical"
                                     />
                                   </div>
                                 )}
 
-                                {/* Per sub-sub-question rubric for nested multi-part */}
-                                {subq.rubricType === 'per-subquestion' && (
+                                {/* Sub-sub-question rubric */}
+                                {subSubq.type !== 'multi-part' && (
                                   <div className="mt-2">
                                     <label className="block text-xs font-medium text-blue-300 mb-1">
                                       Rubric for Part {subIndex + 1}.{subSubIndex + 1}
                                     </label>
-                                    <textarea
-                                      value={subSubq.rubric || ''}
-                                      onChange={(e) => {
+                                    <EditableTextWithEquations
+                                      text={subSubq.rubric || ''}
+                                      equations={subSubq.equations || []}
+                                      onChange={({ text, equations }) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
-                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], rubric: e.target.value };
+                                        newSubSubquestions[subSubIndex] = { 
+                                          ...newSubSubquestions[subSubIndex], 
+                                          rubric: text,
+                                          equations: equations
+                                        };
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
-                                      placeholder={`Enter grading criteria for part ${subIndex + 1}.${subSubIndex + 1}...`}
-                                      rows={1}
-                                      className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs resize-vertical"
+                                      placeholder={`Enter grading criteria for part ${subIndex + 1}.${subSubIndex + 1}... Use <eq {latex}> or <eq {}> to add equations`}
+                                      multiline={true}
+                                      rows={2}
                                     />
                                   </div>
                                 )}
@@ -2379,16 +2749,7 @@ const QuestionCard = ({
             <input
               type="number"
               value={question.type === 'multi-part' 
-                ? (question.subquestions || []).reduce((sum, subq) => {
-                    if (subq.type === 'multi-part') {
-                      // Handle nested multi-part questions - sum their sub-questions
-                      const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
-                        return nestedSum + (nestedSubq.points || 1);
-                      }, 0);
-                      return sum + nestedPoints;
-                    }
-                    return sum + (subq.points || 1);
-                  }, 0)
+                ? calculateMultipartPoints(question.subquestions, question.optionalParts, question.requiredPartsCount)
                 : question.points
               }
               onChange={(e) => handlePointsChange(e.target.value)}
@@ -2400,7 +2761,9 @@ const QuestionCard = ({
             <span className="text-gray-400 text-sm">pts</span>
           </div>
           {question.type === 'multi-part' && (
-            <span className="text-xs text-gray-500">(auto-calculated)</span>
+            <span className="text-xs text-gray-500">
+              (auto-calculated{question.optionalParts ? `, best ${question.requiredPartsCount} of ${(question.subquestions || []).length}` : ''})
+            </span>
           )}
           
           <button
@@ -2448,12 +2811,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Rubric (Required)
               </label>
-              <textarea
-                value={question.rubric}
-                onChange={(e) => handleRubricChange(e.target.value)}
-                placeholder="Enter grading criteria or rubric..."
-                rows={2}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+              <EditableTextWithEquations
+                text={question.rubric || ''}
+                equations={question.equations || []}
+                onChange={({ text, equations }) => 
+                  onUpdate({ rubric: text, equations: equations })
+                }
+                placeholder="Enter grading criteria or rubric... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={4}
               />
             </div>
           )}

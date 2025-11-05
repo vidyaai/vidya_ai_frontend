@@ -2,22 +2,30 @@
 import { useState, useEffect } from 'react';
 import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { TextWithEquations } from './EquationRenderer';
 
 const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
   const calculateQuestionPoints = (question) => {
     if (question.type === 'multi-part') {
-      // For multi-part questions, sum up all sub-question points
-      const subQuestionPoints = (question.subquestions || []).reduce((sum, subq) => {
+      const subquestions = question.subquestions || [];
+      if (subquestions.length === 0) return question.points || 0;
+      
+      // Calculate points for each subquestion (recursively for nested multipart)
+      const subqPoints = subquestions.map(subq => {
         if (subq.type === 'multi-part') {
-          // Handle nested multi-part questions
-          const nestedPoints = (subq.subquestions || []).reduce((nestedSum, nestedSubq) => {
-            return nestedSum + (nestedSubq.points || 1);
-          }, 0);
-          return sum + nestedPoints;
+          return calculateQuestionPoints(subq); // Recursive call
         }
-        return sum + (subq.points || 1);
-      }, 0);
-      return subQuestionPoints;
+        return subq.points || 1;
+      });
+      
+      // For optional parts, only count required number of highest-point parts
+      if (question.optionalParts && question.requiredPartsCount > 0) {
+        const sortedPoints = [...subqPoints].sort((a, b) => b - a);
+        return sortedPoints.slice(0, question.requiredPartsCount).reduce((sum, pts) => sum + pts, 0);
+      }
+      
+      // For non-optional, sum all parts
+      return subqPoints.reduce((sum, pts) => sum + pts, 0);
     }
     return question.points || 1;
   };
@@ -27,13 +35,20 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
   // Component for handling diagram images with URL fetching in preview
   const DiagramPreviewImage = ({ diagramData, displayName }) => {
     const [imageUrl, setImageUrl] = useState(null);
-    const [loading, setLoading] = useState(!!diagramData.s3_key);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
     const [error, setError] = useState(false);
 
     useEffect(() => {
       const loadImageUrl = async () => {
         // If we already have a URL (cached), use it
         if (imageUrl) return;
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setLoading(false);
+          return;
+        }
         
         // If no s3_key, we can't fetch from server
         if (!diagramData.s3_key) {
@@ -56,7 +71,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
       };
 
       loadImageUrl();
-    }, [diagramData.s3_key, imageUrl]);
+    }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
     if (loading) {
       return (
@@ -98,6 +113,24 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
     return <DiagramPreviewImage diagramData={diagramData} displayName={displayName} />;
   };
 
+  // Helper function to render question text with equations
+  const renderQuestionText = (question) => {
+    if (question.equations && question.equations.length > 0) {
+      const textEquations = question.equations.filter(eq => eq.position.context === 'question_text');
+      if (textEquations.length > 0) {
+        return (
+          <div className="text-gray-300 mb-3">
+            <TextWithEquations 
+              text={question.question || 'Question text...'} 
+              equations={textEquations} 
+            />
+          </div>
+        );
+      }
+    }
+    return <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>;
+  };
+
   const renderQuestionPreview = (question, index) => {
     switch (question.type) {
       case 'multiple-choice':
@@ -107,18 +140,34 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
             
             <div className="space-y-2">
-              {question.options?.map((option, optionIndex) => (
-                <div key={optionIndex} className="flex items-center space-x-2">
-                  <input type="radio" disabled className="text-teal-500" />
-                  <span className="text-gray-400 text-sm">{option || `Option ${optionIndex + 1}`}</span>
-                </div>
-              ))}
+              {question.options?.map((option, optionIndex) => {
+                const optionEquations = question.equations?.filter(
+                  eq => eq.position.context === 'options' && 
+                       eq.position.option_index === optionIndex
+                ) || [];
+                
+                return (
+                  <div key={optionIndex} className="flex items-center space-x-2">
+                    <input type="radio" disabled className="text-teal-500" />
+                    <span className="text-gray-400 text-sm">
+                      {optionEquations.length > 0 ? (
+                        <TextWithEquations 
+                          text={option || `Option ${optionIndex + 1}`} 
+                          equations={optionEquations} 
+                        />
+                      ) : (
+                        option || `Option ${optionIndex + 1}`
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -130,7 +179,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -155,9 +204,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">
-              {question.question || 'Question with blanks...'}
-            </p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -175,7 +222,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -189,7 +236,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -203,7 +250,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               <h4 className="text-white font-medium">Question {index + 1}</h4>
               <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -220,7 +267,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               </div>
               <span className="text-purple-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Programming question...'}</p>
+            {renderQuestionText(question)}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagramPreview(question.diagram)}
@@ -251,7 +298,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                 </div>
               <span className="text-orange-400 text-sm font-medium">{question.points || 1} pts</span>
             </div>
-            <p className="text-gray-300 mb-3">{question.question || 'Diagram analysis question...'}</p>
+            {renderQuestionText(question)}
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
               {question.diagram ? renderDiagramPreview(question.diagram) : (
                 <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
@@ -275,7 +322,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
               </div>
               <span className="text-blue-400 text-sm font-medium">{calculateQuestionPoints(question)} pts total</span>
             </div>
-            <p className="text-gray-300 mb-4">{question.question || 'Multi-part question...'}</p>
+            {renderQuestionText(question)}
             
             {/* Main Question Code Preview */}
             {((question.hasMainCode && question.mainCode) || (question.hasCode && question.code)) && (
@@ -326,9 +373,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                       </span>
                       <span className="text-blue-400 text-xs">
                         {subq.type === 'multi-part' 
-                          ? (subq.subquestions || []).reduce((sum, nestedSubq) => sum + (nestedSubq.points || 1), 0)
+                          ? calculateQuestionPoints(subq)
                           : subq.points || 1
                         } pts
+                        {subq.type === 'multi-part' && subq.optionalParts && (
+                          <span className="ml-1 text-blue-300">(best {subq.requiredPartsCount})</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -378,11 +428,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                           <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
                           
                           {/* Nested sub-question diagram */}
-                          {nestedSubq.diagram && (
+                          {(nestedSubq.subDiagram || nestedSubq.diagram) && (
                             <div className="mt-2 bg-gray-700 rounded p-2 border border-orange-500/30">
                               <div className="text-orange-300 text-xs font-medium mb-1">Diagram</div>
                               <div className="max-h-16 overflow-hidden">
-                                {renderDiagramPreview(nestedSubq.diagram)}
+                                {nestedSubq.subDiagram ? renderDiagramPreview(nestedSubq.subDiagram) :
+                                 nestedSubq.diagram ? renderDiagramPreview(nestedSubq.diagram) : null}
                               </div>
                             </div>
                           )}

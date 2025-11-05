@@ -1,7 +1,7 @@
 // ChatBoxComponent.jsx - AI chat interface with clickable timestamps
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X, Share2 } from 'lucide-react';
-import { formatTime, parseMarkdown, SimpleSpinner, api } from '../generic/utils.jsx';
+import { formatTime, parseMarkdown, parseMarkdownWithMath, SimpleSpinner, api, convertLatexToMathHTML } from '../generic/utils.jsx';
 import SharingModal from '../Sharing/SharingModal.jsx';
 
 const ChatBoxComponent = ({ 
@@ -30,6 +30,28 @@ const ChatBoxComponent = ({
   const [isLoadingSharedChat, setIsLoadingSharedChat] = useState(false);
   
   const chatContainerRef = useRef(null);
+
+  // Helper function to maintain only the last 10 messages
+  const addMessageWithHistory = (newMessage, prevMessages) => {
+    const updatedMessages = [...prevMessages, newMessage];
+    // Keep only the last 10 messages (rolling window)
+    return updatedMessages.slice(-10);
+  };
+
+  // Helper function to get conversation context for API
+  const getConversationContext = (messages) => {
+    // Get last 10 messages, excluding system/error messages
+    const conversationMessages = messages
+      .filter(msg => msg.sender === 'user' || msg.sender === 'ai')
+      .slice(-10)
+      .map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text,
+        timestamp: msg.timestamp
+      }));
+    
+    return conversationMessages;
+  };
 
   const fetchSharedChatHistory = async () => {
     if (!currentVideo.videoId) return;
@@ -75,7 +97,7 @@ const ChatBoxComponent = ({
       timestamp: currentTime
     };
     
-    setChatMessages(prevMessages => [...prevMessages, userMessage]);
+    setChatMessages(prevMessages => addMessageWithHistory(userMessage, prevMessages));
     const currentQuery = userQuestion;
     setUserQuestion('');
     setIsProcessingQuery(true);
@@ -84,6 +106,9 @@ const ChatBoxComponent = ({
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
+      
+      // Get conversation context before making API call
+      const conversationContext = getConversationContext(chatMessages);
       
       // Use different endpoints based on whether the video is shared or not
       let response;
@@ -94,7 +119,8 @@ const ChatBoxComponent = ({
           video_id: currentVideo.videoId,
           query: currentQuery,
           timestamp: currentTime,
-          is_image_query: queryType === 'frame'
+          is_image_query: queryType === 'frame',
+          conversation_history: conversationContext
         }, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -104,7 +130,8 @@ const ChatBoxComponent = ({
           video_id: currentVideo.videoId,
           query: currentQuery,
           timestamp: currentTime,
-          is_image_query: queryType === 'frame'
+          is_image_query: queryType === 'frame',
+          conversation_history: conversationContext
         }, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -119,7 +146,7 @@ const ChatBoxComponent = ({
           isDownloading: true
         };
         
-        setChatMessages(prevMessages => [...prevMessages, aiMessage]);
+        setChatMessages(prevMessages => addMessageWithHistory(aiMessage, prevMessages));
       } else {
         const aiMessage = {
           id: Date.now() + 1,
@@ -128,7 +155,7 @@ const ChatBoxComponent = ({
           timestamp: currentTime
         };
         
-        setChatMessages(prevMessages => [...prevMessages, aiMessage]);
+        setChatMessages(prevMessages => addMessageWithHistory(aiMessage, prevMessages));
       }
       
     } catch (error) {
@@ -142,7 +169,7 @@ const ChatBoxComponent = ({
         isError: true
       };
       
-      setChatMessages(prevMessages => [...prevMessages, errorMessage]);
+      setChatMessages(prevMessages => addMessageWithHistory(errorMessage, prevMessages));
     } finally {
       setIsProcessingQuery(false);
       
@@ -206,7 +233,7 @@ const ChatBoxComponent = ({
           isSuccess: true
         };
         
-        setChatMessages(prev => [...prev, successMessage]);
+        setChatMessages(prev => addMessageWithHistory(successMessage, prev));
         setIsLoadingSharedChat(false);
       }, 300);
     }
@@ -445,7 +472,11 @@ const ChatBoxComponent = ({
                 )}
               </div>
               <div className="text-white">
-                {parseMarkdown(message.text, onSeekToTime)}
+                {message.sender === 'ai' ? (
+                  parseMarkdownWithMath(message.text, onSeekToTime)
+                ) : (
+                  parseMarkdown(message.text, onSeekToTime)
+                )}
               </div>
             </div>
           ))

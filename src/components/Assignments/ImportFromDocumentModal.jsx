@@ -35,16 +35,17 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
   // Supported file types by OpenAI
   const supportedTypes = [
     'application/pdf',
-    'text/plain',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/markdown',
-    'text/html',
-    'text/csv',
-    'application/json'
+    // 'text/plain',
+    // 'application/msword',
+    // 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    // 'text/markdown',
+    // 'text/html',
+    // 'text/csv',
+    // 'application/json'
   ];
 
-  const supportedExtensions = ['.pdf', '.txt', '.doc', '.docx', '.md', '.html', '.csv', '.json'];
+  const supportedExtensions = ['.pdf'];
+//   const supportedExtensions = ['.pdf', '.txt', '.doc', '.docx', '.md', '.html', '.csv', '.json'];
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -71,7 +72,8 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
     
     // Check file type
     if (!supportedTypes.includes(file.type) && !supportedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) {
-      setError('Unsupported file type. Please select a PDF, Word document, text file, or other supported format.');
+      setError('Unsupported file type. Please select a PDF document.');
+    //   setError('Unsupported file type. Please select a PDF, Word document, text file, or other supported format.');
       return;
     }
 
@@ -98,12 +100,10 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
     setError('');
 
     try {
-      // Convert file to base64
-      const fileContent = await fileToBase64(selectedFile);
-      
-      // Call the backend API to extract questions from the document
+      // Send the raw file directly (no base64 conversion needed)
+      // The API will handle multipart/form-data upload
       const parsedData = await assignmentApi.importFromDocument(
-        fileContent,
+        selectedFile,  // Send File object directly
         selectedFile.name,
         selectedFile.type,
         null  // No generation options needed for extraction
@@ -210,8 +210,11 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
                     <p className="text-white font-medium mb-2">
                       Drop your document here, or <span className="text-teal-400">browse</span>
                     </p>
-                    <p className="text-gray-400 text-sm">
+                    {/* <p className="text-gray-400 text-sm">
                       Supports: PDF, Word, Text, Markdown, HTML, CSV, JSON (max 10MB)
+                    </p> */}
+                    <p className="text-gray-400 text-sm">
+                      Supports: PDF (max 10MB)
                     </p>
                   </div>
                 </div>
@@ -247,7 +250,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
           )}
 
           {/* Supported Formats Info */}
-          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          {/* <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <div className="flex items-start space-x-3">
               <FileText size={20} className="text-blue-400 flex-shrink-0 mt-1" />
               <div>
@@ -258,7 +261,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Footer */}

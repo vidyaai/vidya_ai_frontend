@@ -181,6 +181,15 @@ export const assignmentApi = {
     return response.data;
   },
 
+  // Download assignment as PDF
+  async downloadAssignmentPDF(assignmentId) {
+    const response = await api.get(`/api/assignments/${assignmentId}/download-pdf`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      responseType: 'blob'  // Important: specify blob response type for binary data
+    });
+    return response;
+  },
+
   // Get user details by UIDs
   async getUsersByIds(userIds) {
     const response = await api.post('/api/sharing/users-by-ids', { user_ids: userIds }, {

@@ -12,16 +12,24 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { TextWithEquations, EquationList } from './EquationRenderer';
 
 // Component for handling diagram images with URL fetching
 const DiagramImage = memo(({ diagramData, displayName }) => {
   const [imageUrl, setImageUrl] = useState(null);
-  const [loading, setLoading] = useState(!!diagramData.s3_key);
+  const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const loadImageUrl = async () => {
       if (imageUrl) return;
+
+      // If s3_url is present, use it directly (bypass presigned URL generation)
+      if (diagramData.s3_url) {
+        setImageUrl(diagramData.s3_url);
+        setLoading(false);
+        return;
+      }
 
       // If no s3_key, we can't fetch from server
       if (!diagramData.s3_key) {
@@ -44,7 +52,7 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
     };
 
     loadImageUrl();
-  }, [diagramData.s3_key, imageUrl]);
+  }, [diagramData.s3_key, diagramData.s3_url, imageUrl]);
 
   if (loading) {
     return (
@@ -93,6 +101,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [isGraded, setIsGraded] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfUploading, setPdfUploading] = useState(false);
+  const [selectedParts, setSelectedParts] = useState({}); // Track which optional parts are selected
 
   const actualAssignment = assignment.assignment || assignment;
   
@@ -118,11 +127,86 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         if (submission.status === 'graded') {
           setIsGraded(true);
         }
+        
+        // Load selected parts for optional questions (including nested)
+        const newSelectedParts = {};
+        questions.forEach(question => {
+          if (question.type === 'multi-part' && question.optionalParts) {
+            const answer = submission.answers[question.id];
+            if (answer && answer.subAnswers) {
+              const answered = Object.keys(answer.subAnswers).filter(k => answer.subAnswers[k]);
+              newSelectedParts[question.id] = answered.map(String);
+            } else {
+              newSelectedParts[question.id] = [];
+            }
+          }
+          
+          // Handle nested multi-part subquestions
+          if (question.type === 'multi-part' && question.subquestions) {
+            question.subquestions.forEach(subq => {
+              if (subq.type === 'multi-part' && subq.optionalParts) {
+                const answer = submission.answers[question.id];
+                const subAnswer = answer?.subAnswers?.[subq.id];
+                if (subAnswer && subAnswer.subAnswers) {
+                  const answered = Object.keys(subAnswer.subAnswers).filter(k => subAnswer.subAnswers[k]);
+                  newSelectedParts[`${question.id}.${subq.id}`] = answered.map(String);
+                } else {
+                  newSelectedParts[`${question.id}.${subq.id}`] = [];
+                }
+              }
+            });
+          }
+        });
+        setSelectedParts(newSelectedParts);
       }
     } catch (error) {
       // No existing submission - this is fine for new assignments
       console.log('No existing submission found');
     }
+  };
+  
+  // Handler for optional parts selection (handles both main and nested)
+  const handlePartSelection = (questionId, subqId, isSelected, parentSubqId = null) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+    
+    let targetQuestion, requiredCount, selectionKey;
+    
+    if (parentSubqId) {
+      // Nested multi-part subquestion
+      const parentSubq = question.subquestions?.find(sq => String(sq.id) === String(parentSubqId));
+      if (!parentSubq || !parentSubq.optionalParts) return;
+      targetQuestion = parentSubq;
+      requiredCount = parentSubq.requiredPartsCount || 1;
+      selectionKey = `${questionId}.${parentSubqId}`;
+    } else {
+      // Main multi-part question
+      if (!question.optionalParts) return;
+      targetQuestion = question;
+      requiredCount = question.requiredPartsCount || 1;
+      selectionKey = String(questionId);
+    }
+    
+    const currentSelected = selectedParts[selectionKey] || [];
+    
+    let newSelected;
+    if (isSelected) {
+      // Adding a selection
+      if (currentSelected.length < requiredCount) {
+        newSelected = [...currentSelected, String(subqId)];
+      } else {
+        // Already at max, don't add
+        return;
+      }
+    } else {
+      // Removing a selection
+      newSelected = currentSelected.filter(id => id !== String(subqId));
+    }
+    
+    setSelectedParts(prev => ({
+      ...prev,
+      [selectionKey]: newSelected
+    }));
   };
 
   const handleAnswerChange = (questionId, answer) => {
@@ -472,7 +556,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -483,29 +578,46 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   Select all correct answers
                 </div>
               )}
-              {question.options.map((option, optionIndex) => (
-                <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type={question.allowMultipleCorrect ? "checkbox" : "radio"}
-                    name={question.allowMultipleCorrect ? undefined : `question-${question.id}`}
-                    value={optionIndex}
-                    checked={
-                      question.allowMultipleCorrect 
-                        ? (Array.isArray(currentAnswer) ? currentAnswer : []).includes(optionIndex.toString())
-                        : currentAnswer === optionIndex.toString()
-                    }
-                    onChange={(e) => !isAlreadySubmitted && handleMultipleChoiceChange(
-                      question.id, 
-                      optionIndex, 
-                      e.target.checked, 
-                      question.allowMultipleCorrect
-                    )}
-                    disabled={isAlreadySubmitted}
-                    className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
-                  />
-                  <span className="text-white">{option}</span>
-                </label>
-              ))}
+              {question.options.map((option, optionIndex) => {
+                // Find equations for this option
+                const optionEquations = question.equations?.filter(
+                  eq => eq.position.context === 'options' && 
+                       eq.position.option_index === optionIndex
+                ) || [];
+
+                return (
+                  <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type={question.allowMultipleCorrect ? "checkbox" : "radio"}
+                      name={question.allowMultipleCorrect ? undefined : `question-${question.id}`}
+                      value={optionIndex}
+                      checked={
+                        question.allowMultipleCorrect 
+                          ? (Array.isArray(currentAnswer) ? currentAnswer : []).includes(optionIndex.toString())
+                          : currentAnswer === optionIndex.toString()
+                      }
+                      onChange={(e) => !isAlreadySubmitted && handleMultipleChoiceChange(
+                        question.id, 
+                        optionIndex, 
+                        e.target.checked, 
+                        question.allowMultipleCorrect
+                      )}
+                      disabled={isAlreadySubmitted}
+                      className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                    />
+                    <span className="text-white">
+                      {optionEquations.length > 0 ? (
+                        <TextWithEquations 
+                          text={option} 
+                          equations={optionEquations} 
+                        />
+                      ) : (
+                        option
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         );
@@ -517,7 +629,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -542,7 +665,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -583,7 +717,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -649,7 +794,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -674,7 +830,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-teal-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -740,7 +907,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-purple-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -838,10 +1016,73 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         return (
           <div key={question.id} className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Question {index + 1} - Multi-Part</h3>
+              <h3 className="text-lg font-semibold text-white">
+                Question {index + 1} - Multi-Part
+                {question.optionalParts && (
+                  <span className="ml-2 text-sm font-normal text-blue-300">
+                    (Answer {question.requiredPartsCount} of {(question.subquestions || []).length})
+                  </span>
+                )}
+              </h3>
               <span className="text-blue-400 text-sm font-medium">{question.points} points total</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Render question text with equations */}
+            <div className="text-gray-300 text-lg">
+              {question.equations && question.equations.length > 0 ? (
+                <TextWithEquations 
+                  text={question.question} 
+                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
+                />
+              ) : (
+                <p>{question.question}</p>
+              )}
+            </div>
+            
+            {/* Optional Parts Selection UI */}
+            {question.optionalParts && !isAlreadySubmitted && (
+              <div className="mb-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <div className="text-blue-300 font-medium mb-3">
+                  Select exactly {question.requiredPartsCount} of {(question.subquestions || []).length} parts to answer
+                </div>
+                <div className="space-y-2">
+                  {(question.subquestions || []).map((subq, idx) => {
+                    const isSelected = (selectedParts[question.id] || []).includes(String(subq.id));
+                    const isMaxSelected = (selectedParts[question.id] || []).length >= question.requiredPartsCount;
+                    const isDisabled = !isSelected && isMaxSelected;
+                    
+                    return (
+                      <label key={subq.id} className={`flex items-start space-x-3 p-2 rounded ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-900/10'}`}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handlePartSelection(question.id, subq.id, e.target.checked)}
+                          disabled={isDisabled}
+                          className="mt-1 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <div className="flex-1">
+                          <div className="text-white font-medium">Part {idx + 1} ({subq.points} pts)</div>
+                          <div className="text-gray-300 text-sm mt-1">{subq.question.substring(0, 100)}{subq.question.length > 100 ? '...' : ''}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 text-sm">
+                  <span className={`font-medium ${(selectedParts[question.id] || []).length === question.requiredPartsCount ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {(selectedParts[question.id] || []).length} of {question.requiredPartsCount} parts selected
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {question.optionalParts && isAlreadySubmitted && (selectedParts[question.id] || []).length > 0 && (
+              <div className="mb-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <div className="text-blue-300 font-medium mb-2">
+                  Selected Parts: {(selectedParts[question.id] || []).length} of {(question.subquestions || []).length}
+                </div>
+              </div>
+            )}
             
             {/* Main Question Code */}
             {((question.hasMainCode && question.mainCode) || (question.hasCode && question.code)) && (
@@ -863,11 +1104,37 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             }
             
             <div className="space-y-4">
-              {(question.subquestions || []).map((subq, subIndex) => (
+              {(question.subquestions || []).map((subq, subIndex) => {
+                // For optional parts, only render selected subquestions
+                if (question.optionalParts && !isAlreadySubmitted) {
+                  const isSelected = (selectedParts[question.id] || []).includes(String(subq.id));
+                  if (!isSelected) {
+                    return null; // Don't render unselected parts
+                  }
+                }
+                
+                // For already submitted optional parts, only show parts that were answered
+                if (question.optionalParts && isAlreadySubmitted) {
+                  const isSelected = (selectedParts[question.id] || []).includes(String(subq.id));
+                  if (!isSelected) {
+                    return null; // Don't render unselected parts
+                  }
+                }
+                
+                return (
                 <div key={subq.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/30">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-blue-300 font-medium">{subq.question}</h4>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex-1 text-blue-300 font-medium">
+                      {subq.equations && subq.equations.length > 0 ? (
+                        <TextWithEquations 
+                          text={subq.question} 
+                          equations={subq.equations.filter(eq => eq.position.context === 'question_text' || eq.position.context === 'subquestion')} 
+                        />
+                      ) : (
+                        <h4>{subq.question}</h4>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
                       <span className={`px-2 py-1 rounded text-xs ${
                         subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                         subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
@@ -912,32 +1179,49 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           Select all correct answers
                         </div>
                       )}
-                      {(subq.options || []).map((option, optionIndex) => (
-                        <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type={subq.allowMultipleCorrect ? "checkbox" : "radio"}
-                            name={subq.allowMultipleCorrect ? undefined : `subq-${question.id}-${subq.id}`}
-                            value={optionIndex}
-                            checked={
-                              subq.allowMultipleCorrect 
-                                ? (Array.isArray((currentAnswer?.subAnswers || {})[subq.id]) 
-                                   ? (currentAnswer?.subAnswers || {})[subq.id] 
-                                   : []).includes(optionIndex.toString())
-                                : (currentAnswer?.subAnswers || {})[subq.id] === optionIndex.toString()
-                            }
-                            onChange={(e) => !isAlreadySubmitted && handleSubquestionMultipleChoiceChange(
-                              question.id,
-                              subq.id,
-                              optionIndex,
-                              e.target.checked,
-                              subq.allowMultipleCorrect
-                            )}
-                            disabled={isAlreadySubmitted}
-                            className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
-                          />
-                          <span className="text-white text-sm">{option}</span>
-                        </label>
-                      ))}
+                      {(subq.options || []).map((option, optionIndex) => {
+                        // Find equations for this option
+                        const optionEquations = subq.equations?.filter(
+                          eq => eq.position.context === 'options' && 
+                               eq.position.option_index === optionIndex
+                        ) || [];
+                        
+                        return (
+                          <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type={subq.allowMultipleCorrect ? "checkbox" : "radio"}
+                              name={subq.allowMultipleCorrect ? undefined : `subq-${question.id}-${subq.id}`}
+                              value={optionIndex}
+                              checked={
+                                subq.allowMultipleCorrect 
+                                  ? (Array.isArray((currentAnswer?.subAnswers || {})[subq.id]) 
+                                     ? (currentAnswer?.subAnswers || {})[subq.id] 
+                                     : []).includes(optionIndex.toString())
+                                  : (currentAnswer?.subAnswers || {})[subq.id] === optionIndex.toString()
+                              }
+                              onChange={(e) => !isAlreadySubmitted && handleSubquestionMultipleChoiceChange(
+                                question.id,
+                                subq.id,
+                                optionIndex,
+                                e.target.checked,
+                                subq.allowMultipleCorrect
+                              )}
+                              disabled={isAlreadySubmitted}
+                              className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                            />
+                            <span className="text-white text-sm">
+                              {optionEquations.length > 0 ? (
+                                <TextWithEquations 
+                                  text={option} 
+                                  equations={optionEquations} 
+                                />
+                              ) : (
+                                option
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   ) : subq.type === 'true-false' ? (
                     <div className="flex space-x-6">
@@ -1094,7 +1378,63 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     </div>
                   ) : subq.type === 'multi-part' ? (
                     <div className="space-y-3 ml-4 border-l-2 border-blue-400/30 pl-4">
-                      {(subq.subquestions || []).map((subSubq, subSubIndex) => (
+                      {/* Optional Parts Selection for Nested Multi-part */}
+                      {subq.optionalParts && !isAlreadySubmitted && (
+                        <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                          <div className="text-blue-300 font-medium text-xs mb-2">
+                            Select exactly {subq.requiredPartsCount} of {(subq.subquestions || []).length} sub-parts to answer
+                          </div>
+                          <div className="space-y-1">
+                            {(subq.subquestions || []).map((subSubq, ssIdx) => {
+                              const selectionKey = `${question.id}.${subq.id}`;
+                              const isSelected = (selectedParts[selectionKey] || []).includes(String(subSubq.id));
+                              const isMaxSelected = (selectedParts[selectionKey] || []).length >= subq.requiredPartsCount;
+                              const isDisabled = !isSelected && isMaxSelected;
+                              
+                              return (
+                                <label key={subSubq.id} className={`flex items-start space-x-2 p-1 rounded text-xs ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-900/10'}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => handlePartSelection(question.id, subSubq.id, e.target.checked, subq.id)}
+                                    disabled={isDisabled}
+                                    className="mt-0.5 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-1"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-white font-medium">Part {subIndex + 1}.{ssIdx + 1} ({subSubq.points} pts)</span>
+                                    <div className="text-gray-300 text-xs mt-0.5">{subSubq.question.substring(0, 80)}{subSubq.question.length > 80 ? '...' : ''}</div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-2 text-xs">
+                            <span className={`font-medium ${(selectedParts[selectionKey] || []).length === subq.requiredPartsCount ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {(selectedParts[selectionKey] || []).length} of {subq.requiredPartsCount} selected
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {subq.optionalParts && isAlreadySubmitted && (selectedParts[`${question.id}.${subq.id}`] || []).length > 0 && (
+                        <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-2">
+                          <div className="text-blue-300 font-medium text-xs">
+                            Selected Sub-parts: {(selectedParts[`${question.id}.${subq.id}`] || []).length} of {(subq.subquestions || []).length}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {(subq.subquestions || []).map((subSubq, subSubIndex) => {
+                        // For optional parts, only render selected sub-sub-questions
+                        if (subq.optionalParts) {
+                          const selectionKey = `${question.id}.${subq.id}`;
+                          const isSelected = (selectedParts[selectionKey] || []).includes(String(subSubq.id));
+                          if (!isSelected) {
+                            return null; // Don't render unselected parts
+                          }
+                        }
+                        
+                        return (
                         <div key={subSubq.id} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-blue-200 text-sm font-medium">
@@ -1265,7 +1605,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             />
                           )}
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   ) : (
                     <textarea
@@ -1286,7 +1627,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     />
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         );

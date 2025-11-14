@@ -451,20 +451,20 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
           {/* Video Showcase */}
           <div className="bg-white border-2 border-purple-500/30 rounded-3xl p-8 mb-12">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold mb-2">Try It: Chat With This VLSI Video</h3>
-              <p className="text-gray-600">Watch "Different Stages of Chip Design" and see sample questions students ask</p>
+              <h3 className="text-2xl font-bold mb-2">Chat with Fourier Transform Video</h3>
+              <p className="text-gray-600">Watch and see how you can ask questions about any moment in this video</p>
             </div>
 
             <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden mb-6">
-              <video
+              <iframe
                 width="100%"
                 height="100%"
-                controls
-                className="w-full h-full object-cover"
-              >
-                <source src="/chat-with-video.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+                src="https://www.youtube.com/embed/SXjOwcvcjRU"
+                title="Fourier Transform Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              ></iframe>
             </div>
 
             {/* Sample Chat Questions */}

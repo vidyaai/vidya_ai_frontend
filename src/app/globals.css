@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -12,6 +27,8 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  min-width: 320px;
+  min-height: 100vh;
 }
 
 body {
@@ -22,4 +39,199 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+}
+
+/* ============================================
+   Mathematical Expression Styling - Enhanced
+   ============================================ */
+
+/* Inline math expressions */
+.math-expression {
+  font-family: 'Times New Roman', serif;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  padding: 0 2px;
+}
+
+/* Display math (block) */
+.math-block {
+  font-family: 'Times New Roman', serif;
+  font-style: normal;
+  display: block;
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  font-size: 1.1em;
+}
+
+/* Fraction styling - Enhanced */
+.fraction {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+  margin: 0 3px;
+}
+
+.fraction .numerator {
+  display: block;
+  border-bottom: 1px solid currentColor;
+  padding: 2px 5px;
+  font-size: 0.9em;
+  line-height: 1.2;
+}
+
+.fraction .denominator {
+  display: block;
+  padding: 2px 5px;
+  font-size: 0.9em;
+  line-height: 1.2;
+}
+
+/* Square root styling - Enhanced */
+.sqrt {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.sqrt-content {
+  border-top: 1px solid currentColor;
+  padding: 2px 4px 0 4px;
+  margin-left: 2px;
+}
+
+/* Integral symbol - Enhanced */
+.integral {
+  font-size: 1.4em;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+/* Integral with limits - NEW */
+.integral-with-limits {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin: 0 4px;
+  padding: 0 4px;
+}
+
+.integral-with-limits .integral {
+  font-size: 1.6em;
+}
+
+.integral-with-limits sup {
+  position: absolute;
+  top: -8px;
+  left: 100%;
+  font-size: 0.7em;
+  margin-left: -5px;
+}
+
+.integral-with-limits sub {
+  position: absolute;
+  bottom: -8px;
+  left: 100%;
+  font-size: 0.7em;
+  margin-left: -5px;
+}
+
+/* Summation symbol - Enhanced */
+.summation {
+  font-size: 1.3em;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+/* Summation with limits - NEW */
+.sum-with-limits {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin: 0 4px;
+  padding: 12px 4px;
+}
+
+.sum-with-limits .summation {
+  font-size: 1.4em;
+}
+
+.sum-with-limits sup {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7em;
+}
+
+.sum-with-limits sub {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7em;
+}
+
+/* Product symbol */
+.product {
+  font-size: 1.3em;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+/* Math text (roman text within math) */
+.math-text {
+  font-family: inherit;
+  font-style: normal;
+}
+
+/* Subscript and superscript - Enhanced */
+sub, sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.5em;
+}
+
+/* Prevent mathematical expressions from breaking awkwardly */
+.math-expression,
+.math-block {
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+/* Better spacing in mathematical expressions */
+.math-expression > *,
+.math-block > * {
+  margin: 0 1px;
+}
+
+/* Ensure proper alignment of complex expressions */
+.integral-with-limits,
+.sum-with-limits,
+.fraction {
+  vertical-align: middle;
 }

@@ -447,6 +447,88 @@ export const assignmentApi = {
     }
     
     return results;
+  },
+
+  // Generate and get PDF download URL for an assignment
+  async generateAssignmentPDF(assignmentId) {
+    const response = await api.get(`/api/assignments/${assignmentId}/download-pdf`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      responseType: 'blob'
+    });
+    
+    // Create a blob URL for download
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    return URL.createObjectURL(blob);
+  },
+
+  // Get PDF download URL (non-blob version for links)
+  getPDFDownloadURL(assignmentId) {
+    const baseUrl = api.defaults.baseURL || window.location.origin;
+    return `${baseUrl}/api/assignments/${assignmentId}/download-pdf`;
+  },
+
+  // Generate Google Form for assignment
+  async generateGoogleForm(assignmentId) {
+    // Use the dedicated Google Form generation endpoint
+    const response = await api.post(`/api/assignments/${assignmentId}/generate-google-form`, {}, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    return response.data;
+  },
+
+  // Get Google Form URL for an assignment (if it exists)
+  async getGoogleFormURL(assignmentId) {
+    try {
+      // First try to get existing Google Form URL
+      const response = await api.get(`/api/assignments/${assignmentId}/google-form-url`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      return response.data?.google_resource_url || null;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // No Google Form exists yet, try to generate one
+        try {
+          const googleFormResponse = await this.generateGoogleForm(assignmentId);
+          return googleFormResponse?.google_resource_url || null;
+        } catch (generateErr) {
+          console.error('Error generating Google Form:', generateErr);
+          return null;
+        }
+      }
+      console.error('Error getting Google Form URL:', error);
+      return null;
+    }
+  },
+
+  // Generate all formats (PDF + Google Forms) for an assignment
+  async generateAllFormats(assignmentId) {
+    try {
+      const results = {
+        pdf: { success: false, url: null, error: null },
+        googleForm: { success: false, url: null, error: null }
+      };
+
+      // Generate PDF
+      try {
+        results.pdf.url = this.getPDFDownloadURL(assignmentId);
+        results.pdf.success = true;
+      } catch (err) {
+        results.pdf.error = err.message;
+      }
+
+      // Generate Google Form
+      try {
+        const googleFormResponse = await this.generateGoogleForm(assignmentId);
+        results.googleForm.url = googleFormResponse.google_resource_url;
+        results.googleForm.success = true;
+      } catch (err) {
+        results.googleForm.error = err.message;
+      }
+
+      return results;
+    } catch (err) {
+      throw new Error(`Failed to generate formats: ${err.message}`);
+    }
   }
 };
 

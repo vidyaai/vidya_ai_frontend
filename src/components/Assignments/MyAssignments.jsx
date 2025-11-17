@@ -12,11 +12,12 @@ import {
   Clock,
   FileText,
   Loader2,
-  Download
+  Download,
+  Globe
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import AssignmentBuilder from './AssignmentBuilder';
-import AIAssignmentGeneratorWizard from './AIAssignmentGeneratorWizard';
+import AIAssignmentGeneratorWizard from './Aiassignmentgeneratorwizard';
 import AssignmentSharingModal from './AssignmentSharingModal';
 import AssignmentSubmissions from './AssignmentSubmissions';
 import ImportFromDocumentModal from './ImportFromDocumentModal';
@@ -33,6 +34,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [error, setError] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(null); // Track which assignment is downloading PDF
+  const [googleFormLinks, setGoogleFormLinks] = useState({}); // Track Google Form links for each assignment
 
   // Load assignments from API
   useEffect(() => {
@@ -45,6 +47,21 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
       setError(null);
       const data = await assignmentApi.getMyAssignments();
       setAssignments(data);
+      
+      // Load Google Form links for published assignments
+      const formLinks = {};
+      for (const assignment of data.filter(a => a.status === 'published')) {
+        try {
+          const googleFormURL = await assignmentApi.getGoogleFormURL(assignment.id);
+          if (googleFormURL) {
+            formLinks[assignment.id] = googleFormURL;
+          }
+        } catch (err) {
+          console.error(`Failed to load Google Form link for assignment ${assignment.id}:`, err);
+        }
+      }
+      console.log('Loaded Google Form links:', formLinks);
+      setGoogleFormLinks(formLinks);
     } catch (err) {
       console.error('Failed to load assignments:', err);
       setError('Failed to load assignments. Please try again.');
@@ -447,6 +464,18 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                         )}
                         {downloadingPDF === assignment.id ? 'Generating...' : 'Download PDF'}
                       </button>
+                      
+                      {/* Google Form Link */}
+                      {googleFormLinks[assignment.id] && (
+                        <button
+                          onClick={() => window.open(googleFormLinks[assignment.id], '_blank')}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center justify-center"
+                          title="Open Google Form"
+                        >
+                          <Globe size={14} className="mr-1" />
+                          Google Form
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -49,7 +49,14 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
 
   return (
     <div className="flex items-center justify-between mb-6">
-      <h2 className="text-2xl font-bold text-white">{title}</h2>
+      <div className="flex items-center space-x-3">
+        <img 
+          src="/logo-new-2.png" 
+          alt="Vidya AI Logo" 
+          className="h-10 w-auto rounded-md"
+        />
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
+      </div>
       
       {/* Navigation Menu */}
       <div className="relative" ref={menuRef}>

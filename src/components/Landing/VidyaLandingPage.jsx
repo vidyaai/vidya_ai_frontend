@@ -210,7 +210,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <img 
-                src="logo-new-2.png" 
+                src="/logo-new-2.png" 
                 alt="Vidya AI Logo" 
                 className="h-16 w-auto rounded-lg border-2 border-white"
               />
@@ -615,7 +615,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <img 
-                src="logo-new-2.png" 
+                src="/logo-new-2.png" 
                 alt="Vidya AI Logo" 
                 className="h-16 w-auto rounded-lg mb-4"
               />

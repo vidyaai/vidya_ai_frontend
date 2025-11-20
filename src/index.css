@@ -217,3 +217,26 @@ sup {
 .fraction {
   vertical-align: middle;
 }
+/* ============================================
+   Download Progress Animations
+   ============================================ */
+
+/* Sliding animation for buffering/preparing state */
+@keyframes slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* Shimmer animation for download progress */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}

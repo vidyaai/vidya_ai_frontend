@@ -19,8 +19,6 @@ import {
   Eye
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
-import { TextWithEquations, EquationList } from './EquationRenderer';
-import { updateEquationLatex } from './utils/equationParser';
 import EditableTextWithEquations from './EditableTextWithEquations';
 
 const QuestionCard = ({ 
@@ -142,13 +140,6 @@ const QuestionCard = ({
 
   const handleRubricChange = (value) => {
     onUpdate({ rubric: value });
-  };
-
-  // Handle equation editing
-  const handleEquationSave = (equationId, newLatex) => {
-    const equations = question.equations || [];
-    const updatedEquations = updateEquationLatex(equations, equationId, newLatex);
-    onUpdate({ equations: updatedEquations });
   };
 
   const handleSubquestionChange = (subIndex, field, value) => {
@@ -1074,8 +1065,7 @@ const QuestionCard = ({
                 {question.options.map((option, optionIndex) => {
                   // Get equations for this specific option
                   const optionEquations = (question.equations || []).filter(
-                    eq => eq.position?.context === 'options' && 
-                         eq.position?.option_index === optionIndex
+                    eq => eq.position?.context === 'options'
                   );
 
                   return (
@@ -1096,15 +1086,18 @@ const QuestionCard = ({
                           className="text-teal-500 focus:ring-teal-500"
                         />
                       )}
-                      <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg">
-                        <TextWithEquations 
-                          text={option}
-                          equations={optionEquations}
-                          onEquationSave={handleEquationSave}
-                          editable={true}
-                          className="text-white"
-                        />
-                      </div>
+                      <EditableTextWithEquations 
+                        text={option}
+                        equations={optionEquations}
+                        onChange={({text, equations}) => {
+                          const newOptions = [...question.options];
+                          newOptions[optionIndex] = text;
+                          onUpdate({ options: newOptions, equations: equations });
+                        }}
+                        placeholder="Enter option..."
+                        multiline={false}
+                        className="text-white"
+                      />
                       {question.options.length > 2 && (
                         <button
                           onClick={() => removeOption(optionIndex)}
@@ -1404,15 +1397,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Correct Answers (one per line)
               </label>
-              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                <TextWithEquations 
-                  text={question.correctAnswer}
-                  equations={question.equations || []}
-                  onEquationSave={handleEquationSave}
-                  editable={true}
-                  className="text-white"
-                />
-              </div>
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter correct answers (one per line)..."
+                multiline={true}
+                rows={3}
+                className="text-white"
+              />
             </div>
           </div>
         );
@@ -1542,20 +1535,20 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Correct Answer
               </label>
-              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                <TextWithEquations 
-                  text={question.correctAnswer}
-                  equations={question.equations || []}
-                  onEquationSave={handleEquationSave}
-                  editable={true}
-                  className="text-white"
-                />
-              </div>
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter correct answer..."
+                multiline={false}
+                className="text-white"
+              />
             </div>
           </div>
         );
 
       case 'short-answer':
+
       case 'long-answer':
         return (
           <div className="space-y-3">
@@ -1765,15 +1758,15 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sample Solution (Required)
               </label>
-              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                <TextWithEquations 
-                  text={question.correctAnswer}
-                  equations={question.equations || []}
-                  onEquationSave={handleEquationSave}
-                  editable={true}
-                  className="text-white font-mono text-sm"
-                />
-              </div>
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Enter sample solution code..."
+                multiline={true}
+                rows={6}
+                className="text-white font-mono text-sm"
+              />
             </div>
           </div>
         );
@@ -2068,18 +2061,18 @@ const QuestionCard = ({
                         </button>
                       </div>
                     </div>
-                    <div className="p-3 bg-gray-600 border border-gray-500 rounded-lg">
-                      <TextWithEquations 
-                        text={subq.question || ''}
-                        equations={subq.equations || []}
-                        onEquationSave={(eqId, newLatex) => {
-                          const updatedEqs = updateEquationLatex(subq.equations || [], eqId, newLatex);
-                          handleSubquestionChange(subIndex, 'equations', updatedEqs);
-                        }}
-                        editable={true}
-                        className="text-white text-sm"
-                      />
-                    </div>
+                    <EditableTextWithEquations 
+                      text={subq.question || ''}
+                      equations={subq.equations || []}
+                      onChange={({text, equations}) => {
+                        handleSubquestionChange(subIndex, 'question', text);
+                        handleSubquestionChange(subIndex, 'equations', equations);
+                      }}
+                      placeholder="Enter sub-question text... Use <eq {latex}> or <eq {}> to add equations"
+                      multiline={true}
+                      rows={2}
+                      className="text-white text-sm"
+                    />
                     
                     {/* Sub-question type selection */}
                     <div className="mt-3 space-y-3">
@@ -2237,8 +2230,7 @@ const QuestionCard = ({
                             {(subq.options || ['', '', '', '']).map((option, optionIndex) => {
                               // Get equations for this specific option
                               const optionEquations = (subq.equations || []).filter(
-                                eq => eq.position?.context === 'options' && 
-                                     eq.position?.option_index === optionIndex
+                                eq => eq.position?.context === 'options'
                               );
 
                               return (
@@ -2259,18 +2251,19 @@ const QuestionCard = ({
                                       className="text-teal-500 focus:ring-teal-500"
                                     />
                                   )}
-                                  <div className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">
-                                    <TextWithEquations 
-                                      text={option}
-                                      equations={optionEquations}
-                                      onEquationSave={(eqId, newLatex) => {
-                                        const updatedEqs = updateEquationLatex(subq.equations || [], eqId, newLatex);
-                                        handleSubquestionChange(subIndex, 'equations', updatedEqs);
-                                      }}
-                                      editable={true}
-                                      className="text-white text-sm"
-                                    />
-                                  </div>
+                                  <EditableTextWithEquations 
+                                    text={option}
+                                    equations={optionEquations}
+                                    onChange={({text, equations}) => {
+                                      const newOptions = [...(subq.options || ['', '', '', ''])];
+                                      newOptions[optionIndex] = text;
+                                      handleSubquestionChange(subIndex, 'options', newOptions);
+                                      handleSubquestionChange(subIndex, 'equations', equations);
+                                    }}
+                                    placeholder="Enter option..."
+                                    multiline={false}
+                                    className="text-white text-sm"
+                                  />
                                   {(subq.options || ['', '', '', '']).length > 2 && (
                                     <button
                                       onClick={() => {
@@ -2492,20 +2485,23 @@ const QuestionCard = ({
                                     </button>
                                   </div>
                                 </div>
-                                <div className="p-2 bg-gray-500 border border-gray-400 rounded mb-2">
-                                  <TextWithEquations 
-                                    text={subSubq.question || ''}
-                                    equations={subSubq.equations || []}
-                                    onEquationSave={(eqId, newLatex) => {
-                                      const updatedEqs = updateEquationLatex(subSubq.equations || [], eqId, newLatex);
-                                      const newSubSubquestions = [...(subq.subquestions || [])];
-                                      newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], equations: updatedEqs };
-                                      handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
-                                    }}
-                                    editable={true}
-                                    className="text-white text-xs"
-                                  />
-                                </div>
+                                <EditableTextWithEquations 
+                                  text={subSubq.question || ''}
+                                  equations={subSubq.equations || []}
+                                  onChange={({text, equations}) => {
+                                    const newSubSubquestions = [...(subq.subquestions || [])];
+                                    newSubSubquestions[subSubIndex] = { 
+                                      ...newSubSubquestions[subSubIndex], 
+                                      question: text,
+                                      equations: equations
+                                    };
+                                    handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
+                                  }}
+                                  placeholder="Enter sub-sub-question text... Use <eq {latex}> or <eq {}> to add equations"
+                                  multiline={true}
+                                  rows={2}
+                                  className="text-white text-xs mb-2"
+                                />
                                 <select
                                   value={subSubq.type || 'short-answer'}
                                   onChange={(e) => {

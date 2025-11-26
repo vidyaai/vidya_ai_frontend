@@ -11,11 +11,13 @@ import {
   Users,
   Clock,
   FileText,
-  Loader2
+  Loader2,
+  Download,
+  Globe
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import AssignmentBuilder from './AssignmentBuilder';
-import AIAssignmentGenerator from './AIAssignmentGenerator';
+import AIAssignmentGeneratorWizard from './Aiassignmentgeneratorwizard';
 import AssignmentSharingModal from './AssignmentSharingModal';
 import AssignmentSubmissions from './AssignmentSubmissions';
 import ImportFromDocumentModal from './ImportFromDocumentModal';
@@ -31,6 +33,8 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(null); // Track which assignment is downloading PDF
+  const [googleFormLinks, setGoogleFormLinks] = useState({}); // Track Google Form links for each assignment
 
   // Load assignments from API
   useEffect(() => {
@@ -43,6 +47,21 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
       setError(null);
       const data = await assignmentApi.getMyAssignments();
       setAssignments(data);
+      
+      // Load Google Form links for published assignments
+      const formLinks = {};
+      for (const assignment of data.filter(a => a.status === 'published')) {
+        try {
+          const googleFormURL = await assignmentApi.getGoogleFormURL(assignment.id);
+          if (googleFormURL) {
+            formLinks[assignment.id] = googleFormURL;
+          }
+        } catch (err) {
+          console.error(`Failed to load Google Form link for assignment ${assignment.id}:`, err);
+        }
+      }
+      console.log('Loaded Google Form links:', formLinks);
+      setGoogleFormLinks(formLinks);
     } catch (err) {
       console.error('Failed to load assignments:', err);
       setError('Failed to load assignments. Please try again.');
@@ -114,6 +133,42 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
     }
   };
 
+  const handleDownloadPDF = async (assignment) => {
+    try {
+      setDownloadingPDF(assignment.id);
+      
+      // Use the assignmentApi to download PDF
+      const response = await assignmentApi.downloadAssignmentPDF(assignment.id);
+      
+      // Create blob from response
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${assignment.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_Assignment.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download PDF:', err);
+      alert('Failed to download assignment PDF. Please try again.');
+    } finally {
+      setDownloadingPDF(null);
+    }
+  };
+
+  const handleContinueFromGenerator = (generatedData) => {
+    setParsedAssignmentData(generatedData);
+    setCurrentView('assignment-builder');
+  };
+
   const handleBackToMain = () => {
     setCurrentView('main');
     setParsedAssignmentData(null); // Clear parsed data when going back
@@ -130,7 +185,11 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
   }
 
   if (currentView === 'ai-generator') {
-    return <AIAssignmentGenerator onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+    return <AIAssignmentGeneratorWizard 
+      onBack={handleBackToMain} 
+      onNavigateToHome={onNavigateToHome} 
+      onContinueToBuilder={handleContinueFromGenerator}
+    />;
   }
 
   if (currentView === 'submissions') {
@@ -383,14 +442,41 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                       <Trash2 size={16} />
                     </button>
                   </div>
-                  {/* Only show View Submissions button for published assignments */}
+                  {/* Only show View Submissions and Download PDF buttons for published assignments */}
                   {assignment.status === 'published' && (
-                    <button
-                      onClick={() => handleViewSubmissions(assignment)}
-                      className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded transition-colors"
-                    >
-                      View Submissions
-                    </button>
+                    <div className="flex flex-col space-y-2">
+                      <button
+                        onClick={() => handleViewSubmissions(assignment)}
+                        className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded transition-colors"
+                      >
+                        View Submissions
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPDF(assignment)}
+                        disabled={downloadingPDF === assignment.id}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Download assignment as PDF"
+                      >
+                        {downloadingPDF === assignment.id ? (
+                          <Loader2 size={14} className="mr-1 animate-spin" />
+                        ) : (
+                          <Download size={14} className="mr-1" />
+                        )}
+                        {downloadingPDF === assignment.id ? 'Generating...' : 'Download PDF'}
+                      </button>
+                      
+                      {/* Google Form Link */}
+                      {googleFormLinks[assignment.id] && (
+                        <button
+                          onClick={() => window.open(googleFormLinks[assignment.id], '_blank')}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center justify-center"
+                          title="Open Google Form"
+                        >
+                          <Globe size={14} className="mr-1" />
+                          Google Form
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

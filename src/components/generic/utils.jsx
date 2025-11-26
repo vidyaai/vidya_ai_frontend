@@ -19,7 +19,7 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'local') {
   API_URL = 'http://localhost:8000';
 }
-API_URL='http://localhost:8000';
+
 console.log("Final API_URL", API_URL);
 export { API_URL };
 

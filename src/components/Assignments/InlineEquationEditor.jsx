@@ -8,10 +8,11 @@ import { validateLatex } from './utils/equationParser';
  * 
  * @param {object} equation - Equation object with id, latex, type properties
  * @param {function} onSave - Callback when equation is saved: (equationId, newLatex) => void
+ * @param {function} onTypeChange - Callback when equation type changes: (equationId, newType) => void
  * @param {boolean} editable - Whether the equation can be edited
  * @param {string} className - Additional CSS classes
  */
-const InlineEquationEditor = ({ equation, onSave, editable = false, className = '' }) => {
+const InlineEquationEditor = ({ equation, onSave, onTypeChange, editable = false, className = '' }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [latexInput, setLatexInput] = useState(equation.latex);
   const [validationError, setValidationError] = useState('');
@@ -107,9 +108,23 @@ const InlineEquationEditor = ({ equation, onSave, editable = false, className = 
   return (
     <div className={`inline-equation-editor border border-blue-400 rounded p-3 my-2 bg-blue-50 ${className}`}>
       <div className="mb-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          LaTeX ({equation.type === 'display' ? 'Display' : 'Inline'})
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-700">
+            LaTeX
+          </label>
+          {onTypeChange && (
+            <button
+              onClick={() => {
+                const newType = equation.type === 'inline' ? 'display' : 'inline';
+                onTypeChange(equation.id, newType);
+              }}
+              className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              type="button"
+            >
+              Switch to {equation.type === 'inline' ? 'Display' : 'Inline'}
+            </button>
+          )}
+        </div>
         <input
           type="text"
           value={latexInput}

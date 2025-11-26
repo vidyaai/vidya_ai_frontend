@@ -171,6 +171,24 @@ const EditableTextWithEquations = ({
     }
   };
 
+  const handleEquationTypeChange = (equationId, newType) => {
+    console.log('[EditableTextWithEquations] handleEquationTypeChange called');
+    console.log('[EditableTextWithEquations] equationId:', equationId, 'newType:', newType);
+    
+    const updatedEquations = equations.map(eq => 
+      eq.id === equationId ? { ...eq, type: newType } : eq
+    );
+    
+    console.log('[EditableTextWithEquations] updatedEquations:', updatedEquations);
+    
+    // Use new onChange callback if provided, otherwise use legacy callback
+    if (onChange) {
+      onChange({ text: text, equations: updatedEquations });
+    } else {
+      onEquationsChange(updatedEquations);
+    }
+  };
+
   // If editing, show textarea/input
   if (isEditing) {
     const inputClassName = `w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${className}`;
@@ -226,6 +244,7 @@ const EditableTextWithEquations = ({
                     key={`eq-${segment.equation.id}-${idx}`}
                     equation={segment.equation}
                     onSave={handleEquationSave}
+                    onTypeChange={handleEquationTypeChange}
                     editable={true}
                   />
                 </span>

@@ -1,537 +1,625 @@
-// src/components/Assignments/AssignmentSharingModal.jsx
 import { useState, useEffect } from 'react';
-import { 
-  X, 
-  Share2, 
-  Users, 
-  Globe, 
-  Lock, 
-  Copy, 
-  Check, 
-  Mail, 
-  UserPlus, 
-  Trash2,
-  Calendar,
-  FileText,
-  Settings
-} from 'lucide-react';
+import { X, Search, Users, Lock, Copy, Check, Loader2, Mail, FileText, Link as LinkIcon, Globe } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 
 const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
-  const [shareLink, setShareLink] = useState(null);
-  const [isPublic, setIsPublic] = useState(false);
-  const [permission, setPermission] = useState('complete');
-  const [emailQuery, setEmailQuery] = useState('');
+  const [shareFormat, setShareFormat] = useState('html_form'); // 'pdf', 'html_form', or 'google_forms'
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [existingUsers, setExistingUsers] = useState([]);
-  const [existingLinkId, setExistingLinkId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [sharedUsers, setSharedUsers] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareLink, setShareLink] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [formatUrls, setFormatUrls] = useState({
+    pdf: null,
+    googleForm: null
+  });
 
-  // Reset state when modal opens/closes
   useEffect(() => {
-    if (assignment) {
-      setShareLink(null);
-      setIsPublic(false);
-      setPermission('complete');
-      setEmailQuery('');
-      setSearchResults([]);
-      setSelectedUsers([]);
-      setExistingUsers([]);
-      setExistingLinkId(null);
-      setCopySuccess(false);
-      
-      // Check for existing shared link
-      checkExistingShare();
-    }
-  }, [assignment]);
+    loadSharedAssignmentData();
+  }, [assignment.id]);
 
-  // Fetch user details by UIDs
-  const fetchUserDetails = async (userIds) => {
-    if (!userIds || userIds.length === 0) return [];
-    
+  const loadSharedAssignmentData = async () => {
     try {
-      const users = await assignmentApi.getUsersByIds(userIds);
-      return users;
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      // Return fallback data with UIDs as display names
-      return userIds.map(uid => ({
-        uid: uid,
-        email: uid,
-        displayName: uid
-      }));
-    }
-  };
-
-  // Check if this assignment is already shared
-  const checkExistingShare = async () => {
-    if (!assignment?.id) return;
-    
-    try {
-      const existingLink = await assignmentApi.getSharedAssignmentLink(assignment.id);
+      setLoading(true);
+      setError(null);
       
-      if (existingLink) {
-        // Don't set shareLink here - we want to show the form with existing data
-        // setShareLink(existingLink);
+      const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
+      
+      if (sharedData) {
+        setShareLink(sharedData.share_link || '');
+        setShareFormat(sharedData.share_format || 'html_form');
         
-        // Get user details for shared accesses
-        const userIds = existingLink.shared_accesses?.map(access => access.user_id) || [];
-        const existingUserList = await fetchUserDetails(userIds);
-        setExistingUsers(existingUserList);
-        setIsPublic(existingLink.is_public);
-        setExistingLinkId(existingLink.id);
+        // Set format URLs from shared data
+        setFormatUrls({
+          pdf: assignmentApi.getPDFDownloadURL(assignment.id),
+          googleForm: sharedData.google_resource_url || null
+        });
+        
+        // Load user details for shared users
+        if (sharedData.shared_with && sharedData.shared_with.length > 0) {
+          try {
+            const userDetails = await assignmentApi.getUsersByIds(sharedData.shared_with);
+            setSharedUsers(userDetails.users || []);
+          } catch (err) {
+            console.error('Error loading user details:', err);
+            setSharedUsers([]);
+          }
+        }
+      } else {
+        // No shared data exists, but we can still provide PDF download
+        setFormatUrls({
+          pdf: assignmentApi.getPDFDownloadURL(assignment.id),
+          googleForm: null
+        });
       }
-    } catch (error) {
-      console.error('Error checking existing share:', error);
+    } catch (err) {
+      console.error('Error loading shared assignment data:', err);
+      setError('Failed to load sharing information');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Search users by email
-  const searchUsers = async (query) => {
-    if (!query || query.length < 2) {
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+    
+    if (query.trim().length < 2) {
       setSearchResults([]);
       return;
     }
 
-    setSearchLoading(true);
     try {
+      setIsSearching(true);
       const results = await assignmentApi.searchUsers(query);
-      setSearchResults(results || []);
-    } catch (error) {
-      console.error('Error searching users:', error);
+      
+      // Handle different API response structures
+      const usersList = results.users || results || [];
+      
+      // Filter out already shared users
+      const sharedUserIds = sharedUsers.map(u => u.uid);
+      const filteredResults = usersList.filter(
+        user => !sharedUserIds.includes(user.uid)
+      );
+      
+      setSearchResults(filteredResults);
+    } catch (err) {
+      console.error('Search error:', err);
       setSearchResults([]);
     } finally {
-      setSearchLoading(false);
+      setIsSearching(false);
     }
   };
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      searchUsers(emailQuery);
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [emailQuery]);
-
-  const addUser = (user) => {
-    if (!selectedUsers.find(u => u.uid === user.uid) && 
-        !existingUsers.find(u => u.uid === user.uid)) {
-      setSelectedUsers(prev => [...prev, user]);
-      setEmailQuery('');
-      setSearchResults([]);
+  const handleSelectUser = (user) => {
+    const userId = user.uid;
+    if (!selectedUsers.find(u => u.uid === userId)) {
+      setSelectedUsers([...selectedUsers, user]);
     }
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
-  const removeUser = (userId) => {
-    setSelectedUsers(prev => prev.filter(user => user.uid !== userId));
+  const handleRemoveSelectedUser = (userId) => {
+    setSelectedUsers(selectedUsers.filter(u => u.uid !== userId));
   };
 
-  const removeExistingUser = async (userId) => {
-    if (!existingLinkId) return;
-    
+  const handleShareAssignment = async () => {
+    if (selectedUsers.length === 0) {
+      alert('Please select at least one student to share with');
+      return;
+    }
+
     try {
-      await assignmentApi.removeUserFromSharedAssignment(existingLinkId, userId);
-      setExistingUsers(prev => prev.filter(user => user.uid !== userId));
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error('Error removing user:', error);
-      alert('Failed to remove user. Please try again.');
-    }
-  };
+      setIsSharing(true);
+      
+      console.log('Selected users before mapping:', selectedUsers);
+      const userIds = selectedUsers.map(u => {
+        console.log('User object:', u);
+        return u.uid; // FirebaseUser uses 'uid' property
+      });
+      console.log('Mapped user IDs:', userIds);
 
-  const createShareLink = async () => {
-    if (!assignment?.id) return;
-
-    setCreating(true);
-    try {
-      const allUsers = [...existingUsers, ...selectedUsers];
       const shareData = {
         assignment_id: assignment.id,
-        shared_with_user_ids: allUsers.map(u => u.uid),
-        permission: permission,
-        title: assignment.title,
-        description: assignment.description,
-        is_public: isPublic,
-        expires_at: null
+        shared_with_user_ids: userIds,
+        share_format: shareFormat,
+        permission: 'complete', // Fixed permission for students
+        is_public: false // Always private for individual student sharing
       };
 
-      let response;
-      if (existingLinkId) {
-        // Update existing share link
-        response = await assignmentApi.updateSharedAssignment(assignment.id, existingLinkId, shareData);
-      } else {
-        // Create new share link
-        response = await assignmentApi.shareAssignment(assignment.id, shareData);
+      console.log('Sharing with data:', shareData);
+
+      const response = await assignmentApi.shareAssignment(assignment.id, shareData);
+      
+      if (response.share_link) {
+        setShareLink(response.share_link);
       }
 
-      setShareLink(response);
-      setCopySuccess(false);
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error('Error creating/updating share link:', error);
-      alert(error.response?.data?.detail || 'Failed to create/update share link');
+      // Reload shared users
+      await loadSharedAssignmentData();
+      setSelectedUsers([]);
+      
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Error sharing assignment:', err);
+      console.error('Error details:', err.response?.data);
+      alert(`Failed to share assignment: ${err.response?.data?.detail || err.message}`);
     } finally {
-      setCreating(false);
+      setIsSharing(false);
     }
   };
 
-  const deleteShareLink = async () => {
-    if (!existingLinkId || !assignment?.id) return;
-
-    if (!confirm('Are you sure you want to delete this shared link? This will remove access for all users.')) {
+  const handleRemoveSharedUser = async (userId) => {
+    if (!window.confirm('Remove this student from the assignment?')) {
       return;
     }
 
     try {
-      await assignmentApi.deleteSharedAssignment(assignment.id, existingLinkId);
-      setShareLink(null);
-      setExistingLinkId(null);
-      setExistingUsers([]);
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error('Error deleting share link:', error);
-      alert('Failed to delete share link. Please try again.');
+      // Get the share ID from the shared data
+      const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
+      if (sharedData && sharedData.id) {
+        await assignmentApi.removeUserFromSharedAssignment(sharedData.id, userId);
+        await loadSharedAssignmentData();
+        
+        if (onRefresh) {
+          onRefresh();
+        }
+      }
+    } catch (err) {
+      console.error('Error removing user:', err);
+      alert('Failed to remove student. Please try again.');
     }
   };
 
-  const copyToClipboard = async (text) => {
+  const handleCopyLink = async () => {
+    if (shareLink) {
+      try {
+        await navigator.clipboard.writeText(shareLink);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
+
+  const handleUpdateShareFormat = async (newFormat) => {
+    console.log('handleUpdateShareFormat called with format:', newFormat);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
+      const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
+      console.log('Existing shared data:', sharedData);
+      
+      if (sharedData && sharedData.id) {
+        // Get current shared user IDs from the shared data
+        const currentSharedUserIds = sharedData.shared_with || [];
+        
+        // Prepare complete update data matching ShareAssignmentRequest schema
+        const updateData = {
+          assignment_id: assignment.id,
+          shared_with_user_ids: currentSharedUserIds,
+          permission: sharedData.permission || 'complete',
+          share_format: newFormat,
+          title: sharedData.title,
+          description: sharedData.description,
+          is_public: sharedData.is_public || false,
+          expires_at: sharedData.expires_at
+        };
+
+        console.log('Updating share format with data:', updateData);
+
+        const updatedSharedData = await assignmentApi.updateSharedAssignment(assignment.id, sharedData.id, updateData);
+        setShareFormat(newFormat);
+        
+        // Update format URLs if Google Form was created
+        if (newFormat === 'google_forms' && updatedSharedData.google_resource_url) {
+          setFormatUrls(prev => ({
+            ...prev,
+            googleForm: updatedSharedData.google_resource_url
+          }));
+        }
+        
+        await loadSharedAssignmentData();
+      } else {
+        // Just update local state if no shared link exists yet
+        console.log('No existing shared link, updating local state to:', newFormat);
+        setShareFormat(newFormat);
+      }
+    } catch (err) {
+      console.error('Error updating share format:', err);
+      console.error('Error details:', err.response?.data);
+      alert(`Failed to update share format: ${err.response?.data?.detail || err.message}`);
     }
   };
-
-  const getShareUrl = () => {
-    if (!shareLink) return '';
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/shared/${shareLink.share_token}`;
-  };
-
-  if (!assignment) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Share2 size={20} className="text-teal-400 flex-shrink-0" />
-            <h3 className="text-base sm:text-lg font-semibold text-white truncate">
-              {existingLinkId && shareLink ? 'Edit' : 'Share'} Assignment
-            </h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-teal-500/10 rounded-lg">
+              <Users className="text-teal-400" size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-white">Share Assignment</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-white rounded flex-shrink-0 ml-2"
+            className="p-2 text-gray-400 hover:text-white transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
-        {!shareLink ? (
-          // Create share link form
-          <div className="space-y-6">
-            {/* Show existing link info if editing */}
-            {existingLinkId && (
-              <div className="bg-teal-900 bg-opacity-50 border border-teal-700 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-teal-400 mb-2">
-                  <Share2 size={16} />
-                  <span className="font-medium">Editing Existing Share Link</span>
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={32} className="text-teal-500 animate-spin" />
+              <span className="ml-3 text-gray-300">Loading...</span>
+            </div>
+          ) : error ? (
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+              <p className="text-red-400">{error}</p>
+            </div>
+          ) : (
+            <>
+              {/* Assignment Details */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-start space-x-3">
+                  <FileText className="text-teal-400 mt-1" size={20} />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white mb-1">Assignment Details</h3>
+                    <h4 className="text-lg font-medium text-white mb-2">{assignment.title}</h4>
+                    <p className="text-gray-400 text-sm mb-3">{assignment.description}</p>
+                    <div className="flex items-center space-x-4 text-sm text-gray-400">
+                      <span>{assignment.total_questions} Questions</span>
+                      <span>•</span>
+                      <span>{assignment.total_points} Points</span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-teal-300 text-sm">
-                  You're editing an existing share link. Changes will update the current link.
-                </p>
               </div>
-            )}
 
-            {/* Assignment Info */}
-            <div className="bg-gray-700 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-gray-300 mb-2">
-                <FileText size={16} />
-                <span className="font-medium">Assignment Details</span>
-              </div>
-              <h4 className="text-white font-medium">{assignment.title}</h4>
-              {assignment.description && (
-                <p className="text-gray-400 text-sm mt-1">{assignment.description}</p>
-              )}
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
-                <span>{assignment.total_questions} Questions</span>
-                <span>{assignment.total_points} Points</span>
-                {assignment.due_date && (
-                  <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Privacy Settings */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Privacy Settings
-              </label>
+              {/* Download Links */}
               <div className="space-y-3">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="privacy"
-                    checked={!isPublic}
-                    onChange={() => setIsPublic(false)}
-                    className="text-teal-500 focus:ring-teal-500"
-                  />
-                  <div className="ml-3">
-                    <div className="flex items-center">
-                      <Lock size={16} className="text-gray-400 mr-2" />
-                      <span className="text-white font-medium">Private</span>
+                <h3 className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                  <LinkIcon size={16} />
+                  <span>Export & Download</span>
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {/* PDF Download */}
+                  <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-red-500/10 rounded-lg">
+                          <FileText className="text-red-400" size={18} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-white">PDF Document</div>
+                          <div className="text-sm text-gray-400">Professional formatted assignment</div>
+                        </div>
+                      </div>
+                      <a
+                        href={formatUrls.pdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+                      >
+                        <LinkIcon size={16} />
+                        <span>Download PDF</span>
+                      </a>
                     </div>
-                    <p className="text-gray-400 text-sm">Only invited students can access</p>
                   </div>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="privacy"
-                    checked={isPublic}
-                    onChange={() => setIsPublic(true)}
-                    className="text-teal-500 focus:ring-teal-500"
-                  />
-                  <div className="ml-3">
-                    <div className="flex items-center">
-                      <Globe size={16} className="text-gray-400 mr-2" />
-                      <span className="text-white font-medium">Public</span>
+
+                  {/* Google Forms Link */}
+                  {formatUrls.googleForm && (
+                    <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-green-500/10 rounded-lg">
+                            <Globe className="text-green-400" size={18} />
+                          </div>
+                          <div>
+                            <div className="font-medium text-white">Google Form</div>
+                            <div className="text-sm text-gray-400">Interactive online form</div>
+                          </div>
+                        </div>
+                        <a
+                          href={formatUrls.googleForm}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+                        >
+                          <LinkIcon size={16} />
+                          <span>Open Form</span>
+                        </a>
+                      </div>
                     </div>
-                    <p className="text-gray-400 text-sm">Anyone with the link can access</p>
-                  </div>
-                </label>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Permission Settings */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Student Permission
-              </label>
-              <select
-                value={permission}
-                onChange={(e) => setPermission(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="view">View Only - Students can view but not submit</option>
-                <option value="complete">Complete - Students can view and submit</option>
-                <option value="edit">Edit - Students can view, submit, and modify</option>
-              </select>
-            </div>
+              {/* Privacy Settings - Always Private */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-300">Privacy Settings</h3>
+                <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-gray-700 rounded-lg">
+                      <Lock className="text-gray-400" size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-white">Private</div>
+                      <div className="text-sm text-gray-400">Only invited students can access</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-
-
-            {/* User Management */}
-            {!isPublic && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-3">
-                  <Users size={16} className="inline mr-2" />
-                  Share with Students
+              {/* Share Format Selection */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-300">
+                  Share As:
                 </label>
-                
-                {/* Existing Users */}
-                {existingUsers.length > 0 && (
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Current Students
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {existingUsers.map(user => (
-                        <div
-                          key={user.uid}
-                          className="flex items-center gap-2 bg-gray-600 text-white px-3 py-1 rounded-full text-sm"
-                        >
-                          <span>{user.displayName || user.email}</span>
-                          <button
-                            onClick={() => removeExistingUser(user.uid)}
-                            className="text-gray-300 hover:text-white"
-                            title="Remove student"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    onClick={() => handleUpdateShareFormat('html_form')}
+                    className={`flex items-center space-x-3 p-4 rounded-lg border transition-all ${
+                      shareFormat === 'html_form'
+                        ? 'border-teal-500 bg-teal-500/10'
+                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      shareFormat === 'html_form' ? 'border-teal-500' : 'border-gray-600'
+                    }`}>
+                      {shareFormat === 'html_form' && (
+                        <div className="w-3 h-3 rounded-full bg-teal-500" />
+                      )}
                     </div>
-                  </div>
-                )}
-                
-                {/* New Selected Users */}
-                {selectedUsers.length > 0 && (
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      New Students to Invite
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUsers.map(user => (
-                        <div
-                          key={user.uid}
-                          className="flex items-center gap-2 bg-teal-600 text-white px-3 py-1 rounded-full text-sm"
-                        >
-                          <span>{user.displayName || user.email}</span>
-                          <button
-                            onClick={() => removeUser(user.uid)}
-                            className="text-teal-200 hover:text-white"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-white">
+                        HTML Form {shareFormat === 'html_form' && '(Current Format)'}
+                      </div>
+                      <div className="text-sm text-gray-400">Interactive online form with instant validation</div>
                     </div>
-                  </div>
-                )}
+                  </button>
 
-                {/* Email Search */}
+                  <button
+                    onClick={() => handleUpdateShareFormat('pdf')}
+                    className={`flex items-center space-x-3 p-4 rounded-lg border transition-all ${
+                      shareFormat === 'pdf'
+                        ? 'border-teal-500 bg-teal-500/10'
+                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      shareFormat === 'pdf' ? 'border-teal-500' : 'border-gray-600'
+                    }`}>
+                      {shareFormat === 'pdf' && (
+                        <div className="w-3 h-3 rounded-full bg-teal-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-white">
+                        PDF {shareFormat === 'pdf' && '(Current Format)'}
+                      </div>
+                      <div className="text-sm text-gray-400">Downloadable PDF document for offline work</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleUpdateShareFormat('google_forms')}
+                    className={`flex items-center space-x-3 p-4 rounded-lg border transition-all ${
+                      shareFormat === 'google_forms'
+                        ? 'border-teal-500 bg-teal-500/10'
+                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      shareFormat === 'google_forms' ? 'border-teal-500' : 'border-gray-600'
+                    }`}>
+                      {shareFormat === 'google_forms' && (
+                        <div className="w-3 h-3 rounded-full bg-teal-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-white">
+                        Google Forms {shareFormat === 'google_forms' && '(Current Format)'}
+                      </div>
+                      <div className="text-sm text-gray-400">Export to Google Forms for easy distribution</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Share with Students */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                  <Users size={16} />
+                  <span>Share with Students</span>
+                </h3>
+
+                {/* Search Input */}
                 <div className="relative">
-                  <input
-                    type="email"
-                    value={emailQuery}
-                    onChange={(e) => setEmailQuery(e.target.value)}
-                    placeholder="Search students by email..."
-                    className="w-full px-3 py-2 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  {searchLoading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-400"></div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      placeholder="Search students by email..."
+                      className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
+
+                  {/* Search Results Dropdown */}
+                  {searchQuery && (
+                    <div className="absolute z-10 w-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {isSearching ? (
+                        <div className="p-4 text-center text-gray-400">
+                          <Loader2 size={20} className="animate-spin mx-auto" />
+                        </div>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.map((user) => (
+                          <button
+                            key={user.uid}
+                            onClick={() => handleSelectUser(user)}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-800 transition-colors flex items-center space-x-3"
+                          >
+                            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                              {user.displayName ? user.displayName[0].toUpperCase() : user.email[0].toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-white text-sm">{user.displayName || 'Unknown'}</div>
+                              <div className="text-gray-400 text-xs">{user.email}</div>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-gray-400 text-sm">
+                          No students found
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Search Results */}
-                {searchResults.length > 0 && (
-                  <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg max-h-40 overflow-y-auto">
-                    {searchResults.map(user => (
-                      <button
-                        key={user.uid}
-                        onClick={() => addUser(user)}
-                        className="w-full px-3 py-2 text-left hover:bg-gray-600 flex items-center gap-2 border-b border-gray-600 last:border-b-0"
-                      >
-                        <UserPlus size={16} className="text-teal-400" />
-                        <div>
-                          <div className="text-white text-sm">{user.displayName || 'Unknown'}</div>
-                          <div className="text-gray-400 text-xs">{user.email}</div>
+                {/* Selected Users */}
+                {selectedUsers.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-400">Selected students:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUsers.map((user) => (
+                        <div
+                          key={user.uid}
+                          className="flex items-center space-x-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                        >
+                          <div className="w-6 h-6 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                            {user.displayName ? user.displayName[0].toUpperCase() : user.email[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm text-white">{user.email}</span>
+                          <button
+                            onClick={() => handleRemoveSelectedUser(user.uid)}
+                            className="text-gray-400 hover:text-red-400 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
-                      </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Share Button */}
+                <button
+                  onClick={handleShareAssignment}
+                  disabled={selectedUsers.length === 0 || isSharing}
+                  className="w-full px-4 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                >
+                  {isSharing ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Sharing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mail size={18} />
+                      <span>Share with Selected Students</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Currently Shared Users */}
+              {sharedUsers.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-gray-300">
+                    Currently Shared With ({sharedUsers.length})
+                  </h3>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {sharedUsers.map((user) => (
+                      <div
+                        key={user.uid}
+                        className="flex items-center justify-between p-3 bg-gray-900 border border-gray-700 rounded-lg"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                            {user.displayName ? user.displayName[0].toUpperCase() : user.email[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="text-sm text-white">{user.displayName || 'Unknown'}</div>
+                            <div className="text-xs text-gray-400">{user.email}</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveSharedUser(user.uid)}
+                          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                          title="Remove student"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              {existingLinkId && (
-                <button
-                  onClick={deleteShareLink}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+                </div>
               )}
-              <button
-                onClick={createShareLink}
-                disabled={creating || (!isPublic && selectedUsers.length === 0 && existingUsers.length === 0)}
-                className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                {creating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {existingLinkId ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  <>
-                    <Share2 size={16} />
-                    {existingLinkId ? 'Update Share Link' : 'Create Share Link'}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        ) : (
-          // Share link created view
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-teal-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Share2 size={32} className="text-teal-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Assignment Shared Successfully!</h3>
-              <p className="text-gray-400">
-                Your assignment is now shared and accessible to students.
-              </p>
-            </div>
 
-            {/* Share Link */}
-            <div className="bg-gray-700 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Share Link
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={getShareUrl()}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm"
-                />
-                <button
-                  onClick={() => copyToClipboard(getShareUrl())}
-                  className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center gap-2"
-                >
-                  {copySuccess ? <Check size={16} /> : <Copy size={16} />}
-                  {copySuccess ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-            </div>
-
-            {/* Share Info */}
-            <div className="bg-gray-700 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Privacy:</span>
-                  <div className="flex items-center gap-1 text-white mt-1">
-                    {shareLink.is_public ? <Globe size={14} /> : <Lock size={14} />}
-                    {shareLink.is_public ? 'Public' : 'Private'}
+              {/* Share Link */}
+              {shareLink && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                    <LinkIcon size={16} />
+                    <span>Share Link</span>
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={shareLink}
+                      readOnly
+                      className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-gray-300 text-sm"
+                    />
+                    <button
+                      onClick={handleCopyLink}
+                      className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      {copySuccess ? (
+                        <>
+                          <Check size={18} />
+                          <span className="text-sm">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={18} />
+                          <span className="text-sm">Copy</span>
+                        </>
+                      )}
+                    </button>
                   </div>
+                  <p className="text-xs text-gray-400">
+                    Students can access the assignment using this link. By default, they can only view and submit their responses.
+                  </p>
                 </div>
-                <div>
-                  <span className="text-gray-400">Students:</span>
-                  <div className="text-white mt-1">
-                    {shareLink.is_public ? 'Anyone with link' : `${existingUsers.length + selectedUsers.length} invited`}
-                  </div>
-                </div>
-              </div>
-            </div>
+              )}
+            </>
+          )}
+        </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShareLink(null)}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <Settings size={16} />
-                Edit Settings
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Footer */}
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 text-gray-300 hover:text-white transition-colors"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

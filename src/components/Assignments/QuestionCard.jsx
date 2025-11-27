@@ -1063,11 +1063,6 @@ const QuestionCard = ({
               </div>
               <div className="space-y-2">
                 {question.options.map((option, optionIndex) => {
-                  // Get equations for this specific option
-                  const optionEquations = (question.equations || []).filter(
-                    eq => eq.position?.context === 'options'
-                  );
-
                   return (
                     <div key={optionIndex} className="flex items-center space-x-2">
                       {question.allowMultipleCorrect ? (
@@ -1088,7 +1083,7 @@ const QuestionCard = ({
                       )}
                       <EditableTextWithEquations 
                         text={option}
-                        equations={optionEquations}
+                        equations={question.equations || []}
                         onChange={({text, equations}) => {
                           const newOptions = [...question.options];
                           newOptions[optionIndex] = text;
@@ -2065,8 +2060,13 @@ const QuestionCard = ({
                       text={subq.question || ''}
                       equations={subq.equations || []}
                       onChange={({text, equations}) => {
-                        handleSubquestionChange(subIndex, 'question', text);
-                        handleSubquestionChange(subIndex, 'equations', equations);
+                        const updatedSubquestions = [...(question.subquestions || [])];
+                        updatedSubquestions[subIndex] = { 
+                          ...updatedSubquestions[subIndex], 
+                          question: text,
+                          equations: equations
+                        };
+                        onUpdate({ subquestions: updatedSubquestions });
                       }}
                       placeholder="Enter sub-question text... Use <eq {latex}> or <eq {}> to add equations"
                       multiline={true}
@@ -2228,11 +2228,6 @@ const QuestionCard = ({
                           </div>
                           <div className="space-y-2">
                             {(subq.options || ['', '', '', '']).map((option, optionIndex) => {
-                              // Get equations for this specific option
-                              const optionEquations = (subq.equations || []).filter(
-                                eq => eq.position?.context === 'options'
-                              );
-
                               return (
                                 <div key={optionIndex} className="flex items-center space-x-2">
                                   {subq.allowMultipleCorrect ? (
@@ -2253,12 +2248,19 @@ const QuestionCard = ({
                                   )}
                                   <EditableTextWithEquations 
                                     text={option}
-                                    equations={optionEquations}
+                                    equations={subq.equations || []}
                                     onChange={({text, equations}) => {
                                       const newOptions = [...(subq.options || ['', '', '', ''])];
                                       newOptions[optionIndex] = text;
-                                      handleSubquestionChange(subIndex, 'options', newOptions);
-                                      handleSubquestionChange(subIndex, 'equations', equations);
+                                      
+                                      // Update both options and equations in a single state update
+                                      const updatedSubquestions = [...(question.subquestions || [])];
+                                      updatedSubquestions[subIndex] = { 
+                                        ...updatedSubquestions[subIndex], 
+                                        options: newOptions,
+                                        equations: equations
+                                      };
+                                      onUpdate({ subquestions: updatedSubquestions });
                                     }}
                                     placeholder="Enter option..."
                                     multiline={false}
@@ -2333,8 +2335,13 @@ const QuestionCard = ({
                             text={subq.correctAnswer || ''}
                             equations={subq.equations || []}
                             onChange={({text, equations}) => {
-                              handleSubquestionChange(subIndex, 'correctAnswer', text);
-                              handleSubquestionChange(subIndex, 'equations', equations);
+                              const updatedSubquestions = [...(question.subquestions || [])];
+                              updatedSubquestions[subIndex] = { 
+                                ...updatedSubquestions[subIndex], 
+                                correctAnswer: text,
+                                equations: equations
+                              };
+                              onUpdate({ subquestions: updatedSubquestions });
                             }}
                             placeholder={subq.type === 'numerical' ? 'Correct answer...' : 'Sample answer...'}
                             multiline={true}
@@ -2558,18 +2565,23 @@ const QuestionCard = ({
                                             className="text-teal-500 focus:ring-teal-500"
                                           />
                                         )}
-                                        <textarea
-                                          value={option}
-                                          onChange={(e) => {
+                                        <EditableTextWithEquations 
+                                          text={option}
+                                          equations={subSubq.equations || []}
+                                          onChange={({text, equations}) => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
                                             const newOptions = [...(newSubSubquestions[subSubIndex].options || ['', '', ''])];
-                                            newOptions[optionIndex] = e.target.value;
-                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], options: newOptions };
+                                            newOptions[optionIndex] = text;
+                                            newSubSubquestions[subSubIndex] = { 
+                                              ...newSubSubquestions[subSubIndex], 
+                                              options: newOptions,
+                                              equations: equations
+                                            };
                                             handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                           }}
                                           placeholder={`Option ${optionIndex + 1}`}
-                                          rows={1}
-                                          className="flex-1 px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 text-xs resize-vertical"
+                                          multiline={false}
+                                          className="text-white text-xs"
                                         />
                                         {(subSubq.options || ['', '', '']).length > 2 && (
                                           <button

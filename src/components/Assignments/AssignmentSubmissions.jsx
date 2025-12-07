@@ -796,7 +796,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   <span className="text-gray-300 text-sm">Score</span>
                 </div>
                 <p className="text-white font-medium">
-                  {submission.score ? `${submission.score}/100` : 'Not graded'}
+                  {submission.score ? `${submission.score}/${submission?.assignment?.total_points || '---'}` : 'Not graded'}
                 </p>
               </div>
             </div>

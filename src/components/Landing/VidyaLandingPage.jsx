@@ -230,6 +230,9 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
               <button onClick={() => scrollToSection('subjects')} className="text-gray-600 hover:text-gray-900 transition">
                 Subjects
               </button>
+              <a href="/blog" className="text-gray-600 hover:text-gray-900 transition">
+                Blog
+              </a>
               <button
                 onClick={handleLogin}
                 className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-md"
@@ -262,6 +265,9 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
               <button onClick={() => scrollToSection('subjects')} className="block w-full text-left text-gray-600 hover:text-gray-900 transition py-2">
                 Subjects
               </button>
+              <a href="/blog" className="block w-full text-left text-gray-600 hover:text-gray-900 transition py-2">
+                Blog
+              </a>
               <button
                 onClick={handleLogin}
                 className="w-full px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium shadow-md"
@@ -1174,7 +1180,7 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
               <ul className="space-y-2 text-gray-600 text-sm">
                 <li><button onClick={handleContactSales} className="hover:text-indigo-600 transition">Contact Us</button></li>
                 <li><a href="#" className="hover:text-indigo-600 transition">About</a></li>
-                <li><a href="#" className="hover:text-indigo-600 transition">Blog</a></li>
+                <li><a href="/blog" className="hover:text-indigo-600 transition">Blog</a></li>
               </ul>
             </div>
 

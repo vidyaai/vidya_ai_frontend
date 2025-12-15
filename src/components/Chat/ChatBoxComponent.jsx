@@ -28,8 +28,10 @@ const ChatBoxComponent = ({
   const [sharedHistoryLoading, setSharedHistoryLoading] = useState(false);
   const [sharedHistoryError, setSharedHistoryError] = useState(null);
   const [isLoadingSharedChat, setIsLoadingSharedChat] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null); // { status, progress, message }
   
   const chatContainerRef = useRef(null);
+  const progressPollingRef = useRef(null);
 
   // Helper function to maintain only the last 10 messages
   const addMessageWithHistory = (newMessage, prevMessages) => {
@@ -84,6 +86,85 @@ const ChatBoxComponent = ({
       fetchSharedChatHistory();
     }
   };
+
+  // Function to poll download progress
+  const pollDownloadProgress = async (videoId) => {
+    try {
+      const response = await api.get(`/api/youtube/download-status/${videoId}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      
+      const status = response.data;
+      
+      if (status.status === 'completed') {
+        setDownloadProgress(null);
+        // Stop polling
+        if (progressPollingRef.current) {
+          clearInterval(progressPollingRef.current);
+          progressPollingRef.current = null;
+        }
+      } else if (status.status === 'preparing') {
+        setDownloadProgress({
+          status: 'preparing',
+          progress: 0,
+          message: status.message || '🔄 Preparing video from YouTube...',
+          downloaded_bytes: 0,
+          total_bytes: 0,
+          chunks_received: 0
+        });
+      } else if (status.status === 'buffering') {
+        setDownloadProgress({
+          status: 'buffering',
+          progress: status.percentage || 0,  // Use percentage from API (might be progress from RapidAPI)
+          message: status.message || '⏳ Video is being prepared by YouTube server...',
+          downloaded_bytes: 0,
+          total_bytes: 0,
+          chunks_received: 0,
+          api_status: status.api_status  // Pass through any API status info
+        });
+      } else if (status.status === 'downloading') {
+        setDownloadProgress({
+          status: 'downloading',
+          progress: status.progress || 0,
+          message: status.message || 'Downloading video...',
+          downloaded_bytes: status.downloaded_bytes,
+          total_bytes: status.total_bytes,
+          chunks_received: status.chunks_received || 0
+        });
+      } else if (status.status === 'failed') {
+        setDownloadProgress({ status: 'failed', message: status.message });
+        if (progressPollingRef.current) {
+          clearInterval(progressPollingRef.current);
+          progressPollingRef.current = null;
+        }
+      }
+    } catch (error) {
+      console.error('Error polling download progress:', error);
+    }
+  };
+
+  // Start polling when a download is detected
+  const startDownloadProgressPolling = (videoId) => {
+    // Clear any existing polling interval
+    if (progressPollingRef.current) {
+      clearInterval(progressPollingRef.current);
+    }
+    
+    // Poll immediately, then every 1 second for more responsive updates
+    pollDownloadProgress(videoId);
+    progressPollingRef.current = setInterval(() => {
+      pollDownloadProgress(videoId);
+    }, 1000); // Changed from 2000ms to 1000ms for faster updates
+  };
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (progressPollingRef.current) {
+        clearInterval(progressPollingRef.current);
+      }
+    };
+  }, []);
 
   const handleQuerySubmit = async (e) => {
     e.preventDefault();
@@ -147,6 +228,9 @@ const ChatBoxComponent = ({
         };
         
         setChatMessages(prevMessages => addMessageWithHistory(aiMessage, prevMessages));
+        
+        // Start polling for download progress
+        startDownloadProgressPolling(currentVideo.videoId);
       } else {
         const aiMessage = {
           id: Date.now() + 1,
@@ -495,6 +579,176 @@ const ChatBoxComponent = ({
         </div>
         )}
       </div>
+      
+      {/* Download Progress Bar */}
+      {downloadProgress && (downloadProgress.status === 'preparing' || downloadProgress.status === 'buffering' || downloadProgress.status === 'downloading') && (
+        <div className="px-4 py-4 border-t border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 bg-opacity-90">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                {(downloadProgress.status === 'preparing' || downloadProgress.status === 'buffering') ? (
+                  // Pulsing animation for buffering/preparing
+                  <div className="relative">
+                    <div className="animate-pulse">
+                      <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="absolute inset-0 animate-ping opacity-75">
+                      <svg className="w-5 h-5 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  // Download animation
+                  <>
+                    <div className="animate-spin">
+                      <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </div>
+                    <div className="absolute inset-0 animate-pulse">
+                      <svg className="w-5 h-5 text-indigo-300 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                      </svg>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-white font-medium">
+                  {downloadProgress.message || 'Processing...'}
+                </span>
+                {downloadProgress.status === 'downloading' && downloadProgress.chunks_received > 0 && (
+                  <span className="text-xs text-gray-400 mt-0.5">
+                    Chunks received: {downloadProgress.chunks_received}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-end">
+              {downloadProgress.status === 'downloading' ? (
+                <>
+                  <span className="text-lg text-indigo-400 font-bold">
+                    {downloadProgress.progress || 0}%
+                  </span>
+                  {downloadProgress.downloaded_bytes && downloadProgress.total_bytes && (
+                    <span className="text-xs text-gray-400 mt-0.5">
+                      {(downloadProgress.downloaded_bytes / (1024 * 1024)).toFixed(1)} / {(downloadProgress.total_bytes / (1024 * 1024)).toFixed(1)} MB
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-sm text-yellow-400 font-medium">
+                  {downloadProgress.status === 'preparing' ? (
+                    <span className="animate-pulse">Preparing...</span>
+                  ) : downloadProgress.progress > 0 ? (
+                    // Show buffering percentage if available from RapidAPI
+                    <span>{downloadProgress.progress}%</span>
+                  ) : (
+                    <span className="animate-pulse">Buffering...</span>
+                  )}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          {/* Progress bar with percentage markers */}
+          <div className="relative">
+            <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
+              {downloadProgress.status === 'preparing' ? (
+                // Indeterminate progress bar for preparing
+                <div className="h-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full relative overflow-hidden">
+                  <div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-40"
+                    style={{
+                      animation: 'slide 1.5s ease-in-out infinite',
+                      width: '50%'
+                    }}
+                  ></div>
+                </div>
+              ) : downloadProgress.status === 'buffering' && downloadProgress.progress > 0 ? (
+                // Semi-determinate progress bar for buffering (if RapidAPI provides progress)
+                <div 
+                  className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 h-3 rounded-full transition-all duration-500 ease-out relative"
+                  style={{ width: `${downloadProgress.progress || 0}%` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="h-full w-32 bg-white opacity-20 blur-sm" 
+                         style={{ 
+                           animation: 'slide 1.5s ease-in-out infinite',
+                           width: '50%'
+                         }}></div>
+                  </div>
+                </div>
+              ) : downloadProgress.status === 'buffering' ? (
+                // Indeterminate progress bar for buffering (no progress from API)
+                <div className="h-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full relative overflow-hidden">
+                  <div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-40"
+                    style={{
+                      animation: 'slide 1.5s ease-in-out infinite',
+                      width: '50%'
+                    }}
+                  ></div>
+                </div>
+              ) : (
+                // Determinate progress bar for downloading
+                <div 
+                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500 ease-out relative"
+                  style={{ width: `${downloadProgress.progress || 0}%` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="h-full w-32 bg-white opacity-20 blur-sm animate-[shimmer_2s_infinite]" 
+                         style={{ 
+                           animation: 'shimmer 2s ease-in-out infinite',
+                           transform: 'translateX(-100%)'
+                         }}></div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Percentage markers */}
+            {(downloadProgress.status === 'downloading' || (downloadProgress.status === 'buffering' && downloadProgress.progress > 0)) && (
+              <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
+                <span className={downloadProgress.progress >= 25 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-indigo-400') : ''}>25%</span>
+                <span className={downloadProgress.progress >= 50 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-indigo-400') : ''}>50%</span>
+                <span className={downloadProgress.progress >= 75 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-indigo-400') : ''}>75%</span>
+                <span className={downloadProgress.progress >= 100 ? 'text-green-400' : ''}>100%</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Additional details */}
+          <div className="flex items-center justify-between mt-3 text-xs">
+            <div className="flex items-center gap-4 text-gray-400">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Live updates</span>
+              </div>
+              {downloadProgress.total_bytes > 0 && (
+                <span>
+                  {((downloadProgress.downloaded_bytes / downloadProgress.total_bytes) * 100).toFixed(1)}% complete
+                </span>
+              )}
+            </div>
+            <span className="text-gray-500">
+              Refreshing every second...
+            </span>
+          </div>
+        </div>
+      )}
+      
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+      `}</style>
       
       {!showHistory && (
       <div className="p-4 border-t border-gray-700 bg-gray-800 bg-opacity-50">

@@ -529,6 +529,15 @@ export const assignmentApi = {
     } catch (err) {
       throw new Error(`Failed to generate formats: ${err.message}`);
     }
+  },
+
+  // Download assignment PDF with authentication
+  async downloadAssignmentPDF(assignmentId) {
+    const response = await api.get(`/api/assignments/${assignmentId}/download-pdf`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      responseType: 'blob' // Important for binary data
+    });
+    return response;
   }
 };
 

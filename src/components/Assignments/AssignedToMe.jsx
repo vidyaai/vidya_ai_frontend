@@ -426,25 +426,60 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                     }`}>
                       {assignment.engineering_level === 'graduate' ? 'Graduate' : 'Undergraduate'}
                     </span>
-                    <button
-                      onClick={() => handleDoAssignment(sharedAssignment)}
-                      className={`px-4 py-2 text-white rounded-lg transition-all duration-300 ${
-                        (() => {
-                          const studentStatus = getStudentStatus(assignment);
-                          if (studentStatus.status === 'graded') {
-                            return 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700';
-                          } else if (studentStatus.status === 'submitted') {
-                            return 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700';
-                          } else if (studentStatus.isOverdue || studentStatus.status === 'overdue') {
-                            return 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700';
-                          } else {
-                            return 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700';
-                          }
-                        })()
-                      }`}
-                    >
-                      {getButtonText(assignment)}
-                    </button>
+                    
+                    {/* Check if this is a PDF-format assignment */}
+                    {sharedAssignment.share_format === 'pdf' ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDoAssignment(sharedAssignment)}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg transition-all duration-300"
+                        >
+                          Download Assignment
+                        </button>
+                        <button
+                          onClick={() => handleDoAssignment(sharedAssignment)}
+                          className={`px-4 py-2 text-white rounded-lg transition-all duration-300 ${
+                            (() => {
+                              const studentStatus = getStudentStatus(assignment);
+                              if (studentStatus.status === 'graded') {
+                                return 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700';
+                              } else if (studentStatus.status === 'submitted') {
+                                return 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700';
+                              } else {
+                                return 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700';
+                              }
+                            })()
+                          }`}
+                        >
+                          {(() => {
+                            const studentStatus = getStudentStatus(assignment);
+                            if (studentStatus.status === 'graded') return 'View Results';
+                            if (studentStatus.status === 'submitted') return 'View Submission';
+                            return 'Submit Assignment';
+                          })()}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleDoAssignment(sharedAssignment)}
+                        className={`px-4 py-2 text-white rounded-lg transition-all duration-300 ${
+                          (() => {
+                            const studentStatus = getStudentStatus(assignment);
+                            if (studentStatus.status === 'graded') {
+                              return 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700';
+                            } else if (studentStatus.status === 'submitted') {
+                              return 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700';
+                            } else if (studentStatus.isOverdue || studentStatus.status === 'overdue') {
+                              return 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700';
+                            } else {
+                              return 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700';
+                            }
+                          })()
+                        }`}
+                      >
+                        {getButtonText(assignment)}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

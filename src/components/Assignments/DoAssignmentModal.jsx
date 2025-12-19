@@ -1,6 +1,7 @@
 // src/components/Assignments/DoAssignmentModal.jsx
 import { useState, useEffect, memo, useCallback } from 'react';
 import { 
+  Brain,
   X, 
   Save, 
   Upload, 
@@ -9,6 +10,7 @@ import {
   AlertCircle,
   FileText,
   Download,
+  Loader2,
   Image as ImageIcon
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
@@ -95,6 +97,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submission, setSubmission] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
@@ -102,6 +105,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfUploading, setPdfUploading] = useState(false);
   const [selectedParts, setSelectedParts] = useState({}); // Track which optional parts are selected
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [assignmentQuestions, setAssignmentQuestions] = useState([]);
 
   const actualAssignment = assignment.assignment || assignment;
   
@@ -114,9 +119,21 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     loadExistingSubmission();
   }, []);
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const loadExistingSubmission = async () => {
     try {
       const submission = await assignmentApi.getMySubmission(actualAssignment.id);
+      if (!submission) return;
+      setSubmission(submission);
       if (submission && submission.answers) {
         setAnswers(submission.answers);
         setSubmissionMethod(submission.submission_method || 'in-app');
@@ -1644,6 +1661,525 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }
   };
 
+  const handleDownloadPDF = async (submission) => {
+    try {
+      setPdfLoading(true);
+      
+      // Get the first file from submitted_files (PDF submissions typically have one file)
+      const fileInfo = submission.submitted_files?.[0];
+      if (!fileInfo || !fileInfo.file_id) {
+        alert('No PDF file found in this submission.');
+        return;
+      }
+
+      // Get presigned URL from backend
+      const response = await assignmentApi.getSubmissionFileUrl(
+        actualAssignment.id,
+        submission.id,
+        fileInfo.file_id
+      );
+
+      // Open PDF in new tab
+      window.open(response.url, '_blank');
+
+    } catch (error) {
+      console.error('Failed to open PDF:', error);
+      alert('Failed to open PDF. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const loadAssignmentQuestions = async () => {
+    try {
+      // If assignment is already passed with questions, use them
+      if (assignment?.questions && assignment.questions.length > 0) {
+        setAssignmentQuestions(assignment.questions);
+      } else {
+        // Otherwise fetch the full assignment data
+        const assignmentData = await assignmentApi.getAssignment(assignment.id);
+        setAssignmentQuestions(assignmentData.questions || []);
+      }
+    } catch (err) {
+      console.error('Failed to load assignment questions:', err);
+      setAssignmentQuestions([]);
+    }
+  };
+
+  const getQuestionById = (questionId) => {
+    loadAssignmentQuestions();
+    // First try to find by exact ID match
+    let question = assignmentQuestions.find(q => q.id === parseInt(questionId) || q.id === questionId);
+    
+    // If not found, try to find by order/index (1-based)
+    if (!question) {
+      const questionIndex = parseInt(questionId) - 1;
+      question = assignmentQuestions[questionIndex];
+    }
+    
+    return question;
+  };
+
+  // Helper function to format question display
+  const getQuestionNumber = (questionId) => {
+    const question = getQuestionById(questionId);
+    if (question) {
+      // Use the question's order if available, otherwise use index + 1
+      return question.order || (assignmentQuestions.indexOf(question) + 1);
+    }
+    return questionId; // fallback to original ID
+  };
+
+  // Helper function to render sub-question answer based on its type
+  const renderSubQuestionAnswer = (subQuestion, subAnswer) => {
+    if (!subQuestion) {
+      return (
+        <div className="bg-gray-800 rounded p-3">
+          <p className="text-gray-300">{typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}</p>
+        </div>
+      );
+    }
+
+    switch (subQuestion.type) {
+      case 'multiple_choice':
+      case 'multiple-choice':
+        return (
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <p className="text-teal-300 font-medium text-sm">Selected: {subAnswer}</p>
+            </div>
+            {subQuestion.options && (
+              <div className="bg-gray-900 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Available options:</p>
+                <div className="space-y-1">
+                  {subQuestion.options.map((option, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-xs p-2 rounded ${
+                        option === subAnswer 
+                          ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
+                          : 'text-gray-400 bg-gray-800'
+                      }`}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'code_writing':
+      case 'code-writing':
+        return (
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-gray-400 text-xs">Code Answer:</p>
+                <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400">
+                  {subQuestion.code_language || 'code'}
+                </span>
+              </div>
+              <pre className="text-gray-200 text-xs overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-2 rounded">
+                {subAnswer}
+              </pre>
+            </div>
+            {subQuestion.subCode && (
+              <div className="bg-gray-900 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
+                <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
+                  {subQuestion.subCode}
+                </pre>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'true_false':
+        return (
+          <div className="bg-gray-800 rounded p-3">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              subAnswer === 'true' || subAnswer === true 
+                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                : 'bg-red-500/20 text-red-300 border border-red-500/30'
+            }`}>
+              {subAnswer === 'true' || subAnswer === true ? 'True' : 'False'}
+            </span>
+          </div>
+        );
+
+      case 'fill-blank':
+      case 'fill_blank':
+        return (
+          <div className="bg-gray-800 rounded p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
+                FILL IN THE BLANK
+              </span>
+            </div>
+            <div className="bg-gray-900 rounded p-3">
+              <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
+              <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
+                "{subAnswer}"
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'multi_part':
+      case 'multi-part':
+        // Recursively render nested multi-part questions
+        return (
+          <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
+            {renderMultiPartAnswer(subQuestion, subAnswer)}
+          </div>
+        );
+
+      default:
+        return (
+          <div className="bg-gray-800 rounded p-3">
+            <p className="text-gray-200 text-sm whitespace-pre-wrap">
+              {typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}
+            </p>
+          </div>
+        );
+    }
+  };
+
+  // Helper function to parse nested subAnswers structure
+  const parseMultiPartAnswer = (answer) => {
+    if (typeof answer === 'string') {
+      try {
+        answer = JSON.parse(answer);
+      } catch (e) {
+        return answer;
+      }
+    }
+
+    // Handle the nested subAnswers format: {"subAnswers": {"id": {"subAnswers": {"nestedId": "value"}}}}
+    if (answer && typeof answer === 'object' && answer.subAnswers) {
+      const result = {};
+      
+      const processSubAnswers = (subAnswers, prefix = '') => {
+        if (!subAnswers || typeof subAnswers !== 'object') return;
+        
+        Object.entries(subAnswers).forEach(([key, value]) => {
+          if (value && typeof value === 'object' && value.subAnswers) {
+            // This is a nested structure, process recursively
+            processSubAnswers(value.subAnswers, key);
+          } else {
+            // This is a final answer value
+            const finalKey = prefix ? `${prefix}.${key}` : key;
+            result[finalKey] = value;
+          }
+        });
+      };
+
+      processSubAnswers(answer.subAnswers);
+      return result;
+    }
+
+    return answer;
+  };
+
+  // Helper function to get nested answer for multi-part sub-questions
+  const getNestedAnswer = (answer, subQuestionId) => {
+    if (typeof answer === 'string') {
+      try {
+        answer = JSON.parse(answer);
+      } catch (e) {
+        return undefined;
+      }
+    }
+
+    // If answer has subAnswers structure, look for the specific sub-question
+    if (answer && typeof answer === 'object' && answer.subAnswers) {
+      const subAnswer = answer.subAnswers[subQuestionId];
+      return subAnswer;
+    }
+
+    return undefined;
+  };
+
+  // Helper function to find sub-question by various ID formats
+  const findSubQuestionById = (subquestions, targetId) => {
+    if (!subquestions || !Array.isArray(subquestions)) return null;
+    
+    // Convert targetId to string for comparison
+    const targetIdStr = String(targetId);
+    
+    // Try exact match first
+    let found = subquestions.find(sq => String(sq.id) === targetIdStr);
+    if (found) return { question: found, index: subquestions.indexOf(found) };
+    
+    // Try to find by index if targetId looks like a number
+    const targetIndex = parseInt(targetId) - 1;
+    if (targetIndex >= 0 && targetIndex < subquestions.length) {
+      return { question: subquestions[targetIndex], index: targetIndex };
+    }
+    
+    // For nested IDs (like "parentId.childId"), try to find the parent first
+    if (targetIdStr.includes('.')) {
+      const [parentId, childId] = targetIdStr.split('.');
+      const parent = subquestions.find(sq => String(sq.id) === parentId);
+      if (parent && parent.subquestions) {
+        const child = findSubQuestionById(parent.subquestions, childId);
+        if (child) {
+          return {
+            question: child.question,
+            index: child.index,
+            parent: parent,
+            parentIndex: subquestions.indexOf(parent)
+          };
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  // Comprehensive multi-part question renderer
+  const renderMultiPartAnswer = (question, answer) => {
+    if (!question || !question.subquestions) {
+      return (
+        <div className="bg-gray-700 rounded p-3">
+          <p className="text-white">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
+        </div>
+      );
+    }
+
+    // Parse the answer structure
+    const parsedAnswers = parseMultiPartAnswer(answer);
+    
+    return (
+      <div className="space-y-4">
+        {/* Main question code/diagram if present */}
+        {question.hasMainCode && question.mainCode && (
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+            <div className="flex items-center space-x-2 mb-3">
+              <span className="text-xs bg-blue-600 px-2 py-1 rounded text-blue-100">
+                MAIN CODE
+              </span>
+              <span className="text-xs text-gray-400">
+                {question.mainCodeLanguage || 'code'}
+              </span>
+            </div>
+            <pre className="text-gray-200 text-sm overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-3 rounded">
+              {question.mainCode}
+            </pre>
+          </div>
+        )}
+
+        {question.hasMainDiagram && question.mainDiagram && (
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+            <div className="flex items-center space-x-2 mb-3">
+              <span className="text-xs bg-purple-600 px-2 py-1 rounded text-purple-100">
+                MAIN DIAGRAM
+              </span>
+            </div>
+            <div className="bg-gray-900 p-3 rounded">
+              <p className="text-gray-300 text-sm">Diagram: {JSON.stringify(question.mainDiagram)}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Sub-questions and answers */}
+        <div className="space-y-4">
+          {question.subquestions.map((subQuestion, index) => {
+            let subAnswer;
+
+            // For multi-part sub-questions, try to get the nested structure
+            if (subQuestion.type === 'multi-part' || subQuestion.type === 'multi_part') {
+              subAnswer = getNestedAnswer(answer, subQuestion.id) || 
+                         getNestedAnswer(answer, String(subQuestion.id)) ||
+                         getNestedAnswer(answer, index + 1) ||
+                         getNestedAnswer(answer, index);
+            }
+            
+            // If not found or not multi-part, use the flattened approach
+            if (subAnswer === undefined) {
+              subAnswer = parsedAnswers[subQuestion.id] || 
+                         parsedAnswers[index + 1] || 
+                         parsedAnswers[index] ||
+                         parsedAnswers[String(subQuestion.id)];
+            }
+            
+            // If still not found, search through all parsed answers
+            if (subAnswer === undefined) {
+              const answerKeys = Object.keys(parsedAnswers);
+              const matchingKey = answerKeys.find(key => {
+                // Try to match timestamp-like IDs or nested IDs
+                return key.includes(String(subQuestion.id)) || 
+                       String(subQuestion.id).includes(key);
+              });
+              if (matchingKey) {
+                subAnswer = parsedAnswers[matchingKey];
+              }
+            }
+            
+            const partNumber = index + 1;
+            
+            return (
+              <div key={subQuestion.id || index} className="bg-gray-700 rounded-lg p-4 border-l-4 border-teal-500">
+                {/* Sub-question header */}
+                <div className="mb-3">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="bg-teal-600 text-white px-2 py-1 rounded text-sm font-medium">
+                      Part {partNumber}
+                    </span>
+                    <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                      {subQuestion.type?.replace('_', ' ')}
+                    </span>
+                    {subQuestion.points && (
+                      <span className="text-gray-400 text-xs">
+                        {subQuestion.points} pts
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Sub-question text */}
+                  <div className="bg-gray-600 rounded p-3">
+                    <p className="text-gray-100 font-medium text-sm">{subQuestion.question}</p>
+                  </div>
+
+                  {/* Sub-question code if present */}
+                  {subQuestion.hasSubCode && subQuestion.subCode && (
+                    <div className="mt-2 bg-gray-800 rounded p-3">
+                      <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
+                      <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
+                        {subQuestion.subCode}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Sub-question diagram if present */}
+                  {subQuestion.hasDiagram && subQuestion.subDiagram && (
+                    <div className="mt-2 bg-gray-800 rounded p-3">
+                      <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                      <p className="text-gray-300 text-xs">{JSON.stringify(subQuestion.subDiagram)}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-question answer */}
+                <div>
+                  <p className="text-gray-300 font-medium text-sm mb-2">Answer:</p>
+                  {subAnswer !== undefined ? (
+                    renderSubQuestionAnswer(subQuestion, subAnswer)
+                  ) : (
+                    <div className="bg-gray-800 rounded p-3">
+                      <p className="text-gray-500 text-sm italic">No answer provided</p>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Helper function to render answer based on question type
+  const renderAnswer = (question, answer) => {
+    if (!question) {
+      return (
+        <div className="bg-gray-700 rounded p-3">
+          <p className="text-gray-300">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
+        </div>
+      );
+    }
+
+    switch (question.type) {
+      case 'multiple_choice':
+      case 'multiple-choice':
+        return (
+          <div className="space-y-3">
+            <div className="bg-gray-700 rounded p-3">
+              <p className="text-gray-300 font-medium">Selected Answer:</p>
+              <p className="text-white mt-1">{answer}</p>
+            </div>
+            {question.options && (
+              <div className="bg-gray-800 rounded p-3 border border-gray-600">
+                <p className="text-gray-400 text-sm mb-2">Available Options:</p>
+                <ul className="space-y-1">
+                  {question.options.map((option, index) => (
+                    <li 
+                      key={index} 
+                      className={`text-sm p-2 rounded ${
+                        option === answer 
+                          ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      {option}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'code_writing':
+      case 'code-writing':
+        return (
+          <div className="space-y-3">
+            <div className="bg-gray-700 rounded p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-gray-300 font-medium">Code Answer:</p>
+                <span className="text-xs bg-gray-600 px-2 py-1 rounded text-gray-300">
+                  {question.code_language || 'code'}
+                </span>
+              </div>
+              <pre className="text-white text-sm overflow-x-auto whitespace-pre-wrap font-mono">
+                {answer}
+              </pre>
+            </div>
+          </div>
+        );
+
+      case 'multi_part':
+      case 'multi-part':
+        return renderMultiPartAnswer(question, answer);
+
+      default:
+        // For short_answer, long_answer, true_false, and other types
+        return (
+          <div className="bg-gray-700 rounded p-3">
+            <p className="text-white whitespace-pre-wrap">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
+          </div>
+        );
+    }
+  };
+
+  // Helper function to render answer with diagrams
+  const renderAnswerWithDiagram = (answer) => {
+    const answerText = typeof answer === 'string' ? answer : (answer?.text || '');
+    const diagram = typeof answer === 'object' ? answer?.diagram : null;
+    
+    return (
+      <div className="space-y-3">
+        {answerText && (
+          <div className="bg-gray-700 rounded p-3">
+            <p className="text-white whitespace-pre-wrap">{answerText}</p>
+          </div>
+        )}
+        {diagram && diagram.s3_key && (
+          <div className="bg-gray-800 p-3 rounded border border-gray-700">
+            <div className="flex items-center space-x-2 mb-2">
+              <ImageIcon size={16} className="text-teal-400" />
+              <span className="text-sm text-gray-300">Attached Diagram</span>
+            </div>
+            <DiagramImage diagramData={diagram} displayName={diagram.filename || 'Student diagram'} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (submitted) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1705,7 +2241,272 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">
-          {submissionMethod === 'in-app' ? (
+          {isGraded ? (<>
+            <div className="h-full overflow-y-auto p-6 space-y-6">
+            {/* Grading Results - Show if graded */}
+            {submission.status === 'graded' && submission.feedback && (
+              <div className="mb-6 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl p-6 border border-green-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <CheckCircle size={24} className="text-green-400 mr-2" />
+                    Grading Results
+                  </h3>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-green-400">
+                      {submission.score && submission.percentage ? `${submission.percentage}%` : submission.score || 'N/A'}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {submission.score ? `${submission.score} points` : ''}
+                    </div>
+                  </div>
+                </div>
+                
+                {submission.overall_feedback && (
+                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                    <p className="text-gray-300 font-medium mb-2">Overall Feedback:</p>
+                    <p className="text-gray-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
+                  </div>
+                )}
+                
+                <div className="text-sm text-gray-400">
+                  Graded at: {submission.graded_at ? formatDate(submission.graded_at) : 'N/A'}
+                </div>
+              </div>
+            )}
+
+            {/* Submission Content */}
+            {submission.submission_method === 'in-app' || !submission.submission_method ? (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-white">Questions & Answers</h3>
+                {submission.answers && typeof submission.answers === 'object' ? 
+                  Object.entries(submission.answers).map(([questionId, answer]) => {
+                    const question = getQuestionById(questionId);
+                    const questionNumber = getQuestionNumber(questionId);
+                    const questionFeedback = submission.feedback?.[questionId];
+                    
+                    return (
+                      <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        {/* Question Header */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Question {questionNumber}
+                              </span>
+                              {question?.type && (
+                                <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                                  {question.type.replace('_', ' ')}
+                                </span>
+                              )}
+                              {question?.points && (
+                                <span className="text-gray-400 text-sm">
+                                  {question.points} {question.points === 1 ? 'point' : 'points'}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Show score for this question if available */}
+                            {questionFeedback && (
+                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                <span className="text-green-400 font-bold">
+                                  {questionFeedback.score || 0}/{questionFeedback.max_points || question?.points || 0}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Optional Parts Indicator */}
+                          {question?.type === 'multi-part' && question?.optionalParts && (
+                            <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                              <div className="flex items-center space-x-2 text-sm">
+                                <span className="text-blue-300 font-medium">Optional Parts:</span>
+                                <span className="text-gray-300">
+                                  Student answered {answer?.subAnswers ? Object.keys(answer.subAnswers).filter(k => answer.subAnswers[k]).length : 0} of {question.requiredPartsCount} required parts
+                                  {question.subquestions ? ` (${question.subquestions.length} total)` : ''}
+                                </span>
+                              </div>
+                              {answer?.subAnswers && (
+                                <div className="mt-2 text-xs text-blue-200">
+                                  Answered parts: {Object.keys(answer.subAnswers)
+                                    .filter(k => answer.subAnswers[k])
+                                    .map(id => {
+                                      const subq = question.subquestions?.find(sq => String(sq.id) === String(id));
+                                      return subq ? `Part ${question.subquestions.indexOf(subq) + 1}` : id;
+                                    })
+                                    .join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Question Text */}
+                          {question?.question && (
+                            <div className="bg-gray-700 rounded-lg p-4 mb-4">
+                              <p className="text-white font-medium mb-2">Question:</p>
+                              <p className="text-gray-200 whitespace-pre-wrap">{question.question}</p>
+                              
+                              {/* Additional question content for specific types */}
+                              {question.type === 'code_writing' && question.starter_code && (
+                                <div className="mt-3">
+                                  <p className="text-gray-400 text-sm mb-2">Starter Code:</p>
+                                  <pre className="bg-gray-800 p-3 rounded text-sm text-gray-300 overflow-x-auto">
+                                    {question.starter_code}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Answer Section */}
+                        <div className="mb-4">
+                          <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
+                          {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
+                            ? renderAnswerWithDiagram(answer)
+                            : renderAnswer(question, answer)
+                          }
+                        </div>
+                        
+                        {/* Question Feedback */}
+                        {questionFeedback && (
+                          <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                            <p className="text-green-400 font-medium mb-3 flex items-center">
+                              <Brain size={16} className="mr-2" />
+                              AI Feedback
+                            </p>
+                            
+                            {questionFeedback.breakdown && (
+                              <div className="mb-3">
+                                <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
+                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                              </div>
+                            )}
+                            
+                            {questionFeedback.strengths && (
+                              <div className="mb-3">
+                                <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
+                                <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                              </div>
+                            )}
+                            
+                            {questionFeedback.areas_for_improvement && (
+                              <div>
+                                <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
+                                <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }) :
+                  <p className="text-gray-400">No answers available</p>
+                }
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* PDF Submission Header */}
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText size={40} className="text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
+                  <p className="text-gray-400 mb-6">
+                    This student submitted their answers as a PDF file.
+                  </p>
+                  <button 
+                    onClick={() => handleDownloadPDF(submission)}
+                    disabled={pdfLoading}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {pdfLoading ? (
+                      <>
+                        <Loader2 size={18} className="mr-2 animate-spin" />
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download size={18} className="mr-2" />
+                        Download PDF
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* PDF Feedback by Question */}
+                {submission.feedback && Object.keys(submission.feedback).length > 0 && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-bold text-white flex items-center">
+                      <Brain size={24} className="text-green-400 mr-2" />
+                      Question-by-Question Feedback
+                    </h3>
+                    
+                    {Object.entries(submission.feedback)
+                      .sort(([a], [b]) => {
+                        // Sort questions numerically, handling decimal formats like 1.1, 1.2
+                        const aNum = parseFloat(a);
+                        const bNum = parseFloat(b);
+                        return aNum - bNum;
+                      })
+                      .map(([questionId, feedback]) => (
+                        <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                          {/* Question Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Question {questionId}
+                              </span>
+                              {/* Optional Part Indicator for sub-questions */}
+                              {questionId.includes('.') && (
+                                <span className="text-blue-400 text-xs bg-blue-900/20 px-2 py-1 rounded">
+                                  Selected Part
+                                </span>
+                              )}
+                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                <span className="text-green-400 font-bold">
+                                  {feedback.score || 0}/{feedback.max_points || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Feedback Content */}
+                          <div className="space-y-4">
+                            {feedback.breakdown && (
+                              <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
+                                <p className="text-gray-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
+                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
+                              </div>
+                            )}
+                            
+                            {feedback.strengths && (
+                              <div className="bg-green-900/20 rounded-lg p-4 border border-green-500/30">
+                                <p className="text-green-400 text-sm mb-2 font-medium flex items-center">
+                                  <CheckCircle size={16} className="mr-2" />
+                                  Strengths:
+                                </p>
+                                <p className="text-gray-200 text-sm">{feedback.strengths}</p>
+                              </div>
+                            )}
+                            
+                            {feedback.areas_for_improvement && feedback.areas_for_improvement !== "None." && (
+                              <div className="bg-orange-900/20 rounded-lg p-4 border border-orange-500/30">
+                                <p className="text-orange-400 text-sm mb-2 font-medium flex items-center">
+                                  <AlertCircle size={16} className="mr-2" />
+                                  Areas for Improvement:
+                                </p>
+                                <p className="text-gray-200 text-sm">{feedback.areas_for_improvement}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+            </div>
+          </>) : (<>{submissionMethod === 'in-app' ? (
             <div className="h-full flex">
               {/* Questions List */}
               <div className="w-80 bg-gray-800 border-r border-gray-700 overflow-y-auto">
@@ -1836,7 +2637,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 </div>
               </div>
             </div>
-          )}
+          )}</>)}
         </div>
 
         {/* Footer */}
@@ -1861,7 +2662,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             <div className="text-sm text-gray-400">
               {isAlreadySubmitted ? (
-                <span className="text-green-400 font-medium">{isGraded ? '✓ Assignment graded - viewing submission' : '✓ Assignment submitted - viewing submission'}</span>
+                <span className="text-green-400 font-medium">{isGraded ? '✓ Assignment graded - viewing feedback' : '✓ Assignment submitted - viewing submission'}</span>
               ) : (
                 <>
                   {Object.keys(answers).length} of {questions.length} questions answered

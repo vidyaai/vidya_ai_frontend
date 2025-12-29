@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthForm from './components/Login/AuthForm';
-import VidyaLandingPage from './components/Landing/VidyaLandingPage';
+import VidyaLandingPageNew from './components/Landing/VidyaLandingPageNew';
 import HomePage from './components/HomePage/HomePage';
 import ImprovedYoutubePlayer from './components/Chat/ImprovedYouTubePlayer';
 import Gallery from './components/Gallery/Gallery';
@@ -262,7 +262,7 @@ const AppContent = () => {
     switch (currentPage) {
       case 'landing':
         return (
-          <VidyaLandingPage 
+          <VidyaLandingPageNew 
             onLogin={handleNavigateToLogin}
             onNavigateToLoginWithTarget={handleNavigateToLoginWithTarget}
           />
@@ -377,7 +377,7 @@ const AppContent = () => {
         );
       default:
         return (
-          <VidyaLandingPage 
+          <VidyaLandingPageNew 
             onLogin={handleNavigateToLogin}
             onNavigateToLoginWithTarget={handleNavigateToLoginWithTarget}
           />

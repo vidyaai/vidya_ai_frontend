@@ -342,6 +342,9 @@ const VidyaLandingPageNew = ({ onLogin, onNavigateToLoginWithTarget }) => {
                 <button onClick={() => scrollToSection('solution')} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Solution
                 </button>
+                <a href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                  Pricing
+                </a>
                 <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Blog
                 </a>
@@ -373,6 +376,9 @@ const VidyaLandingPageNew = ({ onLogin, onNavigateToLoginWithTarget }) => {
                   <button onClick={() => scrollToSection('solution')} className="text-sm text-gray-600 hover:text-gray-900 text-left">
                     Solution
                   </button>
+                  <a href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 text-left">
+                    Pricing
+                  </a>
                   <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 text-left">
                     Blog
                   </a>
@@ -422,7 +428,7 @@ const VidyaLandingPageNew = ({ onLogin, onNavigateToLoginWithTarget }) => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
               <a 
-                href="https://www.youtube.com/embed/SXjOwcvcjRU"
+                href="https://www.youtube.com/watch?v=SXjOwcvcjRU"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition flex items-center gap-2"

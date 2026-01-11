@@ -42,6 +42,40 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Response interceptor to handle 429 errors with better messaging
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 429) {
+      const detail = error.response.data?.detail;
+      
+      if (detail && typeof detail === 'object') {
+        // Use the formatted message from the backend
+        const message = detail.message || 'Daily limit reached. Please upgrade or try again later.';
+        const timeUntilReset = detail.time_until_reset;
+        const resetTime = detail.reset_time_utc;
+        
+        // Create a user-friendly error message
+        let friendlyMessage = message;
+        if (timeUntilReset && resetTime) {
+          friendlyMessage = `${message}`;
+        }
+        
+        // Replace the error message
+        error.message = friendlyMessage;
+        
+        // Also add to response data for components that check it
+        error.response.data.friendlyMessage = friendlyMessage;
+      } else if (typeof detail === 'string') {
+        error.message = detail;
+      } else {
+        error.message = 'Daily limit reached. Please upgrade to Plus or Pro to continue.';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const saveToLocalStorage = (key, data) => {
   try {
     localStorage.setItem(key, JSON.stringify(data));

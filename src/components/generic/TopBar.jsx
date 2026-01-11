@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Menu, X, Settings, CreditCard, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { API_URL } from './utils';
 
 const TopBar = ({ onNavigateToHome }) => {
   const { currentUser, logout } = useAuth();
@@ -9,6 +10,7 @@ const TopBar = ({ onNavigateToHome }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -38,7 +40,7 @@ const TopBar = ({ onNavigateToHome }) => {
       console.log('Got Firebase token, making API call...');
       console.log('Firebase Token:', token);
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/subscription/status`, {
+      const response = await fetch(`${API_URL}/api/payments/subscription/status`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -64,7 +66,13 @@ const TopBar = ({ onNavigateToHome }) => {
     }
   };
 
-  // Fetch subscription when dropdown opens
+  // Fetch subscription when component mounts and when dropdown opens
+  useEffect(() => {
+    if (currentUser) {
+      fetchSubscription();
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (isUserDropdownOpen && currentUser) {
       fetchSubscription();
@@ -80,23 +88,12 @@ const TopBar = ({ onNavigateToHome }) => {
   };
 
   const handleCancelSubscription = async () => {
-    // Show confirmation dialog
-    const isConfirmed = window.confirm(
-      "Are you sure you want to cancel your subscription?\n\n" +
-      "Your subscription will remain active until the end of your current billing period. " +
-      "You will continue to have access to all premium features until then."
-    );
-
-    if (!isConfirmed) {
-      return; // User cancelled the confirmation
-    }
-
     setLoading(true);
     try {
       const token = await currentUser.getIdToken();
       console.log('Attempting to cancel subscription...');
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/cancel-subscription`, {
+      const response = await fetch(`${API_URL}/api/payments/cancel-subscription`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -112,7 +109,8 @@ const TopBar = ({ onNavigateToHome }) => {
         console.log('Cancel subscription result:', result);
         
         await fetchSubscription(); // Refresh subscription data
-        alert('✅ Subscription has been cancelled successfully!\n\nYour subscription will remain active until the end of your current billing period.');
+        setShowCancelModal(false);
+        alert('✅ Subscription cancelled successfully!\n\nYour subscription will remain active until the end of your current billing period.');
       } else {
         const errorText = await response.text();
         console.error('Cancel subscription failed:', response.status, errorText);
@@ -160,6 +158,11 @@ const TopBar = ({ onNavigateToHome }) => {
                       src={currentUser.photoURL} 
                       alt="Profile" 
                       className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                      }}
+                      referrerPolicy="no-referrer"
                     />
                   ) : (
                     <User size={20} className="text-white" />
@@ -170,7 +173,7 @@ const TopBar = ({ onNavigateToHome }) => {
                     {currentUser?.displayName || 'User'}
                   </p>
                   <p className="text-gray-400 text-xs truncate">
-                    {currentUser?.email}
+                    {subscription?.plan_name || 'Free Plan'}
                   </p>
                 </div>
                 <svg
@@ -196,6 +199,11 @@ const TopBar = ({ onNavigateToHome }) => {
                             src={currentUser.photoURL} 
                             alt="Profile" 
                             className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                            }}
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <User size={24} className="text-white" />
@@ -214,38 +222,48 @@ const TopBar = ({ onNavigateToHome }) => {
 
                   <div className="p-2">
                     {/* Subscription Status */}
-                    {subscription && (
-                      <div className="px-3 py-2 mb-2 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {subscription.plan_name || 'Current Plan'}
-                            </p>
-                            <p className="text-xs text-gray-500 capitalize">
-                              Status: {subscription.status} • {subscription.billing_period}
-                            </p>
-                            {/* Debug info - remove after testing */}
-                            <p className="text-xs text-red-500">
-                              Debug: cancel_at_period_end={String(subscription.cancel_at_period_end)}
-                            </p>
-                          </div>
-                          <div className={`px-2 py-1 rounded text-xs font-medium ${
-                            subscription.status === 'active' 
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {subscription.status}
-                          </div>
+                    <div className="px-3 py-2 mb-2 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {subscription?.plan_name || 'Free Plan'}
+                          </p>
+                          {subscription && subscription.plan_name !== 'Free' && (
+                            <>
+                              <p className="text-xs text-gray-500 capitalize">
+                                Status: {subscription.cancel_at_period_end ? 'cancelled' : subscription.status} • {subscription.billing_period}
+                              </p>
+                              {subscription.current_period_end && (
+                                <p className="text-xs text-gray-500">
+                                  {subscription.cancel_at_period_end 
+                                    ? `Active until: ${new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                                    : `Renews: ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                                  }
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${
+                          subscription?.cancel_at_period_end
+                            ? 'bg-orange-100 text-orange-800'
+                            : subscription?.status === 'active' 
+                            ? 'bg-green-100 text-green-800'
+                            : subscription?.status
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {subscription?.cancel_at_period_end ? 'cancelling' : subscription?.status || 'free'}
                         </div>
                       </div>
-                    )}
-
-                    {/* Show subscription info even if null for debugging */}
-                    {!subscription && (
-                      <div className="px-3 py-2 mb-2 bg-red-50 rounded-lg">
-                        <p className="text-xs text-red-600">Debug: No subscription data found</p>
-                      </div>
-                    )}
+                      
+                      {/* Cancellation Notice */}
+                      {subscription?.cancel_at_period_end && subscription.current_period_end && (
+                        <div className="mt-2 px-2 py-1.5 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                          ⚠️ Subscription cancelled. Plan active until {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Subscription Management Options */}
                     <div className="space-y-1">
@@ -257,38 +275,19 @@ const TopBar = ({ onNavigateToHome }) => {
                         Change Subscription
                       </button>
 
-                      {/* More relaxed conditions for cancel button - show if any subscription exists */}
-                      {(() => {
-                        const shouldShow = subscription && subscription.status !== 'cancelled' && !subscription?.cancel_at_period_end;
-                        console.log('Cancel button conditions:', {
-                          hasSubscription: !!subscription,
-                          status: subscription?.status,
-                          notCancelled: subscription?.status !== 'cancelled',
-                          notCancelAtPeriodEnd: !subscription?.cancel_at_period_end,
-                          shouldShow
-                        });
-                        return shouldShow;
-                      })() && (
+                      {/* Show cancel button for paid active subscriptions not already marked for cancellation */}
+                      {subscription && 
+                       subscription.plan_name !== 'Free' && 
+                       subscription.status === 'active' && 
+                       !subscription.cancel_at_period_end && (
                         <button
-                          onClick={handleCancelSubscription}
+                          onClick={() => setShowCancelModal(true)}
                           disabled={loading}
                           className="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
                         >
                           <XCircle size={16} className="mr-3" />
-                          {loading ? 'Cancelling...' : 'Cancel Subscription'}
+                          Cancel Subscription
                         </button>
-                      )}
-
-                      {subscription?.cancel_at_period_end && (
-                        <div className="px-3 py-2 text-sm text-orange-600 bg-orange-50 rounded-lg">
-                          <div className="flex items-center">
-                            <XCircle size={16} className="mr-2" />
-                            {subscription.current_period_end ? 
-                              `Subscription will end on ${new Date(subscription.current_period_end).toLocaleDateString()}` :
-                              'Subscription has been cancelled'
-                            }
-                          </div>
-                        </div>
                       )}
 
                       <div className="border-t border-gray-100 mt-2 pt-2">
@@ -331,6 +330,11 @@ const TopBar = ({ onNavigateToHome }) => {
                     src={currentUser.photoURL} 
                     alt="Profile" 
                     className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                    }}
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <User size={24} className="text-white" />
@@ -377,14 +381,14 @@ const TopBar = ({ onNavigateToHome }) => {
                   </button>
 
                   {subscription?.status === 'active' && !subscription?.cancel_at_period_end && (
-                    <button
-                      onClick={handleCancelSubscription}
-                      disabled={loading}
-                      className="w-full flex items-center px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-gray-700 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                    >
-                      <XCircle size={16} className="mr-3" />
-                      {loading ? 'Cancelling...' : 'Cancel Subscription'}
-                    </button>
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    disabled={loading}
+                    className="w-full flex items-center px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-gray-700 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  >
+                    <XCircle size={16} className="mr-3" />
+                    Cancel Subscription
+                  </button>
                   )}
                 </div>
               </div>
@@ -400,6 +404,39 @@ const TopBar = ({ onNavigateToHome }) => {
           </div>
         )}
       </div>
+
+      {/* Cancellation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Cancel plan</h2>
+              <p className="text-gray-700 mb-6">
+                Cancel to stop recurring billing. You can still use {subscription?.plan_name || 'Vidya AI Plus'} until{' '}
+                {subscription?.current_period_end 
+                  ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'the end of your billing period'}.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={loading}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                >
+                  Go back
+                </button>
+                <button
+                  onClick={handleCancelSubscription}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:bg-red-400"
+                >
+                  {loading ? 'Cancelling...' : 'Cancel plan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

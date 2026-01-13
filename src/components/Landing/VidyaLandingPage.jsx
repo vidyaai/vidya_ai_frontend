@@ -28,6 +28,8 @@ import {
 import emailjs from '@emailjs/browser';
 
 const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
+  console.log('🚀 VidyaLandingPage UPDATED VERSION with University Logos and NVIDIA/AWS - Loaded at', new Date().toLocaleTimeString());
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -1015,6 +1017,106 @@ const VidyaLandingPage = ({ onLogin, onNavigateToLoginWithTarget }) => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* Trusted By Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden border-4 border-green-500">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-4">
+            🎓 Trusted By Professors from:
+          </h2>
+          <p className="text-center text-green-600 font-bold mb-8">✅ NEW SECTION - If you see this, the update worked!</p>
+
+          <div className="relative">
+            <div className="flex gap-12 animate-scroll items-center justify-center flex-wrap md:flex-nowrap">
+              <a
+                href="https://www.utdallas.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/images/utd.png"
+                  alt="UT Dallas"
+                  className="h-12 w-auto object-contain"
+                />
+              </a>
+              <a
+                href="https://www.uhcl.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/images/uhcl.png"
+                  alt="UHCL"
+                  className="h-12 w-auto object-contain"
+                />
+              </a>
+              <a
+                href="https://www.sjsu.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/images/sjsu.png"
+                  alt="SJSU"
+                  className="h-12 w-auto object-contain"
+                />
+              </a>
+              <a
+                href="https://www.troy.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/images/troy.jpg"
+                  alt="Troy University"
+                  className="h-12 w-auto object-contain"
+                />
+              </a>
+              <a
+                href="https://www.scu.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/images/scu.png"
+                  alt="Santa Clara University"
+                  className="h-12 w-auto object-contain"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Backed By Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">
+            Backed By
+          </h2>
+          <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
+            <div className="flex items-center justify-center">
+              <img
+                src="/images/nvidia.png"
+                alt="NVIDIA"
+                className="h-12 w-auto object-contain hover:opacity-80 transition-opacity"
+              />
+            </div>
+            <div className="flex items-center justify-center">
+              <img
+                src="/images/aws.png"
+                alt="AWS"
+                className="h-12 w-auto object-contain hover:opacity-80 transition-opacity"
+              />
+            </div>
           </div>
         </div>
       </section>

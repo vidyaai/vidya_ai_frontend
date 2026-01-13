@@ -1,6 +1,6 @@
 'use client'
 
-import VidyaLandingPage from '@/components/Landing/VidyaLandingPage'
+import VidyaLandingPageNew from '@/components/Landing/VidyaLandingPageNew'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useEffect } from 'react'
@@ -42,7 +42,7 @@ export default function LandingPageWrapper() {
   }
 
   return (
-    <VidyaLandingPage
+    <VidyaLandingPageNew
       onLogin={handleLogin}
       onNavigateToLoginWithTarget={handleNavigateToLoginWithTarget}
     />

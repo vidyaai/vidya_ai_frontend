@@ -60,16 +60,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       }
     } catch (err) {
       console.error('Error loading shared assignment data:', err);
-      // If 404, it means no shared link exists yet - this is fine for a new share
-      if (err.response?.status === 404) {
-        // Keep current shareFormat state, just set URLs
-        setFormatUrls({
-          pdf: assignmentApi.getPDFDownloadURL(assignment.id),
-          googleForm: null
-        });
-      } else {
-        setError('Failed to load sharing information');
-      }
+      setError('Failed to load sharing information');
     } finally {
       setLoading(false);
     }
@@ -225,26 +216,19 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
 
   const handleUpdateShareFormat = async (newFormat) => {
     console.log('handleUpdateShareFormat called with format:', newFormat);
-    
-    // First, update local state immediately for better UX
-    setShareFormat(newFormat);
-    
     try {
       const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
       console.log('Existing shared data:', sharedData);
       
       if (sharedData && sharedData.id) {
-        // Get current shared user IDs from the shared_accesses array
-        const currentSharedUserIds = (sharedData.shared_accesses || []).map(access => access.user_id);
-        console.log('Extracted user IDs from shared_accesses:', currentSharedUserIds);
-        // Get permission from first shared access (they should all be the same)
-        const currentPermission = sharedData.shared_accesses?.[0]?.permission || 'complete';
+        // Get current shared user IDs from the shared data
+        const currentSharedUserIds = sharedData.shared_with || [];
         
         // Prepare complete update data matching ShareAssignmentRequest schema
         const updateData = {
           assignment_id: assignment.id,
           shared_with_user_ids: currentSharedUserIds,
-          permission: currentPermission,
+          permission: sharedData.permission || 'complete',
           share_format: newFormat,
           title: sharedData.title,
           description: sharedData.description,
@@ -255,6 +239,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
         console.log('Updating share format with data:', updateData);
 
         const updatedSharedData = await assignmentApi.updateSharedAssignment(assignment.id, sharedData.id, updateData);
+        setShareFormat(newFormat);
         
         // Update format URLs if Google Form was created
         if (newFormat === 'google_forms' && updatedSharedData.google_resource_url) {
@@ -264,22 +249,16 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
           }));
         }
         
-        console.log('Share format updated successfully on server');
+        await loadSharedAssignmentData();
       } else {
-        // No shared link exists yet - format will be used when sharing
-        console.log('No existing shared link, format will be used when sharing');
+        // Just update local state if no shared link exists yet
+        console.log('No existing shared link, updating local state to:', newFormat);
+        setShareFormat(newFormat);
       }
     } catch (err) {
       console.error('Error updating share format:', err);
-      // If no shared link exists yet (404), that's fine - we already updated local state
-      if (err.response?.status === 404) {
-        console.log('No shared link yet, format will be used when sharing');
-      } else {
-        // For other errors, revert the local state and show error
-        console.error('Error details:', err.response?.data);
-        setShareFormat(shareFormat); // Revert to previous value
-        alert(`Failed to update share format: ${err.response?.data?.detail || err.message}`);
-      }
+      console.error('Error details:', err.response?.data);
+      alert(`Failed to update share format: ${err.response?.data?.detail || err.message}`);
     }
   };
 

@@ -4,6 +4,7 @@ import { assignmentApi } from './assignmentApi';
 
 const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [shareFormat, setShareFormat] = useState('html_form'); // 'pdf', 'html_form', or 'google_forms'
+  const [isPublic, setIsPublic] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -34,6 +35,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       if (sharedData) {
         setShareLink(sharedData.share_link || '');
         setShareFormat(sharedData.share_format || 'html_form');
+        setIsPublic(sharedData.is_public || false);
         
         // Set format URLs from shared data
         setFormatUrls({
@@ -153,7 +155,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
         shared_with_user_ids: userIds,
         share_format: shareFormat,
         permission: 'complete', // Fixed permission for students
-        is_public: false // Always private for individual student sharing
+        is_public: isPublic
       };
 
       console.log('Sharing with data:', shareData);
@@ -232,7 +234,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
           share_format: newFormat,
           title: sharedData.title,
           description: sharedData.description,
-          is_public: sharedData.is_public || false,
+          is_public: isPublic,
           expires_at: sharedData.expires_at
         };
 
@@ -373,19 +375,36 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                 </div>
               </div>
 
-              {/* Privacy Settings - Always Private */}
+              {/* Privacy Settings */}
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-gray-300">Privacy Settings</h3>
-                <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-gray-700 rounded-lg">
-                      <Lock className="text-gray-400" size={18} />
+                <div className="space-y-3">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="privacy"
+                      checked={isPublic}
+                      onChange={() => setIsPublic(true)}
+                      className="mr-3 accent-teal-500"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Globe size={16} className="text-green-400" />
+                      <span className="text-white">Public - Anyone with the link can access</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">Private</div>
-                      <div className="text-sm text-gray-400">Only invited students can access</div>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="privacy"
+                      checked={!isPublic}
+                      onChange={() => setIsPublic(false)}
+                      className="mr-3 accent-teal-500"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Lock size={16} className="text-yellow-400" />
+                      <span className="text-white">Private - Only invited students can access</span>
                     </div>
-                  </div>
+                  </label>
                 </div>
               </div>
 

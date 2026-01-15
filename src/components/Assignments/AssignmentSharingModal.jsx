@@ -10,6 +10,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [sharedUsers, setSharedUsers] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,29 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       setError('Failed to load sharing information');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      setIsDownloadingPDF(true);
+      const blobUrl = await assignmentApi.generateAssignmentPDF(assignment.id);
+      
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${assignment.title || 'assignment'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      setError('Failed to download PDF. Please try again.');
+    } finally {
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -306,15 +330,18 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                           <div className="text-sm text-gray-400">Professional formatted assignment</div>
                         </div>
                       </div>
-                      <a
-                        href={formatUrls.pdf}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+                      <button
+                        onClick={handleDownloadPDF}
+                        disabled={isDownloadingPDF}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
                       >
-                        <LinkIcon size={16} />
-                        <span>Download PDF</span>
-                      </a>
+                        {isDownloadingPDF ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <LinkIcon size={16} />
+                        )}
+                        <span>{isDownloadingPDF ? 'Downloading...' : 'Download PDF'}</span>
+                      </button>
                     </div>
                   </div>
 

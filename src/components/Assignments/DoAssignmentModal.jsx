@@ -1661,34 +1661,34 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }
   };
 
-  const handleDownloadPDF = async (submission) => {
-    try {
-      setPdfLoading(true);
+//   const handleDownloadPDF = async (submission) => {
+//     try {
+//       setPdfLoading(true);
       
-      // Get the first file from submitted_files (PDF submissions typically have one file)
-      const fileInfo = submission.submitted_files?.[0];
-      if (!fileInfo || !fileInfo.file_id) {
-        alert('No PDF file found in this submission.');
-        return;
-      }
+//       // Get the first file from submitted_files (PDF submissions typically have one file)
+//       const fileInfo = submission.submitted_files?.[0];
+//       if (!fileInfo || !fileInfo.file_id) {
+//         alert('No PDF file found in this submission.');
+//         return;
+//       }
 
-      // Get presigned URL from backend
-      const response = await assignmentApi.getSubmissionFileUrl(
-        actualAssignment.id,
-        submission.id,
-        fileInfo.file_id
-      );
+//       // Get presigned URL from backend
+//       const response = await assignmentApi.getSubmissionFileUrl(
+//         actualAssignment.id,
+//         submission.id,
+//         fileInfo.file_id
+//       );
 
-      // Open PDF in new tab
-      window.open(response.url, '_blank');
+//       // Open PDF in new tab
+//       window.open(response.url, '_blank');
 
-    } catch (error) {
-      console.error('Failed to open PDF:', error);
-      alert('Failed to open PDF. Please try again.');
-    } finally {
-      setPdfLoading(false);
-    }
-  };
+//     } catch (error) {
+//       console.error('Failed to open PDF:', error);
+//       alert('Failed to open PDF. Please try again.');
+//     } finally {
+//       setPdfLoading(false);
+//     }
+//   };
 
   const loadAssignmentQuestions = async () => {
     try {

@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Menu, X, Settings, CreditCard, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { API_URL } from './utils';
 
 const TopBar = ({ onNavigateToHome }) => {
   const { currentUser, logout } = useAuth();
@@ -38,7 +39,7 @@ const TopBar = ({ onNavigateToHome }) => {
       console.log('Got Firebase token, making API call...');
       console.log('Firebase Token:', token);
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/subscription/status`, {
+      const response = await fetch(`${API_URL}/api/payments/subscription/status`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ const TopBar = ({ onNavigateToHome }) => {
       const token = await currentUser.getIdToken();
       console.log('Attempting to cancel subscription...');
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/cancel-subscription`, {
+      const response = await fetch(`${API_URL}/api/payments/cancel-subscription`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

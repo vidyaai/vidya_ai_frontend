@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 import { TextWithEquations, EquationList } from './EquationRenderer';
-import { API_URL } from '../generic/utils';
 
 // Component for handling diagram images with URL fetching
 const DiagramImage = memo(({ diagramData, displayName }) => {
@@ -93,12 +92,8 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
 DiagramImage.displayName = 'DiagramImage';
 
 const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
-  // Get the actual assignment object (could be nested or at root)
-  const actualAssignment = assignment?.assignment || assignment;
-  
-  // Initialize state variables first (before any early returns)
   const [answers, setAnswers] = useState({});
-  const [submissionMethod, setSubmissionMethod] = useState('in-app');
+  const [submissionMethod, setSubmissionMethod] = useState('in-app'); // 'in-app' or 'pdf'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -112,345 +107,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [selectedParts, setSelectedParts] = useState({}); // Track which optional parts are selected
   const [pdfLoading, setPdfLoading] = useState(false);
   const [assignmentQuestions, setAssignmentQuestions] = useState([]);
-  
-  // Check submission status on component mount
-  useEffect(() => {
-    const checkSubmissionStatus = async () => {
-      try {
-        const status = await assignmentApi.getAssignmentStatus(actualAssignment.id);
-        if (status.status === 'submitted' || status.status === 'graded') {
-          setIsAlreadySubmitted(true);
-          setSubmitted(true);
-        }
-        if (status.status === 'graded') {
-          setIsGraded(true);
-        }
-      } catch (error) {
-        console.error('Error checking submission status:', error);
-      }
-    };
-    
-    checkSubmissionStatus();
-  }, [actualAssignment.id]);
-  
-  // Check if this assignment is shared with a non-HTML format
-  console.log('DoAssignmentModal received assignment:', assignment);
-  console.log('Checking share_format:', assignment?.share_format);
-  console.log('Checking nested share_format:', assignment?.assignment?.share_format);
-  
-  const shareFormat = assignment?.share_format || assignment?.assignment?.share_format || 'html_form';
-  const googleResourceUrl = assignment?.google_resource_url || assignment?.assignment?.google_resource_url;
-  
-  console.log('Final shareFormat:', shareFormat);
-  console.log('Final googleResourceUrl:', googleResourceUrl);
-  
-  // Function to download PDF with authentication
-  const handleDownloadPDF = async () => {
-    try {
-      const response = await assignmentApi.downloadAssignmentPDF(actualAssignment.id);
-      
-      // Create a blob from the response
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      
-      // Create a temporary link and trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${actualAssignment.title || 'assignment'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF. Please try again.');
-    }
-  };
-  
-  // Handle PDF file selection
-  const handlePdfFileChange = (event) => {
-    if (isAlreadySubmitted) {
-      return;
-    }
-    const file = event.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      setPdfFile(file);
-    } else {
-      alert('Please select a valid PDF file');
-    }
-  };
 
-  // Handle assignment submission
-  const handleSubmit = async () => {
-    try {
-      setIsSubmitting(true);
-      
-      let submissionData = {
-        answers,
-        submission_method: 'pdf',
-        time_spent: "0",
-        submitted_files: null
-      };
-
-      // Handle PDF submission
-      if (!pdfFile) {
-        alert('Please upload a PDF file first');
-        setIsSubmitting(false);
-        return;
-      }
-
-      await assignmentApi.submitAssignment(
-        actualAssignment.id,
-        submissionData,
-        pdfFile
-      );
-      
-      setSubmitted(true);
-      setIsAlreadySubmitted(true);
-      
-      // Notify parent component to refresh assignment status
-      if (onAssignmentUpdate) {
-        onAssignmentUpdate();
-      }
-    } catch (error) {
-      console.error('Failed to submit assignment:', error);
-      alert('Failed to submit assignment. Please try again.');
-      setIsSubmitting(false);
-    }
-  };
+  const actualAssignment = assignment.assignment || assignment;
   
-  // If shared as PDF or Google Forms, show a redirect message instead
-  if (shareFormat === 'pdf') {
-    console.log('Rendering PDF assignment view');
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between z-10">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1">{actualAssignment.title}</h2>
-              <p className="text-gray-400 text-sm">PDF Assignment</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <X size={24} className="text-gray-400" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="p-6 space-y-6">
-            {/* Assignment Info */}
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Questions:</span>
-                  <span className="ml-2 text-white font-medium">{actualAssignment.total_questions}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Total Points:</span>
-                  <span className="ml-2 text-white font-medium">{actualAssignment.total_points}</span>
-                </div>
-                {actualAssignment.due_date && (
-                  <div className="col-span-2">
-                    <span className="text-gray-400">Due Date:</span>
-                    <span className="ml-2 text-white font-medium">
-                      {new Date(actualAssignment.due_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Download Section */}
-            <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700">
-              <div className="flex items-start">
-                <div className="w-12 h-12 bg-blue-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileText size={24} className="text-blue-400" />
-                </div>
-                <div className="ml-4 flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2">Step 1: Download Assignment</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Download the PDF assignment, complete it, and upload your solution below.
-                  </p>
-                  <button
-                    onClick={handleDownloadPDF}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors inline-flex items-center"
-                  >
-                    <Download size={16} className="mr-2" />
-                    Download Assignment PDF
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Upload Section */}
-            <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700">
-              <div className="flex items-start">
-                <div className="w-12 h-12 bg-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Upload size={24} className="text-purple-400" />
-                </div>
-                <div className="ml-4 flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2">Step 2: Upload Your Solution</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Upload a PDF containing your answers. Your submission will be automatically processed and graded.
-                  </p>
-                  
-                  <div className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                    isAlreadySubmitted 
-                      ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed' 
-                      : 'border-gray-700 hover:border-gray-600'
-                  }`}>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      className="hidden"
-                      id="pdf-upload-shared"
-                      onChange={handlePdfFileChange}
-                      disabled={isAlreadySubmitted}
-                    />
-                    {isAlreadySubmitted ? (
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <CheckCircle size={24} className="text-green-400" />
-                        </div>
-                        <p className="text-green-400 font-medium mb-1">Assignment Submitted</p>
-                        <p className="text-gray-400 text-sm">
-                          Your solution has been uploaded and is being processed for grading.
-                        </p>
-                      </div>
-                    ) : pdfFile ? (
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <p className="text-green-400 font-medium mb-1">✓ PDF Selected</p>
-                        <p className="text-gray-300 text-sm mb-3">{pdfFile.name}</p>
-                        <button
-                          onClick={() => setPdfFile(null)}
-                          className="text-red-400 hover:text-red-300 text-sm"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <label
-                        htmlFor="pdf-upload-shared"
-                        className="cursor-pointer flex flex-col items-center"
-                      >
-                        <Upload size={28} className="text-gray-400 mb-2" />
-                        <p className="text-white font-medium mb-1">Click to upload your solution PDF</p>
-                        <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Submission Status */}
-            {isAlreadySubmitted && (
-              <div className="bg-green-900/10 border border-green-500/30 rounded-lg p-4">
-                <div className="flex items-center">
-                  <CheckCircle size={20} className="text-green-400 mr-3" />
-                  <div>
-                    <p className="text-green-400 font-medium">Submission Received</p>
-                    <p className="text-gray-400 text-sm">Your assignment has been submitted successfully.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-6">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={onClose}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                Close
-              </button>
-              
-              {!isAlreadySubmitted && (
-                <button
-                  onClick={handleSubmit}
-                  disabled={!pdfFile || isSubmitting}
-                  className={`px-6 py-2 rounded-lg transition-colors font-medium ${
-                    !pdfFile || isSubmitting
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 text-white'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={16} className="inline mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={16} className="inline mr-2" />
-                      Submit Assignment
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (shareFormat === 'google_forms' && googleResourceUrl) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl max-w-lg w-full p-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
-                <path d="M14 2v6h6"/>
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Assignment Shared as Google Form</h3>
-            <p className="text-gray-400 mb-6">
-              This assignment has been shared via Google Forms. Please click below to open and complete the form.
-            </p>
-            <div className="flex space-x-3 justify-center">
-              <a
-                href={googleResourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
-                </svg>
-                Open Google Form
-              </a>
-              <button
-                onClick={onClose}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Continue with HTML form rendering for html_form format
-  // (State variables are already declared at the top of the component)
-
-  // Use the actualAssignment we already determined above
   const questions = actualAssignment.questions && actualAssignment.questions.length > 0 
     ? actualAssignment.questions 
     : [];
@@ -839,7 +498,69 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     }
   };
 
-  // handlePdfFileChange and handleSubmit are already defined at the top of the component
+  const handlePdfFileChange = (event) => {
+    // Prevent file changes if assignment is already submitted
+    if (isAlreadySubmitted) {
+      return;
+    }
+    
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+    } else {
+      alert('Please select a valid PDF file');
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      let submissionData = {
+        answers,
+        submission_method: submissionMethod,
+        time_spent: "0", // Could track actual time spent
+        submitted_files: null
+      };
+
+      // Handle PDF submission
+      if (submissionMethod === 'pdf') {
+        if (!pdfFile) {
+          alert('Please upload a PDF file first');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Build minimal payload; backend will extract answers from PDF
+        setPdfUploading(true);
+        try {
+          submissionData = {
+            answers: {},
+            submission_method: 'pdf',
+            time_spent: "0",
+          };
+        } finally {
+          setPdfUploading(false);
+        }
+      }
+
+      await assignmentApi.submitAssignment(
+        actualAssignment.id,
+        submissionData,
+        submissionMethod === 'pdf' ? pdfFile : null
+      );
+      setSubmitted(true);
+      
+      // Notify parent component to refresh assignment status
+      if (onAssignmentUpdate) {
+        onAssignmentUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to submit assignment:', error);
+      alert('Failed to submit assignment. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
 
   const renderQuestion = (question, index) => {
     const currentAnswer = answers[question.id] || '';

@@ -1,3 +1,5 @@
+# VidyaAI Robots.txt - AI-Based Grading Platform & Learning Assistant
+
 # Allow all bots to crawl
 User-agent: *
 Allow: /
@@ -8,5 +10,25 @@ Disallow: /chat?
 Disallow: /login
 Disallow: /shared/
 
+# Allow Googlebot and Bingbot specifically for key pages
+User-agent: Googlebot
+Allow: /
+Allow: /home
+Allow: /pricing
+Allow: /blog
+Allow: /assignments
+Allow: /gallery
+
+User-agent: Bingbot
+Allow: /
+Allow: /home
+Allow: /pricing
+Allow: /blog
+Allow: /assignments
+Allow: /gallery
+
 # Sitemap
 Sitemap: https://vidyaai.co/sitemap.xml
+
+# Crawl-delay for courtesy
+Crawl-delay: 1

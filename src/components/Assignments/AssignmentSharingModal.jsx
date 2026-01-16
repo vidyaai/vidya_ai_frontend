@@ -54,23 +54,52 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
         setShareLinkData(sharedData);
         
         // Load user details for existing shared users
-        // Extract user IDs from shared_accesses array
-        const sharedUserIds = sharedData.shared_accesses?.map(access => access.user_id) || [];
+        // Separate registered users (Firebase UIDs) from pending users (email-based)
+        const sharedAccesses = sharedData.shared_accesses || [];
+        const registeredUserIds = sharedAccesses
+          .filter(access => !access.user_id.startsWith('pending_'))
+          .map(access => access.user_id);
+        const pendingAccesses = sharedAccesses.filter(access => access.user_id.startsWith('pending_'));
+        
         console.log('sharedData:', sharedData);
-        console.log('sharedUserIds:', sharedUserIds);
-        if (sharedUserIds.length > 0) {
+        console.log('registeredUserIds:', registeredUserIds);
+        console.log('pendingAccesses:', pendingAccesses);
+        
+        let users = [];
+        
+        // Fetch registered user details from Firebase
+        if (registeredUserIds.length > 0) {
           try {
-            const userDetails = await assignmentApi.getUsersByIds(sharedUserIds);
-            // Handle both array response and {users: [...]} response
-            const users = Array.isArray(userDetails) ? userDetails : (userDetails.users || []);
-            setExistingUsers(users);
+            const userDetails = await assignmentApi.getUsersByIds(registeredUserIds);
+            const fetchedUsers = Array.isArray(userDetails) ? userDetails : (userDetails.users || []);
+            // Add email from shared_accesses if available
+            users = fetchedUsers.map(user => {
+              const access = sharedAccesses.find(a => a.user_id === user.uid);
+              return {
+                ...user,
+                email: user.email || access?.email
+              };
+            });
           } catch (err) {
             console.error('Error loading user details:', err);
-            setExistingUsers([]);
           }
-        } else {
-          setExistingUsers([]);
         }
+        
+        // Add pending users (not yet registered) directly from shared_accesses
+        const pendingUsers = pendingAccesses.map(access => {
+          // Extract email from user_id (format: pending_{email}) if email field is not set
+          const emailFromUserId = access.user_id.startsWith('pending_') 
+            ? access.user_id.substring('pending_'.length) 
+            : null;
+          return {
+            uid: access.user_id,
+            email: access.email || emailFromUserId,
+            displayName: null,
+            isPending: true
+          };
+        });
+        
+        setExistingUsers([...users, ...pendingUsers]);
       }
       
       setFormatUrls({ pdf: pdfUrl, googleForm: googleFormUrl });
@@ -197,8 +226,9 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       
       if (response.id) setExistingLinkId(response.id);
       
-      // Move selected users to existing users
-      setExistingUsers(prev => [...prev, ...selectedUsers.filter(u => !u.isPending)]);
+      // Move all selected users (including pending) to existing users
+      // Pending users are now invited, so they should appear in the invited count
+      setExistingUsers(prev => [...prev, ...selectedUsers]);
       setSelectedUsers([]);
       
       if (onRefresh) onRefresh();
@@ -434,9 +464,10 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                     <label className="block text-sm font-medium text-gray-400 mb-2">Currently Invited ({existingUsers.length})</label>
                     <div className="flex flex-wrap gap-2">
                       {existingUsers.map(user => (
-                        <div key={user.uid} className="flex items-center gap-2 bg-gray-600 text-white px-3 py-1 rounded-full text-sm">
+                        <div key={user.uid} className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${user.isPending ? 'bg-yellow-600/20 border border-yellow-500/50 text-yellow-300' : 'bg-gray-600 text-white'}`}>
                           <span>{user.displayName || user.email}</span>
-                          <button onClick={() => handleRemoveExistingUser(user.uid)} className="text-gray-300 hover:text-white" title="Remove"><X size={14} /></button>
+                          {user.isPending && <span className="text-xs opacity-75">(pending)</span>}
+                          <button onClick={() => handleRemoveExistingUser(user.uid)} className={user.isPending ? 'text-yellow-200 hover:text-white' : 'text-gray-300 hover:text-white'} title="Remove"><X size={14} /></button>
                         </div>
                       ))}
                     </div>
@@ -561,7 +592,11 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                 {!shareLinkData.is_public && existingUsers.length > 0 && (
                   <div>
                     <span className="text-gray-400">Invited Students:</span>
-                    <div className="mt-1 space-y-1">{existingUsers.map(user => <div key={user.uid} className="text-white text-xs">{user.displayName || user.email}</div>)}</div>
+                    <div className="mt-1 space-y-1">{existingUsers.map(user => (
+                      <div key={user.uid} className={`text-xs ${user.isPending ? 'text-yellow-300' : 'text-white'}`}>
+                        {user.displayName || user.email}{user.isPending && ' (pending)'}
+                      </div>
+                    ))}</div>
                   </div>
                 )}
               </div>

@@ -13,7 +13,8 @@ import {
   FileText,
   Loader2,
   Download,
-  Globe
+  Globe,
+  Eye
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import AssignmentBuilder from './AssignmentBuilder';
@@ -357,7 +358,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
             {assignments.map((assignment) => (
               <div
                 key={assignment.id}
-                className="bg-gray-900 rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg"
+                className="bg-gray-900 rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg flex flex-col"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -375,7 +376,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4">
+                <div className="space-y-2 mb-4 flex-1">
                   <div className="flex items-center text-sm text-gray-400">
                     <Calendar size={16} className="mr-2" />
                     <span>Created: {new Date(assignment.created_at).toLocaleDateString()}</span>
@@ -410,7 +411,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-700 mt-auto">
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleEditAssignment(assignment)}
@@ -444,36 +445,35 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                   </div>
                   {/* Only show View Submissions and Download PDF buttons for published assignments */}
                   {assignment.status === 'published' && (
-                    <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleViewSubmissions(assignment)}
-                        className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded transition-colors"
+                        className="p-2 bg-teal-600 hover:bg-teal-700 text-white rounded transition-colors"
+                        title="View Submissions"
                       >
-                        View Submissions
+                        <Eye size={16} />
                       </button>
                       <button
                         onClick={() => handleDownloadPDF(assignment)}
                         disabled={downloadingPDF === assignment.id}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Download assignment as PDF"
                       >
                         {downloadingPDF === assignment.id ? (
-                          <Loader2 size={14} className="mr-1 animate-spin" />
+                          <Loader2 size={16} className="animate-spin" />
                         ) : (
-                          <Download size={14} className="mr-1" />
+                          <Download size={16} />
                         )}
-                        {downloadingPDF === assignment.id ? 'Generating...' : 'Download PDF'}
                       </button>
                       
                       {/* Google Form Link */}
                       {googleFormLinks[assignment.id] && (
                         <button
                           onClick={() => window.open(googleFormLinks[assignment.id], '_blank')}
-                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center justify-center"
+                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
                           title="Open Google Form"
                         >
-                          <Globe size={14} className="mr-1" />
-                          Google Form
+                          <Globe size={16} />
                         </button>
                       )}
                     </div>

@@ -3,7 +3,6 @@ import { X, Search, Users, Lock, Copy, Check, Loader2, Mail, FileText, Link as L
 import { assignmentApi } from './assignmentApi';
 
 const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
-  const [shareFormat, setShareFormat] = useState('html_form'); // 'pdf', 'html_form', or 'google_forms'
   const [isPublic, setIsPublic] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -12,6 +11,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+  const [isGeneratingGoogleForm, setIsGeneratingGoogleForm] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,16 +32,15 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       
       const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
       
+      // Set PDF URL (always available)
+      const pdfUrl = assignmentApi.getPDFDownloadURL(assignment.id);
+      
+      // Get Google Form URL from assignment data or generate if needed
+      let googleFormUrl = assignment.google_form_url || assignment.google_form_response_url || null;
+      
       if (sharedData) {
         setShareLink(sharedData.share_link || '');
-        setShareFormat(sharedData.share_format || 'html_form');
         setIsPublic(sharedData.is_public || false);
-        
-        // Set format URLs from shared data
-        setFormatUrls({
-          pdf: assignmentApi.getPDFDownloadURL(assignment.id),
-          googleForm: sharedData.google_resource_url || null
-        });
         
         // Load user details for shared users
         if (sharedData.shared_with && sharedData.shared_with.length > 0) {
@@ -53,18 +52,46 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
             setSharedUsers([]);
           }
         }
-      } else {
-        // No shared data exists, but we can still provide PDF download
-        setFormatUrls({
-          pdf: assignmentApi.getPDFDownloadURL(assignment.id),
-          googleForm: null
-        });
+      }
+      
+      // Set format URLs
+      setFormatUrls({
+        pdf: pdfUrl,
+        googleForm: googleFormUrl
+      });
+      
+      // Auto-generate Google Form if not present (in background)
+      if (!googleFormUrl) {
+        generateGoogleFormInBackground();
       }
     } catch (err) {
       console.error('Error loading shared assignment data:', err);
       setError('Failed to load sharing information');
+      // Still set PDF URL even if other data fails
+      setFormatUrls({
+        pdf: assignmentApi.getPDFDownloadURL(assignment.id),
+        googleForm: null
+      });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const generateGoogleFormInBackground = async () => {
+    try {
+      setIsGeneratingGoogleForm(true);
+      const result = await assignmentApi.generateGoogleForm(assignment.id);
+      if (result && result.google_resource_url) {
+        setFormatUrls(prev => ({
+          ...prev,
+          googleForm: result.google_resource_url
+        }));
+      }
+    } catch (err) {
+      console.error('Error generating Google Form:', err);
+      // Silently fail - user can still use PDF
+    } finally {
+      setIsGeneratingGoogleForm(false);
     }
   };
 
@@ -153,7 +180,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       const shareData = {
         assignment_id: assignment.id,
         shared_with_user_ids: userIds,
-        share_format: shareFormat,
         permission: 'complete', // Fixed permission for students
         is_public: isPublic
       };
@@ -213,54 +239,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       } catch (err) {
         console.error('Failed to copy:', err);
       }
-    }
-  };
-
-  const handleUpdateShareFormat = async (newFormat) => {
-    console.log('handleUpdateShareFormat called with format:', newFormat);
-    try {
-      const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
-      console.log('Existing shared data:', sharedData);
-      
-      if (sharedData && sharedData.id) {
-        // Get current shared user IDs from the shared data
-        const currentSharedUserIds = sharedData.shared_with || [];
-        
-        // Prepare complete update data matching ShareAssignmentRequest schema
-        const updateData = {
-          assignment_id: assignment.id,
-          shared_with_user_ids: currentSharedUserIds,
-          permission: sharedData.permission || 'complete',
-          share_format: newFormat,
-          title: sharedData.title,
-          description: sharedData.description,
-          is_public: isPublic,
-          expires_at: sharedData.expires_at
-        };
-
-        console.log('Updating share format with data:', updateData);
-
-        const updatedSharedData = await assignmentApi.updateSharedAssignment(assignment.id, sharedData.id, updateData);
-        setShareFormat(newFormat);
-        
-        // Update format URLs if Google Form was created
-        if (newFormat === 'google_forms' && updatedSharedData.google_resource_url) {
-          setFormatUrls(prev => ({
-            ...prev,
-            googleForm: updatedSharedData.google_resource_url
-          }));
-        }
-        
-        await loadSharedAssignmentData();
-      } else {
-        // Just update local state if no shared link exists yet
-        console.log('No existing shared link, updating local state to:', newFormat);
-        setShareFormat(newFormat);
-      }
-    } catch (err) {
-      console.error('Error updating share format:', err);
-      console.error('Error details:', err.response?.data);
-      alert(`Failed to update share format: ${err.response?.data?.detail || err.message}`);
     }
   };
 
@@ -348,18 +326,23 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                   </div>
 
                   {/* Google Forms Link */}
-                  {formatUrls.googleForm && (
-                    <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-green-500/10 rounded-lg">
-                            <Globe className="text-green-400" size={18} />
-                          </div>
-                          <div>
-                            <div className="font-medium text-white">Google Form</div>
-                            <div className="text-sm text-gray-400">Interactive online form</div>
-                          </div>
+                  <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-green-500/10 rounded-lg">
+                          <Globe className="text-green-400" size={18} />
                         </div>
+                        <div>
+                          <div className="font-medium text-white">Google Form</div>
+                          <div className="text-sm text-gray-400">Interactive online form</div>
+                        </div>
+                      </div>
+                      {isGeneratingGoogleForm ? (
+                        <div className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg flex items-center space-x-2 text-sm">
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Generating...</span>
+                        </div>
+                      ) : formatUrls.googleForm ? (
                         <a
                           href={formatUrls.googleForm}
                           target="_blank"
@@ -369,9 +352,17 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                           <LinkIcon size={16} />
                           <span>Open Form</span>
                         </a>
-                      </div>
+                      ) : (
+                        <button
+                          onClick={generateGoogleFormInBackground}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+                        >
+                          <Globe size={16} />
+                          <span>Generate Form</span>
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -405,83 +396,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                       <span className="text-white">Private - Only invited students can access</span>
                     </div>
                   </label>
-                </div>
-              </div>
-
-              {/* Share Format Selection */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-300">
-                  Share As:
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    onClick={() => handleUpdateShareFormat('html_form')}
-                    className={`flex items-center space-x-3 p-4 rounded-lg border transition-all ${
-                      shareFormat === 'html_form'
-                        ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      shareFormat === 'html_form' ? 'border-teal-500' : 'border-gray-600'
-                    }`}>
-                      {shareFormat === 'html_form' && (
-                        <div className="w-3 h-3 rounded-full bg-teal-500" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="font-medium text-white">
-                        HTML Form {shareFormat === 'html_form' && '(Current Format)'}
-                      </div>
-                      <div className="text-sm text-gray-400">Interactive online form with instant validation</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => handleUpdateShareFormat('pdf')}
-                    className={`flex items-center space-x-3 p-4 rounded-lg border transition-all ${
-                      shareFormat === 'pdf'
-                        ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      shareFormat === 'pdf' ? 'border-teal-500' : 'border-gray-600'
-                    }`}>
-                      {shareFormat === 'pdf' && (
-                        <div className="w-3 h-3 rounded-full bg-teal-500" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="font-medium text-white">
-                        PDF {shareFormat === 'pdf' && '(Current Format)'}
-                      </div>
-                      <div className="text-sm text-gray-400">Downloadable PDF document for offline work</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => handleUpdateShareFormat('google_forms')}
-                    className={`flex items-center space-x-3 p-4 rounded-lg border transition-all ${
-                      shareFormat === 'google_forms'
-                        ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      shareFormat === 'google_forms' ? 'border-teal-500' : 'border-gray-600'
-                    }`}>
-                      {shareFormat === 'google_forms' && (
-                        <div className="w-3 h-3 rounded-full bg-teal-500" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="font-medium text-white">
-                        Google Forms {shareFormat === 'google_forms' && '(Current Format)'}
-                      </div>
-                      <div className="text-sm text-gray-400">Export to Google Forms for easy distribution</div>
-                    </div>
-                  </button>
                 </div>
               </div>
 

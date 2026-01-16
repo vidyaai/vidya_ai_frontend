@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignmentManager.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ClipboardList, 
   UserCheck, 
@@ -13,6 +13,23 @@ import AssignedToMe from './AssignedToMe';
 
 const AssignmentManager = ({ onNavigateToHome }) => {
   const [currentView, setCurrentView] = useState('main');
+
+  // Handle URL query parameter for direct navigation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const view = urlParams.get('view');
+      if (view === 'assigned-to-me') {
+        setCurrentView('assigned-to-me');
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (view === 'my-assignments') {
+        setCurrentView('my-assignments');
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []);
 
   const handleNavigateToMyAssignments = () => {
     setCurrentView('my-assignments');

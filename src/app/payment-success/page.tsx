@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { auth } from '@/firebase/config';
 
 const API_URL = 'http://localhost:8000';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
@@ -154,5 +154,29 @@ export default function PaymentSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-gray-900 rounded-2xl p-8 border border-gray-800 text-center">
+        <div className="mb-6 flex justify-center">
+          <div className="w-20 h-20 rounded-full bg-green-900/30 flex items-center justify-center">
+            <Loader2 size={48} className="text-green-400 animate-spin" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-4">Loading...</h1>
+        <p className="text-gray-400">Please wait...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

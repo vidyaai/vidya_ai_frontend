@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   FileText,
   Eye,
-  Loader2
+  Loader2,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import DoAssignmentModal from './DoAssignmentModal';
@@ -22,6 +24,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   const [assignmentStatuses, setAssignmentStatuses] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingPdfId, setDownloadingPdfId] = useState(null);
 
   // Load assigned assignments from API
   useEffect(() => {
@@ -418,6 +421,52 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                         {type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     ))}
+                  </div>
+
+                  {/* Export Options - PDF and Google Form */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <button
+                      onClick={async () => {
+                        try {
+                          setDownloadingPdfId(assignment.id);
+                          const blobUrl = await assignmentApi.generateAssignmentPDF(assignment.id);
+                          const link = document.createElement('a');
+                          link.href = blobUrl;
+                          link.download = `${assignment.title || 'assignment'}.pdf`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(blobUrl);
+                        } catch (err) {
+                          console.error('Error downloading PDF:', err);
+                          alert('Failed to download PDF. Please try again.');
+                        } finally {
+                          setDownloadingPdfId(null);
+                        }
+                      }}
+                      disabled={downloadingPdfId === assignment.id}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 disabled:opacity-50 text-red-400 rounded-lg text-xs transition-colors"
+                      title="Download PDF"
+                    >
+                      {downloadingPdfId === assignment.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Download size={14} />
+                      )}
+                      <span>{downloadingPdfId === assignment.id ? 'Downloading...' : 'PDF'}</span>
+                    </button>
+                    {(assignment.google_form_response_url) && (
+                      <a
+                        href={assignment.google_form_response_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-xs transition-colors"
+                        title="Open Google Form"
+                      >
+                        <ExternalLink size={14} />
+                        <span>Google Form</span>
+                      </a>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-700">

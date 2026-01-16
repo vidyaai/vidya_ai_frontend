@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, Eye, AlertCircle, Loader, LogIn, Play } from 'lucide-react';
+import { Share2, Folder as FolderIcon, MessageSquare, User, Calendar, Eye, AlertCircle, Loader, LogIn, Play, FileText } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import SharedChatPage from './SharedChatPage';
+import SharedAssignmentPage from './SharedAssignmentPage';
 
 const SharedResourceViewer = () => {
   // Extract share token from URL path
@@ -178,6 +179,8 @@ const SharedResourceViewer = () => {
           <div className="p-3 bg-indigo-600 rounded-lg">
             {sharedData.share_type === 'folder' ? (
               <FolderIcon size={24} className="text-white" />
+            ) : sharedData.share_type === 'assignment' ? (
+              <FileText size={24} className="text-white" />
             ) : (
               <MessageSquare size={24} className="text-white" />
             )}
@@ -221,6 +224,10 @@ const SharedResourceViewer = () => {
       
       {sharedData.share_type === 'chat' && sharedData.video && sharedData.chat_session && (
         <SharedChatPage />
+      )}
+
+      {sharedData.share_type === 'assignment' && (
+        <SharedAssignmentPage sharedData={sharedData} />
       )}
     </div>
   );

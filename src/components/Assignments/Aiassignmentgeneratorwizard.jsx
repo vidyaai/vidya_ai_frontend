@@ -13,7 +13,9 @@ import {
   Trash2,
   Settings,
   Target,
-  Loader2
+  Loader2,
+  Video,
+  Link
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { api } from '../generic/utils.jsx';
@@ -33,12 +35,51 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [assignmentDescription, setAssignmentDescription] = useState('');
+  
+  // Video selection from gallery
+  const [availableVideos, setAvailableVideos] = useState([]);
+  const [selectedVideos, setSelectedVideos] = useState([]);
+  const [isLoadingVideos, setIsLoadingVideos] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  // Fetch available videos on mount
+  useEffect(() => {
+    const fetchAvailableVideos = async () => {
+      setIsLoadingVideos(true);
+      try {
+        const response = await assignmentApi.getAvailableVideos();
+        setAvailableVideos(response.videos || []);
+      } catch (error) {
+        console.error('Error fetching available videos:', error);
+      } finally {
+        setIsLoadingVideos(false);
+      }
+    };
+    fetchAvailableVideos();
+  }, []);
+
+  // Toggle video selection
+  const toggleVideoSelection = (video) => {
+    setSelectedVideos(prev => {
+      const isSelected = prev.some(v => v.id === video.id);
+      if (isSelected) {
+        return prev.filter(v => v.id !== video.id);
+      } else {
+        return [...prev, video];
+      }
+    });
+  };
+
+  // Remove a selected video
+  const removeSelectedVideo = (videoId) => {
+    setSelectedVideos(prev => prev.filter(v => v.id !== videoId));
+  };
 
   // Step 2: Assignment Settings
   const [numQuestions, setNumQuestions] = useState(10);
   const [totalPoints, setTotalPoints] = useState(50);
-  const [engineeringLevel, setEngineeringLevel] = useState('undergraduate');
-  const [engineeringDiscipline, setEngineeringDiscipline] = useState('general');
+  const [engineeringLevel, setEngineeringLevel] = useState('');
+  const [engineeringDiscipline, setEngineeringDiscipline] = useState('');
 
   // Step 3: Question Types
   const [questionTypes, setQuestionTypes] = useState({
@@ -122,9 +163,12 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     }));
   };
 
-  // Validation
+  // Validation - at least one content source required (description, videos, or files)
   const canProceedFromStep1 = () => {
-    return uploadedFiles.length > 0;
+    const hasDescription = assignmentDescription.trim().length > 0;
+    const hasVideos = selectedVideos.length > 0;
+    const hasFiles = uploadedFiles.length > 0;
+    return hasDescription || hasVideos || hasFiles;
   };
 
   const hasSelectedQuestionTypes = () => {
@@ -132,7 +176,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   };
 
   const canGenerate = () => {
-    return uploadedFiles.length > 0 && hasSelectedQuestionTypes() && numQuestions > 0 && totalPoints > 0;
+    return canProceedFromStep1() && hasSelectedQuestionTypes() && numQuestions > 0 && totalPoints > 0;
   };
 
   // Generate assignment
@@ -158,16 +202,26 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         includeCalculations: questionTypes['numerical']
       };
 
+      // Build linked_videos array from selected videos
+      const linkedVideos = selectedVideos.map(v => ({
+        id: v.id,
+        title: v.title,
+        source_type: v.source_type,
+        youtube_id: v.youtube_id,
+        youtube_url: v.youtube_url,
+        transcript_text: v.transcript_text
+      }));
+
       const generateData = {
         prompt: assignmentDescription || '',
-        title: assignmentTitle || 'Generated Assignment',
+        title: assignmentTitle || '',
         generation_options: generationOptions,
         uploaded_files: uploadedFiles.map(f => ({
           name: f.name,
           type: f.type,
           content: f.content
         })),
-        linked_videos: [] // No videos in simplified flow
+        linked_videos: linkedVideos
       };
 
       const result = await assignmentApi.generateAssignment(generateData);
@@ -219,26 +273,138 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <Upload size={48} className="text-teal-400 mx-auto mb-4" />
-        <h2 className="text-3xl font-bold text-white mb-2">Upload Lecture Notes</h2>
-        <p className="text-gray-400">Upload your lecture materials (required) and optionally describe the assignment focus</p>
+        <Sparkles size={48} className="text-teal-400 mx-auto mb-4" />
+        <h2 className="text-3xl font-bold text-white mb-2">Content Sources</h2>
+        <p className="text-gray-400">Provide at least one content source: description, video from gallery, or lecture notes</p>
       </div>
 
-      {/* File Upload */}
+      {/* Requirement indicator */}
+      {!canProceedFromStep1() && (
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 flex items-center space-x-3">
+          <AlertCircle size={20} className="text-orange-400 flex-shrink-0" />
+          <p className="text-orange-300 text-sm">
+            Please provide at least one of: Assignment Focus Description, Video from Gallery, or Lecture Notes
+          </p>
+        </div>
+      )}
+
+      {/* Assignment Description - Now first and more prominent */}
       <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-        <div className="mb-4">
-          <label className="block text-white font-medium mb-3">
-            Lecture Notes <span className="text-red-400">*</span>
+        <div className="flex items-center space-x-2 mb-4">
+          <FileText size={20} className="text-green-400" />
+          <label className="block text-white font-medium">
+            Assignment Focus Description
           </label>
+          <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 1</span>
+        </div>
+        <textarea
+          value={assignmentDescription}
+          onChange={(e) => setAssignmentDescription(e.target.value)}
+          placeholder="Describe what you want the assignment to focus on...&#10;&#10;Examples:&#10;• Create a quiz on CMOS transistor design principles&#10;• Generate questions about machine learning fundamentals&#10;• Test understanding of thermodynamics laws&#10;• Cover data structures and algorithms basics"
+          rows={5}
+          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+        />
+        <p className="text-gray-500 text-sm mt-2">
+          Describe the topic, concepts, or focus areas for your assignment. AI will generate questions based on this description.
+        </p>
+      </div>
+
+      {/* Video Selection and File Upload in one row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Video Selection from Gallery */}
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex flex-col">
+          <div className="flex items-center space-x-2 mb-4">
+            <Video size={20} className="text-blue-400" />
+            <label className="block text-white font-medium">
+              Videos from Gallery
+            </label>
+            <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 2</span>
+          </div>
           
-          <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-gray-600 transition-colors">
-            <Upload size={32} className="text-gray-400 mx-auto mb-4" />
-            <div>
-              <label className="cursor-pointer">
-                <span className="text-teal-400 hover:text-teal-300 font-medium">
-                  Choose files
-                </span>
-                <span className="text-gray-400"> or drag and drop</span>
+          <div className="flex-1">
+            {isLoadingVideos ? (
+              <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg">
+                <Loader2 size={24} className="text-teal-400 animate-spin" />
+                <span className="ml-2 text-gray-400">Loading videos...</span>
+              </div>
+            ) : selectedVideos.length === 0 ? (
+              // No videos selected - show button to open modal
+              <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg">
+                <Video size={28} className="text-gray-500 mb-2" />
+                {availableVideos.length === 0 ? (
+                  <>
+                    <p className="text-gray-400 text-sm">No videos available</p>
+                    <p className="text-gray-500 text-xs">Upload videos in Gallery first</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-400 text-sm mb-2">Select videos from your gallery</p>
+                    <button
+                      onClick={() => setIsVideoModalOpen(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Browse Videos ({availableVideos.length})
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              // Videos selected - show selected videos list
+              <div className="min-h-[8rem]">
+                <div className="space-y-2 mb-3">
+                  {selectedVideos.map((video) => (
+                    <div
+                      key={video.id}
+                      className="flex items-center justify-between p-2 bg-blue-500/20 border border-blue-500 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-2 min-w-0 flex-1">
+                        <Video size={16} className="text-blue-400 flex-shrink-0" />
+                        <p className="text-white text-sm font-medium truncate">{video.title}</p>
+                      </div>
+                      <button
+                        onClick={() => removeSelectedVideo(video.id)}
+                        className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors"
+                >
+                  + Add More Videos
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <p className="text-gray-500 text-sm mt-3">
+            Questions will be generated from video transcripts
+          </p>
+        </div>
+
+        {/* File Upload */}
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex flex-col">
+          <div className="flex items-center space-x-2 mb-4">
+            <Upload size={20} className="text-purple-400" />
+            <label className="block text-white font-medium">
+              Upload Lecture Notes
+            </label>
+            <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 3</span>
+          </div>
+          
+          <div className="flex-1">
+            {uploadedFiles.length === 0 ? (
+              <label className="cursor-pointer block">
+                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
+                  <Upload size={28} className="text-gray-500 mb-2" />
+                  <p className="text-gray-400 text-sm">
+                    <span className="text-teal-400 font-medium">Choose files</span> or drag and drop
+                  </p>
+                  <p className="text-gray-500 text-xs mt-1">PDF, Word, PPT, Excel, Markdown</p>
+                </div>
                 <input
                   type="file"
                   multiple
@@ -247,40 +413,48 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                   accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
                 />
               </label>
-            </div>
-            <p className="text-gray-500 text-sm mt-2">
-              PDF, Word, PowerPoint, Excel, Text, Markdown supported
-            </p>
-          </div>
-        </div>
-
-        {/* Uploaded Files */}
-        {uploadedFiles.length > 0 && (
-          <div className="space-y-2">
-            {uploadedFiles.map((file) => (
-              <div key={file.id} className="flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                <div className="flex items-center space-x-3">
-                  {getFileIcon(file.type)}
-                  <div>
-                    <p className="text-white text-sm font-medium">{file.name}</p>
-                    <p className="text-gray-400 text-xs">{formatFileSize(file.size)}</p>
-                  </div>
+            ) : (
+              // Files uploaded - show file list
+              <div className="min-h-[8rem]">
+                <div className="space-y-2 mb-3">
+                  {uploadedFiles.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between bg-gray-800 rounded-lg p-2">
+                      <div className="flex items-center space-x-2 min-w-0 flex-1">
+                        {getFileIcon(file.type)}
+                        <p className="text-white text-sm font-medium truncate">{file.name}</p>
+                      </div>
+                      <button
+                        onClick={() => removeFile(file.id)}
+                        className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <button
-                  onClick={() => removeFile(file.id)}
-                  className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <label className="cursor-pointer block">
+                  <div className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors text-center">
+                    + Add More Files
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
+                  />
+                </label>
               </div>
-            ))}
+            )}
           </div>
-        )}
-
-
+          
+          <p className="text-gray-500 text-sm mt-3">
+            Questions will be generated from uploaded content
+          </p>
+        </div>
       </div>
 
-      {/* Assignment Description */}
+      {/* Assignment Title */}
       <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
         <label className="block text-white font-medium mb-3">
           Assignment Title (Optional)
@@ -292,19 +466,8 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           placeholder="e.g., CMOS Circuit Design Quiz (will auto-generate if empty)"
           className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
-        
-        <label className="block text-white font-medium mb-3 mt-6">
-          Assignment Focus Description (Optional)
-        </label>
-        <textarea
-          value={assignmentDescription}
-          onChange={(e) => setAssignmentDescription(e.target.value)}
-          placeholder="Describe the focus area or specific topics to emphasize...&#10;&#10;Examples:&#10;• Focus on CMOS transistor design and analysis&#10;• Include both theory and numerical problems&#10;• Emphasize circuit analysis techniques&#10;• Cover chapters 3-5 from uploaded notes"
-          rows={6}
-          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
-        />
         <p className="text-gray-500 text-sm mt-2">
-          <strong>Optional:</strong> Provide additional context about what to focus on. The assignment will be generated from your uploaded files even without this description.
+          Leave empty to auto-generate a title based on your content.
         </p>
       </div>
     </div>
@@ -383,6 +546,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               onChange={(e) => setEngineeringLevel(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="">None</option>
               <option value="undergraduate">Undergraduate Level</option>
               <option value="graduate">Graduate Level</option>
             </select>
@@ -396,6 +560,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               onChange={(e) => setEngineeringDiscipline(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="">None</option>
               <option value="general">General Engineering</option>
               <option value="electrical">Electrical Engineering</option>
               <option value="mechanical">Mechanical Engineering</option>
@@ -541,19 +706,25 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               <div>
                 <h4 className="text-white font-medium mb-3">Content Sources</h4>
                 <div className="space-y-2">
-                  {uploadedFiles.map((file, idx) => (
-                    <div key={idx} className="flex items-center space-x-2 text-sm text-gray-300">
-                      {getFileIcon(file.type)}
-                      <span>{file.name}</span>
-                    </div>
-                  ))}
                   {assignmentDescription && (
                     <div className="flex items-center space-x-2 text-sm text-gray-300">
                       <FileText size={16} className="text-green-400" />
                       <span>Custom focus description provided</span>
                     </div>
                   )}
-                  {uploadedFiles.length === 0 && !assignmentDescription && (
+                  {selectedVideos.map((video, idx) => (
+                    <div key={idx} className="flex items-center space-x-2 text-sm text-gray-300">
+                      <Video size={16} className="text-blue-400" />
+                      <span>{video.title}</span>
+                    </div>
+                  ))}
+                  {uploadedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center space-x-2 text-sm text-gray-300">
+                      {getFileIcon(file.type)}
+                      <span>{file.name}</span>
+                    </div>
+                  ))}
+                  {uploadedFiles.length === 0 && selectedVideos.length === 0 && !assignmentDescription && (
                     <p className="text-gray-400 text-sm">No content sources added</p>
                   )}
                 </div>
@@ -815,6 +986,95 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           </div>
         )}
       </main>
+
+      {/* Video Selection Modal */}
+      {isVideoModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-white">Select Videos from Gallery</h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  Choose videos to generate questions from their transcripts
+                </p>
+              </div>
+              <button
+                onClick={() => setIsVideoModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body - Video List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {availableVideos.length === 0 ? (
+                <div className="text-center py-12">
+                  <Video size={48} className="text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">No videos with transcripts available</p>
+                  <p className="text-gray-500 text-sm">Upload videos in the Gallery to use them here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availableVideos.map((video) => {
+                    const isSelected = selectedVideos.some(v => v.id === video.id);
+                    return (
+                      <div
+                        key={video.id}
+                        onClick={() => toggleVideoSelection(video)}
+                        className={`flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-blue-500/20 border-2 border-blue-500'
+                            : 'bg-gray-800 border-2 border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-400'
+                          }`}>
+                            {isSelected && <CheckCircle size={16} className="text-white" />}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{video.title}</p>
+                            <p className="text-gray-400 text-sm">
+                              {video.source_type === 'youtube' ? 'YouTube Video' : 'Uploaded Video'} • {video.created_at ? new Date(video.created_at).toLocaleDateString() : ''}
+                            </p>
+                          </div>
+                        </div>
+                        {video.source_type === 'youtube' && (
+                          <Link size={16} className="text-gray-400" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-700 bg-gray-800/50">
+              <p className="text-gray-400 text-sm">
+                {selectedVideos.length} video(s) selected
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsVideoModalOpen(false)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setIsVideoModalOpen(false)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

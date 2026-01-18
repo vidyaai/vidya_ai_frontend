@@ -78,8 +78,8 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   // Step 2: Assignment Settings
   const [numQuestions, setNumQuestions] = useState(10);
   const [totalPoints, setTotalPoints] = useState(50);
-  const [engineeringLevel, setEngineeringLevel] = useState('undergraduate');
-  const [engineeringDiscipline, setEngineeringDiscipline] = useState('general');
+  const [engineeringLevel, setEngineeringLevel] = useState('');
+  const [engineeringDiscipline, setEngineeringDiscipline] = useState('');
 
   // Step 3: Question Types
   const [questionTypes, setQuestionTypes] = useState({
@@ -546,6 +546,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               onChange={(e) => setEngineeringLevel(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="">None</option>
               <option value="undergraduate">Undergraduate Level</option>
               <option value="graduate">Graduate Level</option>
             </select>
@@ -559,6 +560,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               onChange={(e) => setEngineeringDiscipline(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="">None</option>
               <option value="general">General Engineering</option>
               <option value="electrical">Electrical Engineering</option>
               <option value="mechanical">Mechanical Engineering</option>

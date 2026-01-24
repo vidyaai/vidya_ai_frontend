@@ -201,7 +201,8 @@ const ChatBoxComponent = ({
           query: currentQuery,
           timestamp: currentTime,
           is_image_query: queryType === 'frame',
-          conversation_history: conversationContext
+          conversation_history: conversationContext,
+          session_id: activeSessionId
         }, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -212,7 +213,8 @@ const ChatBoxComponent = ({
           query: currentQuery,
           timestamp: currentTime,
           is_image_query: queryType === 'frame',
-          conversation_history: conversationContext
+          conversation_history: conversationContext,
+          session_id: activeSessionId
         }, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });

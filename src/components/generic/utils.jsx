@@ -137,12 +137,13 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     const parts = [];
     let currentIndex = 0;
     
-    // Updated regex to match timestamps with or without $ signs
+    // Updated regex to match timestamps, bold text, and markdown links
     const timestampRegex = /(\$?\d{1,2}:\d{2}\$?)/g;
     const boldRegex = /(\*\*.*?\*\*|__.*?__)/g;
-    
-    // Combine both regexes to process in order
-    const combinedRegex = /(\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+    const linkRegex = /(\[([^\]]+)\]\(([^)]+)\))/g;
+
+    // Combine all regexes to process in order (links, timestamps, bold)
+    const combinedRegex = /(\[([^\]]+)\]\(([^)]+)\)|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
     let match;
     
     while ((match = combinedRegex.exec(line)) !== null) {
@@ -156,12 +157,29 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
         }
       }
       
-      // Check if this is a timestamp (contains digits and colon)
-      if (/\d{1,2}:\d{2}/.test(match[0])) {
+      // Check if this is a markdown link [text](url)
+      if (match[0].startsWith('[') && match[0].includes('](')) {
+        const linkMatch = match[0].match(/\[([^\]]+)\]\(([^)]+)\)/);
+        if (linkMatch) {
+          const [, linkText, linkUrl] = linkMatch;
+          parts.push(
+            <a
+              key={`link-${index}-${match.index}`}
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              {linkText}
+            </a>
+          );
+        }
+      } else if (/\d{1,2}:\d{2}/.test(match[0])) {
+        // Check if this is a timestamp (contains digits and colon)
         // Extract just the time part (remove $ signs)
         const timeStr = match[0].replace(/\$/g, '');
         const totalSeconds = timeToSeconds(timeStr);
-        
+
         if (onSeekToTime && totalSeconds > 0) {
           parts.push(
             <button
@@ -245,12 +263,13 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
     const parts = [];
     let currentIndex = 0;
     
-    // Updated regex to match timestamps with or without $ signs
+    // Updated regex to match timestamps, bold text, and markdown links
     const timestampRegex = /(\$?\d{1,2}:\d{2}\$?)/g;
     const boldRegex = /(\*\*.*?\*\*|__.*?__)/g;
-    
-    // Combine both regexes to process in order
-    const combinedRegex = /(\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+    const linkRegex = /(\[([^\]]+)\]\(([^)]+)\))/g;
+
+    // Combine all regexes to process in order (links, timestamps, bold)
+    const combinedRegex = /(\[([^\]]+)\]\(([^)]+)\)|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
     let match;
     
     while ((match = combinedRegex.exec(line)) !== null) {
@@ -258,12 +277,29 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
         parts.push(line.slice(currentIndex, match.index));
       }
       
-      // Check if this is a timestamp (contains digits and colon)
-      if (/\d{1,2}:\d{2}/.test(match[0])) {
+      // Check if this is a markdown link [text](url)
+      if (match[0].startsWith('[') && match[0].includes('](')) {
+        const linkMatch = match[0].match(/\[([^\]]+)\]\(([^)]+)\)/);
+        if (linkMatch) {
+          const [, linkText, linkUrl] = linkMatch;
+          parts.push(
+            <a
+              key={`link-${index}-${match.index}`}
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              {linkText}
+            </a>
+          );
+        }
+      } else if (/\d{1,2}:\d{2}/.test(match[0])) {
+        // Check if this is a timestamp (contains digits and colon)
         // Extract just the time part (remove $ signs)
         const timeStr = match[0].replace(/\$/g, '');
         const totalSeconds = timeToSeconds(timeStr);
-        
+
         if (onSeekToTime && totalSeconds > 0) {
           parts.push(
             <button

@@ -557,7 +557,7 @@ const ChatBoxComponent = ({
                   </span>
                 )}
               </div>
-              <div className="text-white">
+              <div className="text-white break-words overflow-wrap-anywhere">
                 {message.sender === 'ai' ? (
                   parseMarkdownWithMath(message.text, onSeekToTime)
                 ) : (

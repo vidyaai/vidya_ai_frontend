@@ -308,6 +308,16 @@ export const assignmentApi = {
     return response.data;
   },
 
+  // Override AI plagiarism flag for a specific question
+  async overrideAIFlag(assignmentId, submissionId, overrideData) {
+    const response = await api.post(
+      `/api/assignments/${assignmentId}/submissions/${submissionId}/override-ai-flag`,
+      overrideData,
+      { headers: { 'ngrok-skip-browser-warning': 'true' } }
+    );
+    return response.data;
+  },
+
   // Download a submitted file (PDF)
   async getSubmissionFileUrl(assignmentId, submissionId, fileId) {
     try {

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 import { TextWithEquations, EquationList } from './EquationRenderer';
+import { useIntegrityTracker } from '../../hooks/useIntegrityTracker';
 
 // Component for handling diagram images with URL fetching
 const DiagramImage = memo(({ diagramData, displayName }) => {
@@ -107,6 +108,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [selectedParts, setSelectedParts] = useState({}); // Track which optional parts are selected
   const [pdfLoading, setPdfLoading] = useState(false);
   const [assignmentQuestions, setAssignmentQuestions] = useState([]);
+  
+  // AI Plagiarism Detection telemetry
+  const { handlePaste, handleKeyDown, startTracking, getTrackingData, resetTracking } = useIntegrityTracker();
 
   const actualAssignment = assignment.assignment || assignment;
   
@@ -117,7 +121,14 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   // Load existing draft/submission on component mount
   useEffect(() => {
     loadExistingSubmission();
+    // Start telemetry tracking when modal opens
+    startTracking();
   }, []);
+
+  // Load assignment questions on component mount
+//   useEffect(() => {
+//     loadAssignmentQuestions();
+//   }, [assignment]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -175,6 +186,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           }
         });
         setSelectedParts(newSelectedParts);
+      }
+      if (submission.status === 'submitted' || submission.status === 'graded') {
+        setAssignmentQuestions(submission.assignment.questions || []);
       }
     } catch (error) {
       // No existing submission - this is fine for new assignments
@@ -511,16 +525,68 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       alert('Please select a valid PDF file');
     }
   };
+  // Transform answers from question IDs to backend format
+  const transformAnswersToSequentialIds = (answersObj) => {
+    const transformed = {};
+    let mainQuestionCounter = 0;
+    
+    const processAnswerValue = (value, question) => {
+      // If the answer is an object with subAnswers, transform those too
+      if (value && typeof value === 'object' && value.subAnswers) {
+        const transformedSubAnswers = {};
+        
+        // Get the subquestions for this question
+        const subQuestions = question.subquestions || question.sub_questions || question.subQuestions || [];
+        
+        // Map each subquestion by its ID
+        subQuestions.forEach((subq, subIndex) => {
+          const subqId = String(subq.id);
+          if (value.subAnswers[subqId]) {
+            // Use sequential index (1, 2, 3...) for subquestion keys
+            transformedSubAnswers[String(subIndex + 1)] = value.subAnswers[subqId];
+          }
+        });
+        
+        return {
+          ...value,
+          subAnswers: transformedSubAnswers
+        };
+      }
+      
+      return value;
+    };
+    
+    // Process each question in order
+    questions.forEach((question, questionIndex) => {
+      mainQuestionCounter = questionIndex + 1;
+      const questionId = String(question.id);
+      
+      if (answersObj[questionId]) {
+        transformed[String(mainQuestionCounter)] = processAnswerValue(answersObj[questionId], question);
+      }
+    });
+    
+    return transformed;
+  };
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       
+      // Collect telemetry data
+      const telemetryData = getTrackingData();
+      
+      // Transform answers for in-app submissions to use sequential IDs
+      const answersToSubmit = submissionMethod === 'in-app' 
+        ? transformAnswersToSequentialIds(answers)
+        : answers;
+      
       let submissionData = {
-        answers,
+        answers: answersToSubmit,
         submission_method: submissionMethod,
         time_spent: "0", // Could track actual time spent
-        submitted_files: null
+        submitted_files: null,
+        telemetry_data: telemetryData  // Include telemetry for AI detection
       };
 
       // Handle PDF submission
@@ -538,6 +604,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             answers: {},
             submission_method: 'pdf',
             time_spent: "0",
+            telemetry_data: telemetryData  // Include telemetry even for PDF submissions
           };
         } finally {
           setPdfUploading(false);
@@ -563,9 +630,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   };
 
   const renderQuestion = (question, index) => {
-    const currentAnswer = answers[question.id] || '';
+    const currentAnswer = answers[index+1] || '';
 
     switch (question.type) {
+      case 'multiple_choice':
       case 'multiple-choice':
         return (
           <div key={question.id} className="space-y-4">
@@ -585,6 +653,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <p>{question.question}</p>
               )}
             </div>
+            
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -639,6 +716,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'fill_blank':
       case 'fill-blank':
         return (
           <div key={question.id} className="space-y-4">
@@ -659,6 +737,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               )}
             </div>
             
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
+            
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
@@ -666,7 +753,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               type="text"
               value={currentAnswer}
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
-              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
+              placeholder={!currentAnswer ? "Enter your answer here..." : ""}
               readOnly={isAlreadySubmitted}
               className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
@@ -675,6 +762,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'true_false':
       case 'true-false':
         return (
           <div key={question.id} className="space-y-4">
@@ -694,6 +782,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <p>{question.question}</p>
               )}
             </div>
+            
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -727,6 +824,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'short_answer':
       case 'short-answer':
         return (
           <div key={question.id} className="space-y-4">
@@ -746,6 +844,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <p>{question.question}</p>
               )}
             </div>
+
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -753,7 +860,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             <textarea
               value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
               onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
-              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
+              onPaste={handlePaste}
+              onKeyDown={handleKeyDown}
+              placeholder={(typeof currentAnswer === 'string' ? !currentAnswer : !currentAnswer?.text) ? "Enter your answer here..." : ""}
               rows={4}
               readOnly={isAlreadySubmitted}
               className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
@@ -824,6 +933,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               )}
             </div>
             
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
+            
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
@@ -831,7 +949,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               type="text"
               value={currentAnswer}
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
-              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your numerical answer..."}
+              placeholder={!currentAnswer ? "Enter your numerical answer..." : ""}
               readOnly={isAlreadySubmitted}
               className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
@@ -840,6 +958,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'long_answer':
       case 'long-answer':
         return (
           <div key={question.id} className="space-y-4">
@@ -860,13 +979,22 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               )}
             </div>
             
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
+            
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             <textarea
               value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
               onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
-              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your detailed answer here..."}
+              placeholder={(typeof currentAnswer === 'string' ? !currentAnswer : !currentAnswer?.text) ? "Enter your detailed answer here..." : ""}
               rows={8}
               readOnly={isAlreadySubmitted}
               className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
@@ -917,6 +1045,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'code_writing':
       case 'code-writing':
         return (
           <div key={question.id} className="space-y-4">
@@ -936,6 +1065,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <p>{question.question}</p>
               )}
             </div>
+            
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
             
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
@@ -964,6 +1102,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         );
 
       case 'diagram-analysis':
+      case 'diagram_analysis':
         return (
           <div key={question.id} className="space-y-4">
             <div className="flex items-center justify-between">
@@ -971,6 +1110,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <span className="text-orange-400 text-sm font-medium">{question.points} points</span>
             </div>
             <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
             
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
@@ -1030,6 +1178,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
 
       case 'multi-part':
+      case 'multi_part':
         return (
           <div key={question.id} className="space-y-6">
             <div className="flex items-center justify-between">
@@ -1055,6 +1204,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <p>{question.question}</p>
               )}
             </div>
+            
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto mb-4">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
+            
+            {/* Show diagram if available */}
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
             {/* Optional Parts Selection UI */}
             {question.optionalParts && !isAlreadySubmitted && (
@@ -1299,8 +1460,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           };
                           handleAnswerChange(question.id, newAnswer);
                         }}
-                        placeholder="Enter your answer..."
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                        placeholder={!(currentAnswer?.subAnswers || {})[subq.id] ? "Enter your answer..." : ""}
+                        readOnly={isAlreadySubmitted}
+                        className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                       />
                     </div>
                   ) : subq.type === 'numerical' ? (
@@ -1347,7 +1509,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       <textarea
                         value={typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? (currentAnswer?.subAnswers || {})[subq.id] : ((currentAnswer?.subAnswers || {})[subq.id]?.text || '')}
                         onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value, true, subq.id)}
-                        placeholder={subq.type === 'diagram-analysis' ? "Enter your diagram analysis..." : "Enter your answer..."}
+                        placeholder={(typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? !(currentAnswer?.subAnswers || {})[subq.id] : !((currentAnswer?.subAnswers || {})[subq.id]?.text)) ? (subq.type === 'diagram-analysis' ? "Enter your diagram analysis..." : "Enter your answer...") : ""}
                         rows={subq.type === 'long-answer' ? 6 : 4}
                         readOnly={isAlreadySubmitted}
                         className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
@@ -1391,6 +1553,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             </div>
                           )}
                         </div>
+                      )}
+                      {/* show diagram if already submitted */}
+                      {isAlreadySubmitted && (currentAnswer?.subAnswers || {})[subq.id]?.diagram && (
+                          <div className="bg-gray-800 p-2 rounded border border-gray-600">
+                              <div className="text-xs text-gray-400 mb-1">Submitted Diagram:</div>
+                              {renderDiagram((currentAnswer?.subAnswers || {})[subq.id]?.diagram, "Submitted diagram")}
+                          </div>
                       )}
                     </div>
                   ) : subq.type === 'multi-part' ? (
@@ -1460,8 +1629,26 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             <span className="text-blue-300 text-xs">{subSubq.points} pts</span>
                           </div>
                           
+                          {/* Sub-sub-question code if present */}
+                          {subSubq.code && (
+                            <div className="bg-gray-800 rounded p-2 mb-2 border border-gray-600">
+                              <p className="text-gray-400 text-xs mb-1">Code:</p>
+                              <pre className="text-green-400 text-xs overflow-x-auto font-mono">
+                                {subSubq.code}
+                              </pre>
+                            </div>
+                          )}
+                          
+                          {/* Sub-sub-question diagram if present */}
+                          {subSubq.diagram && (
+                            <div className="bg-gray-800 rounded p-2 mb-2 border border-gray-600">
+                              <p className="text-gray-400 text-xs mb-1">Diagram:</p>
+                              {renderDiagram(subSubq.diagram, "Sub-sub-question diagram")}
+                            </div>
+                          )}
+                          
                           {/* Render sub-sub-questions */}
-                          {subSubq.type === 'multiple-choice' ? (
+                          {(subSubq.type === 'multiple-choice' || subSubq.type === 'multiple_choice') ? (
                             <div className="space-y-1">
                               {subSubq.allowMultipleCorrect && (
                                 <div className="text-xs text-gray-400 mb-1">
@@ -1496,7 +1683,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 </label>
                               ))}
                             </div>
-                          ) : subSubq.type === 'true-false' ? (
+                          ) : (subSubq.type === 'true-false' || subSubq.type === 'true_false') ? (
                             <div className="flex space-x-4">
                               <label className="flex items-center space-x-2 cursor-pointer">
                                 <input
@@ -1551,7 +1738,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 <span className="text-white text-sm">False</span>
                               </label>
                             </div>
-                          ) : subSubq.type === 'fill-blank' ? (
+                          ) : (subSubq.type === 'fill-blank' || subSubq.type === 'fill_blank') ? (
                             <input
                               type="text"
                               value={(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] || ''}
@@ -1572,7 +1759,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 handleAnswerChange(question.id, newAnswer);
                               }}
                               placeholder="Fill in the blank..."
-                              className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
+                              readOnly={isAlreadySubmitted}
+                              className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
                           ) : subSubq.type === 'numerical' ? (
                             <input
@@ -1595,8 +1783,154 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 handleAnswerChange(question.id, newAnswer);
                               }}
                               placeholder="Enter number..."
-                              className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 text-sm"
+                              readOnly={isAlreadySubmitted}
+                              className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
+                          ) : (subSubq.type === 'code-writing' || subSubq.type === 'code_writing') ? (
+                            <div>
+                              <div className="text-xs text-purple-400 mb-1">
+                                Language: {subSubq.codeLanguage?.toUpperCase() || 'CODE'}
+                              </div>
+                              <textarea
+                                value={(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] || ''}
+                                onChange={(e) => {
+                                  const newAnswer = {
+                                    ...currentAnswer,
+                                    subAnswers: {
+                                      ...(currentAnswer?.subAnswers || {}),
+                                      [subq.id]: {
+                                        ...(currentAnswer?.subAnswers?.[subq.id] || {}),
+                                        subAnswers: {
+                                          ...(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {}),
+                                          [subSubq.id]: e.target.value
+                                        }
+                                      }
+                                    }
+                                  };
+                                  handleAnswerChange(question.id, newAnswer);
+                                }}
+                                placeholder={`// Write your ${subSubq.codeLanguage || 'code'} here...`}
+                                rows={6}
+                                readOnly={isAlreadySubmitted}
+                                className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none text-sm font-mono ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                              />
+                            </div>
+                          ) : (subSubq.type === 'diagram-analysis' || subSubq.type === 'diagram_analysis' || subSubq.type === 'short-answer' || subSubq.type === 'short_answer' || subSubq.type === 'long-answer' || subSubq.type === 'long_answer') ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={typeof (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] === 'string' ? (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] : ((currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.text || '')}
+                                onChange={(e) => {
+                                  const newAnswer = {
+                                    ...currentAnswer,
+                                    subAnswers: {
+                                      ...(currentAnswer?.subAnswers || {}),
+                                      [subq.id]: {
+                                        ...(currentAnswer?.subAnswers?.[subq.id] || {}),
+                                        subAnswers: {
+                                          ...(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {}),
+                                          [subSubq.id]: typeof (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] === 'object' 
+                                            ? { ...(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id], text: e.target.value }
+                                            : e.target.value
+                                        }
+                                      }
+                                    }
+                                  };
+                                  handleAnswerChange(question.id, newAnswer);
+                                }}
+                                placeholder={(subSubq.type === 'diagram-analysis' || subSubq.type === 'diagram_analysis') ? "Enter your diagram analysis..." : "Enter your answer..."}
+                                rows={(subSubq.type === 'long-answer' || subSubq.type === 'long_answer') ? 6 : 3}
+                                readOnly={isAlreadySubmitted}
+                                className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                              />
+                              {/* Diagram upload for nested sub-subquestions */}
+                              {!isAlreadySubmitted && (
+                                <div>
+                                  {(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram ? (
+                                    <div className="bg-gray-700 p-2 rounded border border-gray-500">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs text-gray-400">Attached Diagram:</span>
+                                        <button
+                                          onClick={() => {
+                                            const newAnswer = {
+                                              ...currentAnswer,
+                                              subAnswers: {
+                                                ...(currentAnswer?.subAnswers || {}),
+                                                [subq.id]: {
+                                                  ...(currentAnswer?.subAnswers?.[subq.id] || {}),
+                                                  subAnswers: {
+                                                    ...(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {}),
+                                                    [subSubq.id]: {
+                                                      text: (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.text || '',
+                                                      diagram: null
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            };
+                                            handleAnswerChange(question.id, newAnswer);
+                                          }}
+                                          className="text-red-400 hover:text-red-300 text-xs"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                      {renderDiagram((currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram, "Your diagram")}
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        id={`diagram-upload-${question.id}-${subq.id}-${subSubq.id}`}
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                          if (e.target.files && e.target.files[0]) {
+                                            const file = e.target.files[0];
+                                            try {
+                                              const response = await assignmentApi.uploadDiagram(file, actualAssignment.id);
+                                              const newAnswer = {
+                                                ...currentAnswer,
+                                                subAnswers: {
+                                                  ...(currentAnswer?.subAnswers || {}),
+                                                  [subq.id]: {
+                                                    ...(currentAnswer?.subAnswers?.[subq.id] || {}),
+                                                    subAnswers: {
+                                                      ...(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {}),
+                                                      [subSubq.id]: {
+                                                        text: (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.text || '',
+                                                        diagram: response
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              };
+                                              handleAnswerChange(question.id, newAnswer);
+                                            } catch (err) {
+                                              console.error('Failed to upload diagram:', err);
+                                              alert('Failed to upload diagram. Please try again.');
+                                            }
+                                          }
+                                        }}
+                                      />
+                                      <label
+                                        htmlFor={`diagram-upload-${question.id}-${subq.id}-${subSubq.id}`}
+                                        className="inline-flex items-center px-2 py-1 bg-gray-500 hover:bg-gray-400 text-white rounded cursor-pointer transition-colors text-xs"
+                                      >
+                                        <ImageIcon size={12} className="mr-1" />
+                                        Attach Diagram
+                                      </label>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {/* show diagram if already submitted */}
+                                {isAlreadySubmitted && (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram && (
+                                    <div className="bg-gray-700 p-2 rounded border border-gray-500">
+                                        <div className="text-xs text-gray-400 mb-1">Submitted Diagram:</div>
+                                        {renderDiagram((currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram, "Submitted diagram")}
+                                    </div>
+                                )}
+                            </div>
                           ) : (
                             <textarea
                               value={(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id] || ''}
@@ -1616,9 +1950,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 };
                                 handleAnswerChange(question.id, newAnswer);
                               }}
-                              placeholder="Enter your answer..."
+                              placeholder={!(((currentAnswer?.subAnswers || {})[subq.id]?.subAnswers || {})[subSubq.id]) ? "Enter your answer..." : ""}
                               rows={2}
-                              className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none text-sm"
+                              readOnly={isAlreadySubmitted}
+                              className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
                           )}
                         </div>
@@ -1690,24 +2025,24 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 //     }
 //   };
 
-  const loadAssignmentQuestions = async () => {
-    try {
-      // If assignment is already passed with questions, use them
-      if (assignment?.questions && assignment.questions.length > 0) {
-        setAssignmentQuestions(assignment.questions);
-      } else {
-        // Otherwise fetch the full assignment data
-        const assignmentData = await assignmentApi.getAssignment(assignment.id);
-        setAssignmentQuestions(assignmentData.questions || []);
-      }
-    } catch (err) {
-      console.error('Failed to load assignment questions:', err);
-      setAssignmentQuestions([]);
-    }
-  };
+//   const loadAssignmentQuestions = async () => {
+//     try {
+//       // If assignment is already passed with questions, use them
+//       if (assignment?.questions && assignment.questions.length > 0) {
+//         setAssignmentQuestions(assignment.questions);
+//       } else {
+//         // Otherwise fetch the full assignment data
+//         const assignmentData = await assignmentApi.getAssignment(assignment.id);
+//         setAssignmentQuestions(assignmentData.questions || []);
+//       }
+//     } catch (err) {
+//       console.log('Failed to load assignment questions:', err);
+//     //   setAssignmentQuestions(submission?.assignment?.questions || []);
+//     //   console.log('Falling back to submission assignment questions:', submission?.assignment?.questions || []);
+//     }
+//   };
 
   const getQuestionById = (questionId) => {
-    loadAssignmentQuestions();
     // First try to find by exact ID match
     let question = assignmentQuestions.find(q => q.id === parseInt(questionId) || q.id === questionId);
     
@@ -1730,8 +2065,16 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     return questionId; // fallback to original ID
   };
 
+  // Helper function to get sub-question feedback from submission feedback
+  // Feedback keys are structured as "questionNumber.partNumber" (e.g., "2.1", "2.2")
+  const getSubQuestionFeedback = (feedbackKey) => {
+    if (!submission?.feedback || !feedbackKey) return null;
+    return submission.feedback[feedbackKey];
+  };
+
   // Helper function to render sub-question answer based on its type
-  const renderSubQuestionAnswer = (subQuestion, subAnswer) => {
+  const renderSubQuestionAnswer = (subQuestion, subAnswer, feedbackKey = null) => {
+    const subQuestionFeedback = getSubQuestionFeedback(feedbackKey);
     if (!subQuestion) {
       return (
         <div className="bg-gray-800 rounded p-3">
@@ -1743,10 +2086,28 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     switch (subQuestion.type) {
       case 'multiple_choice':
       case 'multiple-choice':
+        // Handle both single answer (string/integer) and multiple answers (array)
+        const selectedIndices = Array.isArray(subAnswer) 
+          ? subAnswer.map(idx => parseInt(idx))
+          : [parseInt(subAnswer)];
+        
+        const selectedOptions = selectedIndices
+          .map(idx => subQuestion.options?.[idx])
+          .filter(opt => opt !== undefined);
+
         return (
           <div className="space-y-2">
             <div className="bg-gray-800 rounded p-3">
-              <p className="text-teal-300 font-medium text-sm">Selected: {subAnswer}</p>
+              <p className="text-teal-300 font-medium text-sm">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
+              {selectedOptions.length > 0 ? (
+                <ul className="mt-1 space-y-1">
+                  {selectedOptions.map((opt, idx) => (
+                    <li key={idx} className="text-white text-sm">• {opt}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-white text-sm mt-1">{subAnswer}</p>
+              )}
             </div>
             {subQuestion.options && (
               <div className="bg-gray-900 rounded p-3">
@@ -1756,7 +2117,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     <div 
                       key={index} 
                       className={`text-xs p-2 rounded ${
-                        option === subAnswer 
+                        selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
                           : 'text-gray-400 bg-gray-800'
                       }`}
@@ -1765,6 +2126,40 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            {/* Sub-question feedback */}
+            {subQuestionFeedback && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                  <Brain size={12} className="mr-1" />
+                  AI Feedback
+                </p>
+                {subQuestionFeedback.score !== undefined && (
+                  <div className="mb-2">
+                    <span className="text-green-400 font-bold text-sm">
+                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                    </span>
+                  </div>
+                )}
+                {subQuestionFeedback.breakdown && (
+                  <div className="mb-2">
+                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.strengths && (
+                  <div className="mb-2">
+                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.areas_for_improvement && (
+                  <div>
+                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1793,55 +2188,255 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 </pre>
               </div>
             )}
+            {/* Sub-question feedback */}
+            {subQuestionFeedback && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                  <Brain size={12} className="mr-1" />
+                  AI Feedback
+                </p>
+                {subQuestionFeedback.score !== undefined && (
+                  <div className="mb-2">
+                    <span className="text-green-400 font-bold text-sm">
+                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                    </span>
+                  </div>
+                )}
+                {subQuestionFeedback.breakdown && (
+                  <div className="mb-2">
+                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.strengths && (
+                  <div className="mb-2">
+                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.areas_for_improvement && (
+                  <div>
+                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
       case 'true_false':
+      case 'true_false':
         return (
-          <div className="bg-gray-800 rounded p-3">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              subAnswer === 'true' || subAnswer === true 
-                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
-                : 'bg-red-500/20 text-red-300 border border-red-500/30'
-            }`}>
-              {subAnswer === 'true' || subAnswer === true ? 'True' : 'False'}
-            </span>
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                subAnswer === 'true' || subAnswer === true 
+                  ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+              }`}>
+                {subAnswer === 'true' || subAnswer === true ? 'True' : 'False'}
+              </span>
+            </div>
+            {/* Sub-question feedback */}
+            {subQuestionFeedback && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                  <Brain size={12} className="mr-1" />
+                  AI Feedback
+                </p>
+                {subQuestionFeedback.score !== undefined && (
+                  <div className="mb-2">
+                    <span className="text-green-400 font-bold text-sm">
+                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                    </span>
+                  </div>
+                )}
+                {subQuestionFeedback.breakdown && (
+                  <div className="mb-2">
+                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.strengths && (
+                  <div className="mb-2">
+                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.areas_for_improvement && (
+                  <div>
+                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
       case 'fill-blank':
       case 'fill_blank':
         return (
-          <div className="bg-gray-800 rounded p-3">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
-                FILL IN THE BLANK
-              </span>
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
+                  FILL IN THE BLANK
+                </span>
+              </div>
+              <div className="bg-gray-900 rounded p-3">
+                <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
+                <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
+                  "{subAnswer}"
+                </p>
+              </div>
             </div>
-            <div className="bg-gray-900 rounded p-3">
-              <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
-              <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
-                "{subAnswer}"
-              </p>
-            </div>
+            {/* Sub-question feedback */}
+            {subQuestionFeedback && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                  <Brain size={12} className="mr-1" />
+                  AI Feedback
+                </p>
+                {subQuestionFeedback.score !== undefined && (
+                  <div className="mb-2">
+                    <span className="text-green-400 font-bold text-sm">
+                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                    </span>
+                  </div>
+                )}
+                {subQuestionFeedback.breakdown && (
+                  <div className="mb-2">
+                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.strengths && (
+                  <div className="mb-2">
+                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.areas_for_improvement && (
+                  <div>
+                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
       case 'multi_part':
       case 'multi-part':
         // Recursively render nested multi-part questions
+        // Pass the feedbackKey as the prefix for nested levels
         return (
           <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
-            {renderMultiPartAnswer(subQuestion, subAnswer)}
+            {renderMultiPartAnswer(subQuestion, subAnswer, null, feedbackKey)}
+          </div>
+        );
+
+      case 'short_answer':
+      case 'short-answer':
+      case 'long_answer':
+      case 'long-answer':
+      case 'diagram_analysis':
+      case 'diagram-analysis':
+        return (
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <p className="text-gray-200 text-sm whitespace-pre-wrap">
+                  {typeof subAnswer === 'string' ? subAnswer : subAnswer.text || JSON.stringify(subAnswer)}
+                  {subAnswer.diagram && (
+                    <div className="mt-3">
+                      <p className="text-gray-400 text-xs mb-1">Attached Diagram:</p>
+                      {renderDiagram(subAnswer.diagram, "Student's diagram")}
+                    </div>
+                  )}
+              </p>
+            </div>
+            {/* Sub-question feedback */}
+            {subQuestionFeedback && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                  <Brain size={12} className="mr-1" />
+                  AI Feedback
+                </p>
+                {subQuestionFeedback.score !== undefined && (
+                  <div className="mb-2">
+                    <span className="text-green-400 font-bold text-sm">
+                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                    </span>
+                  </div>
+                )}
+                {subQuestionFeedback.breakdown && (
+                  <div className="mb-2">
+                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.strengths && (
+                  <div className="mb-2">
+                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.areas_for_improvement && (
+                  <div>
+                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
       default:
         return (
-          <div className="bg-gray-800 rounded p-3">
-            <p className="text-gray-200 text-sm whitespace-pre-wrap">
-              {typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}
-            </p>
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <p className="text-gray-200 text-sm whitespace-pre-wrap">
+                {typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}
+              </p>
+            </div>
+            {/* Sub-question feedback */}
+            {subQuestionFeedback && (
+              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                  <Brain size={12} className="mr-1" />
+                  AI Feedback
+                </p>
+                {subQuestionFeedback.score !== undefined && (
+                  <div className="mb-2">
+                    <span className="text-green-400 font-bold text-sm">
+                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                    </span>
+                  </div>
+                )}
+                {subQuestionFeedback.breakdown && (
+                  <div className="mb-2">
+                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.strengths && (
+                  <div className="mb-2">
+                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                  </div>
+                )}
+                {subQuestionFeedback.areas_for_improvement && (
+                  <div>
+                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
     }
@@ -1940,7 +2535,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   };
 
   // Comprehensive multi-part question renderer
-  const renderMultiPartAnswer = (question, answer) => {
+  // feedbackKeyPrefix is used for nested multi-part questions (e.g., "2" for top-level, "2.1" for nested)
+  const renderMultiPartAnswer = (question, answer, questionId = null, feedbackKeyPrefix = null) => {
     if (!question || !question.subquestions) {
       return (
         <div className="bg-gray-700 rounded p-3">
@@ -2020,6 +2616,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             const partNumber = index + 1;
             
+            // Construct feedback key: for top-level it's "questionId.partNumber", for nested it extends the prefix
+            // e.g., "2.1" for question 2 part 1, or "2.1.2" for question 2 part 1 sub-part 2
+            const currentFeedbackKey = feedbackKeyPrefix 
+              ? `${feedbackKeyPrefix}.${partNumber}` 
+              : (questionId ? `${questionId}.${partNumber}` : null);
+            
+            // Get feedback for this sub-question if available
+            const subQuestionFeedback = getSubQuestionFeedback(currentFeedbackKey);
+            
             return (
               <div key={subQuestion.id || index} className="bg-gray-700 rounded-lg p-4 border-l-4 border-teal-500">
                 {/* Sub-question header */}
@@ -2035,6 +2640,14 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       <span className="text-gray-400 text-xs">
                         {subQuestion.points} pts
                       </span>
+                    )}
+                    {/* Display score if feedback available */}
+                    {subQuestionFeedback && subQuestionFeedback.score !== undefined && (
+                      <div className="ml-auto bg-green-900/30 px-2 py-1 rounded border border-green-500/30">
+                        <span className="text-green-400 font-bold text-xs">
+                          {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0}
+                        </span>
+                      </div>
                     )}
                   </div>
                   
@@ -2066,7 +2679,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <div>
                   <p className="text-gray-300 font-medium text-sm mb-2">Answer:</p>
                   {subAnswer !== undefined ? (
-                    renderSubQuestionAnswer(subQuestion, subAnswer)
+                    renderSubQuestionAnswer(subQuestion, subAnswer, currentFeedbackKey)
                   ) : (
                     <div className="bg-gray-800 rounded p-3">
                       <p className="text-gray-500 text-sm italic">No answer provided</p>
@@ -2095,11 +2708,28 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     switch (question.type) {
       case 'multiple_choice':
       case 'multiple-choice':
+        // Handle both single answer (string/integer) and multiple answers (array)
+        const selectedIndices = Array.isArray(answer) 
+          ? answer.map(idx => parseInt(idx))
+          : [parseInt(answer)];
+        
+        const selectedOptions = selectedIndices
+          .map(idx => question.options?.[idx])
+          .filter(opt => opt !== undefined);
+
         return (
           <div className="space-y-3">
             <div className="bg-gray-700 rounded p-3">
-              <p className="text-gray-300 font-medium">Selected Answer:</p>
-              <p className="text-white mt-1">{answer}</p>
+              <p className="text-gray-300 font-medium">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
+              {selectedOptions.length > 0 ? (
+                <ul className="mt-2 space-y-1">
+                  {selectedOptions.map((opt, idx) => (
+                    <li key={idx} className="text-white">• {opt}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-white mt-1">{answer}</p>
+              )}
             </div>
             {question.options && (
               <div className="bg-gray-800 rounded p-3 border border-gray-600">
@@ -2109,7 +2739,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     <li 
                       key={index} 
                       className={`text-sm p-2 rounded ${
-                        option === answer 
+                        selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
                           : 'text-gray-400'
                       }`}
@@ -2143,7 +2773,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
       case 'multi_part':
       case 'multi-part':
-        return renderMultiPartAnswer(question, answer);
+        // For top-level multi-part questions, we need to find the question ID from submission
+        // The questionId is the key in submission.answers, which corresponds to feedback keys
+        let topLevelQuestionId = null;
+        if (submission?.answers) {
+          const answerEntries = Object.entries(submission.answers);
+          const questionIndex = questions.findIndex(q => q.id === question.id);
+          if (questionIndex >= 0 && answerEntries[questionIndex]) {
+            topLevelQuestionId = answerEntries[questionIndex][0];
+          }
+        }
+        return renderMultiPartAnswer(question, answer, topLevelQuestionId, topLevelQuestionId);
 
       default:
         // For short_answer, long_answer, true_false, and other types
@@ -2307,10 +2947,22 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             
                             {/* Show score for this question if available */}
                             {questionFeedback && (
-                              <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
-                                <span className="text-green-400 font-bold">
-                                  {questionFeedback.score || 0}/{questionFeedback.max_points || question?.points || 0}
-                                </span>
+                              <div className="flex items-center space-x-2">
+                                <div className="bg-green-900/30 px-3 py-1 rounded border border-green-500/30">
+                                  <span className="text-green-400 font-bold">
+                                    {questionFeedback.score || 0}/{questionFeedback.max_points || question?.points || 0}
+                                  </span>
+                                </div>
+                                {/* AI Plagiarism Flag Indicator */}
+                                {questionFeedback.ai_flag && questionFeedback.ai_flag.flag_level !== 'none' && (
+                                  <div className={`px-3 py-1 rounded border text-sm font-medium ${
+                                    questionFeedback.ai_flag.flag_level === 'hard' 
+                                      ? 'bg-red-900/30 border-red-500/50 text-red-300' 
+                                      : 'bg-yellow-900/30 border-yellow-500/50 text-yellow-300'
+                                  }`}>
+                                    {questionFeedback.ai_flag.flag_level === 'hard' ? '🚫 AI-Generated (Penalized)' : '⚠️ Possible AI-Generated'}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -2369,32 +3021,78 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         
                         {/* Question Feedback */}
                         {questionFeedback && (
-                          <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
-                            <p className="text-green-400 font-medium mb-3 flex items-center">
-                              <Brain size={16} className="mr-2" />
-                              AI Feedback
-                            </p>
-                            
-                            {questionFeedback.breakdown && (
-                              <div className="mb-3">
-                                <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
-                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                          <div className="space-y-3">
+                            {/* AI Flag Warning Banner */}
+                            {questionFeedback.ai_flag && questionFeedback.ai_flag.flag_level !== 'none' && (
+                              <div className={`rounded-lg p-4 border-2 ${
+                                questionFeedback.ai_flag.flag_level === 'hard'
+                                  ? 'bg-red-900/20 border-red-500'
+                                  : 'bg-yellow-900/20 border-yellow-500'
+                              }`}>
+                                <div className="flex items-start space-x-3">
+                                  <AlertCircle className={questionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={20} />
+                                  <div className="flex-1">
+                                    <p className={`font-bold mb-2 ${
+                                      questionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                                    }`}>
+                                      {questionFeedback.ai_flag.flag_level === 'hard' 
+                                        ? 'AI-Generated Content Detected (Score Penalized)' 
+                                        : 'Possible AI-Generated Content'}
+                                    </p>
+                                    {questionFeedback.ai_flag.original_score && questionFeedback.ai_flag.penalized_score && (
+                                      <p className="text-sm text-gray-300 mb-2">
+                                        Original Score: <span className="line-through">{questionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                                        Penalized Score: <span className="font-bold text-red-300">{questionFeedback.ai_flag.penalized_score.toFixed(1)}</span> 
+                                        <span className="text-red-400 ml-2">(50% penalty applied)</span>
+                                      </p>
+                                    )}
+                                    {questionFeedback.ai_flag.reasons && questionFeedback.ai_flag.reasons.length > 0 && (
+                                      <div className="text-sm text-gray-300">
+                                        <p className="font-medium mb-1">Detection Reasons:</p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                          {questionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                            <li key={idx}>{reason}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    <p className="text-xs text-gray-400 mt-2">
+                                      Confidence: {(questionFeedback.ai_flag.confidence * 100).toFixed(1)}% | 
+                                      Model Score: {(questionFeedback.ai_flag.model_score * 100).toFixed(1)}%
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             )}
                             
-                            {questionFeedback.strengths && (
-                              <div className="mb-3">
-                                <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
-                                <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
-                              </div>
-                            )}
-                            
-                            {questionFeedback.areas_for_improvement && (
-                              <div>
-                                <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
-                                <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
-                              </div>
-                            )}
+                            {/* Regular Feedback */}
+                            <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                              <p className="text-green-400 font-medium mb-3 flex items-center">
+                                <Brain size={16} className="mr-2" />
+                                AI Feedback
+                              </p>
+                              
+                              {questionFeedback.breakdown && (
+                                <div className="mb-3">
+                                  <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
+                                  <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                                </div>
+                              )}
+                              
+                              {questionFeedback.strengths && (
+                                <div className="mb-3">
+                                  <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
+                                  <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                                </div>
+                              )}
+                              
+                              {questionFeedback.areas_for_improvement && (
+                                <div>
+                                  <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
+                                  <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>

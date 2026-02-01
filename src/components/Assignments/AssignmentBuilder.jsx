@@ -95,6 +95,13 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     return question;
   };
 
+  // Helper function to get next sequential ID
+  const getNextQuestionId = () => {
+    if (questions.length === 0) return 1;
+    const maxId = Math.max(...questions.map(q => q.id || 0));
+    return maxId + 1;
+  };
+
   // Update state when preloadedData changes
   useEffect(() => {
     if (preloadedData) {
@@ -107,7 +114,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         return {
           ...normalizedQ,
           // Ensure each question has a unique ID that works with the frontend
-          id: question.id || Date.now() + index,
+          id: question.id || (index + 1),
           // Ensure order is set
           order: question.order || index + 1
         };
@@ -145,7 +152,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
 
   const addQuestion = (type) => {
     const baseQuestion = {
-      id: Date.now(),
+      id: getNextQuestionId(),
       type,
       question: '',
       options: type === 'multiple-choice' ? ['', '', '', ''] : [],

@@ -724,6 +724,63 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 {/* Sub-question feedback if available */}
                 {subQuestionFeedback && (
                   <div className="mt-4 space-y-2">
+                    {/* AI Flag Warning Banner for Sub-question */}
+                    {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                      <div className={`rounded-lg p-3 border-2 ${
+                        subQuestionFeedback.ai_flag.flag_level === 'hard'
+                          ? 'bg-red-900/20 border-red-500'
+                          : 'bg-yellow-900/20 border-yellow-500'
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-2 flex-1">
+                            <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                            <div className="flex-1">
+                              <p className={`font-bold text-sm mb-1 ${
+                                subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                              }`}>
+                                {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                                  ? 'AI-Generated Content (Penalized)' 
+                                  : 'Possible AI-Generated Content'}
+                              </p>
+                              {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                                <p className="text-xs text-gray-300 mb-1">
+                                  Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                                  Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                                </p>
+                              )}
+                              {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                                <div className="text-xs text-gray-300 mb-1">
+                                  <p className="font-medium">Detection Reasons:</p>
+                                  <ul className="list-disc list-inside space-y-0.5 mt-1">
+                                    {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                      <li key={idx}>{reason}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-400">
+                                Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedFlagForOverride({
+                                submissionId: submission.id,
+                                questionId: currentFeedbackKey,
+                                questionNumber: currentFeedbackKey,
+                                flag: subQuestionFeedback.ai_flag
+                              });
+                              setOverrideModalOpen(true);
+                            }}
+                            className="ml-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                          >
+                            Override
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
                       <p className="text-green-400 font-medium text-sm mb-2 flex items-center">
                         <Brain size={14} className="mr-1" />

@@ -109,8 +109,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [assignmentQuestions, setAssignmentQuestions] = useState([]);
   
-  // AI Plagiarism Detection telemetry
-  const { handlePaste, handleKeyDown, startTracking, getTrackingData, resetTracking } = useIntegrityTracker();
+  // AI Plagiarism Detection telemetry (per-question tracking)
+  const { 
+    startQuestionTracking, 
+    stopQuestionTracking, 
+    handlePaste, 
+    handleKeyDown, 
+    getAllQuestionTelemetry, 
+    resetTracking 
+  } = useIntegrityTracker();
 
   const actualAssignment = assignment.assignment || assignment;
   
@@ -121,8 +128,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   // Load existing draft/submission on component mount
   useEffect(() => {
     loadExistingSubmission();
-    // Start telemetry tracking when modal opens
-    startTracking();
+    // Note: Per-question tracking starts on focus, not modal open
   }, []);
 
   // Load assignment questions on component mount
@@ -573,8 +579,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     try {
       setIsSubmitting(true);
       
-      // Collect telemetry data
-      const telemetryData = getTrackingData();
+      // Collect per-question telemetry data
+      const telemetryData = getAllQuestionTelemetry();
       
       // Transform answers for in-app submissions to use sequential IDs
       const answersToSubmit = submissionMethod === 'in-app' 
@@ -860,8 +866,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             <textarea
               value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
               onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
-              onPaste={handlePaste}
-              onKeyDown={handleKeyDown}
+              onFocus={() => startQuestionTracking(question.id.toString())}
+              onBlur={() => stopQuestionTracking(question.id.toString())}
+              onPaste={(e) => handlePaste(e, question.id.toString())}
+              onKeyDown={(e) => handleKeyDown(e, question.id.toString())}
               placeholder={(typeof currentAnswer === 'string' ? !currentAnswer : !currentAnswer?.text) ? "Enter your answer here..." : ""}
               rows={4}
               readOnly={isAlreadySubmitted}
@@ -994,6 +1002,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             <textarea
               value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
               onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
+              onFocus={() => startQuestionTracking(question.id.toString())}
+              onBlur={() => stopQuestionTracking(question.id.toString())}
+              onPaste={(e) => handlePaste(e, question.id.toString())}
+              onKeyDown={(e) => handleKeyDown(e, question.id.toString())}
               placeholder={(typeof currentAnswer === 'string' ? !currentAnswer : !currentAnswer?.text) ? "Enter your detailed answer here..." : ""}
               rows={8}
               readOnly={isAlreadySubmitted}
@@ -1090,6 +1102,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <textarea
                 value={currentAnswer}
                 onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
+                onFocus={() => startQuestionTracking(question.id.toString())}
+                onBlur={() => stopQuestionTracking(question.id.toString())}
+                onPaste={(e) => handlePaste(e, question.id.toString())}
+                onKeyDown={(e) => handleKeyDown(e, question.id.toString())}
                 placeholder={isAlreadySubmitted ? "// Submitted code" : "// Write your code here..."}
                 rows={12}
                 readOnly={isAlreadySubmitted}
@@ -1125,6 +1141,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             <textarea
               value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
               onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
+              onFocus={() => startQuestionTracking(question.id.toString())}
+              onBlur={() => stopQuestionTracking(question.id.toString())}
+              onPaste={(e) => handlePaste(e, question.id.toString())}
+              onKeyDown={(e) => handleKeyDown(e, question.id.toString())}
               placeholder={isAlreadySubmitted ? "Submitted analysis" : "Enter your analysis here..."}
               rows={8}
               readOnly={isAlreadySubmitted}
@@ -1509,6 +1529,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       <textarea
                         value={typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? (currentAnswer?.subAnswers || {})[subq.id] : ((currentAnswer?.subAnswers || {})[subq.id]?.text || '')}
                         onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value, true, subq.id)}
+                        onFocus={() => startQuestionTracking(`${question.id}.${subq.id}`)}
+                        onBlur={() => stopQuestionTracking(`${question.id}.${subq.id}`)}
+                        onPaste={(e) => handlePaste(e, `${question.id}.${subq.id}`)}
+                        onKeyDown={(e) => handleKeyDown(e, `${question.id}.${subq.id}`)}
                         placeholder={(typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? !(currentAnswer?.subAnswers || {})[subq.id] : !((currentAnswer?.subAnswers || {})[subq.id]?.text)) ? (subq.type === 'diagram-analysis' ? "Enter your diagram analysis..." : "Enter your answer...") : ""}
                         rows={subq.type === 'long-answer' ? 6 : 4}
                         readOnly={isAlreadySubmitted}
@@ -1837,6 +1861,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                   };
                                   handleAnswerChange(question.id, newAnswer);
                                 }}
+                                onFocus={() => startQuestionTracking(`${question.id}.${subq.id}.${subSubq.id}`)}
+                                onBlur={() => stopQuestionTracking(`${question.id}.${subq.id}.${subSubq.id}`)}
+                                onPaste={(e) => handlePaste(e, `${question.id}.${subq.id}.${subSubq.id}`)}
+                                onKeyDown={(e) => handleKeyDown(e, `${question.id}.${subq.id}.${subSubq.id}`)}
                                 placeholder={(subSubq.type === 'diagram-analysis' || subSubq.type === 'diagram_analysis') ? "Enter your diagram analysis..." : "Enter your answer..."}
                                 rows={(subSubq.type === 'long-answer' || subSubq.type === 'long_answer') ? 6 : 3}
                                 readOnly={isAlreadySubmitted}
@@ -2190,36 +2218,79 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             )}
             {/* Sub-question feedback */}
             {subQuestionFeedback && (
-              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
-                  <Brain size={12} className="mr-1" />
-                  AI Feedback
-                </p>
-                {subQuestionFeedback.score !== undefined && (
-                  <div className="mb-2">
-                    <span className="text-green-400 font-bold text-sm">
-                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
-                    </span>
+              <div className="space-y-2">
+                {/* AI Flag Warning Banner */}
+                {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                  <div className={`rounded-lg p-3 border-2 ${
+                    subQuestionFeedback.ai_flag.flag_level === 'hard'
+                      ? 'bg-red-900/20 border-red-500'
+                      : 'bg-yellow-900/20 border-yellow-500'
+                  }`}>
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                      <div className="flex-1">
+                        <p className={`font-bold text-sm mb-1 ${
+                          subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                        }`}>
+                          {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                            ? 'AI-Generated Content (Penalized)' 
+                            : 'Possible AI-Generated Content'}
+                        </p>
+                        {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                          <p className="text-xs text-gray-300 mb-1">
+                            Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                            Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                          </p>
+                        )}
+                        {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                          <div className="text-xs text-gray-300 mb-1">
+                            <p className="font-medium">Detection Reasons:</p>
+                            <ul className="list-disc list-inside space-y-0.5 mt-1">
+                              {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {subQuestionFeedback.breakdown && (
-                  <div className="mb-2">
-                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.strengths && (
-                  <div className="mb-2">
-                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.areas_for_improvement && (
-                  <div>
-                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
-                  </div>
-                )}
+                
+                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                  <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                    <Brain size={12} className="mr-1" />
+                    AI Feedback
+                  </p>
+                  {subQuestionFeedback.score !== undefined && (
+                    <div className="mb-2">
+                      <span className="text-green-400 font-bold text-sm">
+                        {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                      </span>
+                    </div>
+                  )}
+                  {subQuestionFeedback.breakdown && (
+                    <div className="mb-2">
+                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.strengths && (
+                    <div className="mb-2">
+                      <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.areas_for_improvement && (
+                    <div>
+                      <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2240,36 +2311,79 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             {/* Sub-question feedback */}
             {subQuestionFeedback && (
-              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
-                  <Brain size={12} className="mr-1" />
-                  AI Feedback
-                </p>
-                {subQuestionFeedback.score !== undefined && (
-                  <div className="mb-2">
-                    <span className="text-green-400 font-bold text-sm">
-                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
-                    </span>
+              <div className="space-y-2">
+                {/* AI Flag Warning Banner */}
+                {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                  <div className={`rounded-lg p-3 border-2 ${
+                    subQuestionFeedback.ai_flag.flag_level === 'hard'
+                      ? 'bg-red-900/20 border-red-500'
+                      : 'bg-yellow-900/20 border-yellow-500'
+                  }`}>
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                      <div className="flex-1">
+                        <p className={`font-bold text-sm mb-1 ${
+                          subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                        }`}>
+                          {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                            ? 'AI-Generated Content (Penalized)' 
+                            : 'Possible AI-Generated Content'}
+                        </p>
+                        {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                          <p className="text-xs text-gray-300 mb-1">
+                            Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                            Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                          </p>
+                        )}
+                        {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                          <div className="text-xs text-gray-300 mb-1">
+                            <p className="font-medium">Detection Reasons:</p>
+                            <ul className="list-disc list-inside space-y-0.5 mt-1">
+                              {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {subQuestionFeedback.breakdown && (
-                  <div className="mb-2">
-                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.strengths && (
-                  <div className="mb-2">
-                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.areas_for_improvement && (
-                  <div>
-                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
-                  </div>
-                )}
+                
+                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                  <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                    <Brain size={12} className="mr-1" />
+                    AI Feedback
+                  </p>
+                  {subQuestionFeedback.score !== undefined && (
+                    <div className="mb-2">
+                      <span className="text-green-400 font-bold text-sm">
+                        {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                      </span>
+                    </div>
+                  )}
+                  {subQuestionFeedback.breakdown && (
+                    <div className="mb-2">
+                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.strengths && (
+                    <div className="mb-2">
+                      <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.areas_for_improvement && (
+                    <div>
+                      <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2294,36 +2408,79 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             {/* Sub-question feedback */}
             {subQuestionFeedback && (
-              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
-                  <Brain size={12} className="mr-1" />
-                  AI Feedback
-                </p>
-                {subQuestionFeedback.score !== undefined && (
-                  <div className="mb-2">
-                    <span className="text-green-400 font-bold text-sm">
-                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
-                    </span>
+              <div className="space-y-2">
+                {/* AI Flag Warning Banner */}
+                {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                  <div className={`rounded-lg p-3 border-2 ${
+                    subQuestionFeedback.ai_flag.flag_level === 'hard'
+                      ? 'bg-red-900/20 border-red-500'
+                      : 'bg-yellow-900/20 border-yellow-500'
+                  }`}>
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                      <div className="flex-1">
+                        <p className={`font-bold text-sm mb-1 ${
+                          subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                        }`}>
+                          {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                            ? 'AI-Generated Content (Penalized)' 
+                            : 'Possible AI-Generated Content'}
+                        </p>
+                        {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                          <p className="text-xs text-gray-300 mb-1">
+                            Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                            Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                          </p>
+                        )}
+                        {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                          <div className="text-xs text-gray-300 mb-1">
+                            <p className="font-medium">Detection Reasons:</p>
+                            <ul className="list-disc list-inside space-y-0.5 mt-1">
+                              {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {subQuestionFeedback.breakdown && (
-                  <div className="mb-2">
-                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.strengths && (
-                  <div className="mb-2">
-                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.areas_for_improvement && (
-                  <div>
-                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
-                  </div>
-                )}
+                
+                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                  <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                    <Brain size={12} className="mr-1" />
+                    AI Feedback
+                  </p>
+                  {subQuestionFeedback.score !== undefined && (
+                    <div className="mb-2">
+                      <span className="text-green-400 font-bold text-sm">
+                        {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                      </span>
+                    </div>
+                  )}
+                  {subQuestionFeedback.breakdown && (
+                    <div className="mb-2">
+                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.strengths && (
+                    <div className="mb-2">
+                      <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.areas_for_improvement && (
+                    <div>
+                      <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2360,36 +2517,79 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             {/* Sub-question feedback */}
             {subQuestionFeedback && (
-              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
-                  <Brain size={12} className="mr-1" />
-                  AI Feedback
-                </p>
-                {subQuestionFeedback.score !== undefined && (
-                  <div className="mb-2">
-                    <span className="text-green-400 font-bold text-sm">
-                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
-                    </span>
+              <div className="space-y-2">
+                {/* AI Flag Warning Banner */}
+                {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                  <div className={`rounded-lg p-3 border-2 ${
+                    subQuestionFeedback.ai_flag.flag_level === 'hard'
+                      ? 'bg-red-900/20 border-red-500'
+                      : 'bg-yellow-900/20 border-yellow-500'
+                  }`}>
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                      <div className="flex-1">
+                        <p className={`font-bold text-sm mb-1 ${
+                          subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                        }`}>
+                          {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                            ? 'AI-Generated Content (Penalized)' 
+                            : 'Possible AI-Generated Content'}
+                        </p>
+                        {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                          <p className="text-xs text-gray-300 mb-1">
+                            Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                            Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                          </p>
+                        )}
+                        {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                          <div className="text-xs text-gray-300 mb-1">
+                            <p className="font-medium">Detection Reasons:</p>
+                            <ul className="list-disc list-inside space-y-0.5 mt-1">
+                              {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {subQuestionFeedback.breakdown && (
-                  <div className="mb-2">
-                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.strengths && (
-                  <div className="mb-2">
-                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.areas_for_improvement && (
-                  <div>
-                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
-                  </div>
-                )}
+                
+                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                  <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                    <Brain size={12} className="mr-1" />
+                    AI Feedback
+                  </p>
+                  {subQuestionFeedback.score !== undefined && (
+                    <div className="mb-2">
+                      <span className="text-green-400 font-bold text-sm">
+                        {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                      </span>
+                    </div>
+                  )}
+                  {subQuestionFeedback.breakdown && (
+                    <div className="mb-2">
+                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.strengths && (
+                    <div className="mb-2">
+                      <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.areas_for_improvement && (
+                    <div>
+                      <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2405,36 +2605,79 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             {/* Sub-question feedback */}
             {subQuestionFeedback && (
-              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
-                  <Brain size={12} className="mr-1" />
-                  AI Feedback
-                </p>
-                {subQuestionFeedback.score !== undefined && (
-                  <div className="mb-2">
-                    <span className="text-green-400 font-bold text-sm">
-                      {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
-                    </span>
+              <div className="space-y-2">
+                {/* AI Flag Warning Banner */}
+                {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                  <div className={`rounded-lg p-3 border-2 ${
+                    subQuestionFeedback.ai_flag.flag_level === 'hard'
+                      ? 'bg-red-900/20 border-red-500'
+                      : 'bg-yellow-900/20 border-yellow-500'
+                  }`}>
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                      <div className="flex-1">
+                        <p className={`font-bold text-sm mb-1 ${
+                          subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                        }`}>
+                          {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                            ? 'AI-Generated Content (Penalized)' 
+                            : 'Possible AI-Generated Content'}
+                        </p>
+                        {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                          <p className="text-xs text-gray-300 mb-1">
+                            Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                            Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                          </p>
+                        )}
+                        {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                          <div className="text-xs text-gray-300 mb-1">
+                            <p className="font-medium">Detection Reasons:</p>
+                            <ul className="list-disc list-inside space-y-0.5 mt-1">
+                              {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {subQuestionFeedback.breakdown && (
-                  <div className="mb-2">
-                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.strengths && (
-                  <div className="mb-2">
-                    <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
-                  </div>
-                )}
-                {subQuestionFeedback.areas_for_improvement && (
-                  <div>
-                    <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
-                  </div>
-                )}
+                
+                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                  <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
+                    <Brain size={12} className="mr-1" />
+                    AI Feedback
+                  </p>
+                  {subQuestionFeedback.score !== undefined && (
+                    <div className="mb-2">
+                      <span className="text-green-400 font-bold text-sm">
+                        {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0} pts
+                      </span>
+                    </div>
+                  )}
+                  {subQuestionFeedback.breakdown && (
+                    <div className="mb-2">
+                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.strengths && (
+                    <div className="mb-2">
+                      <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                    </div>
+                  )}
+                  {subQuestionFeedback.areas_for_improvement && (
+                    <div>
+                      <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

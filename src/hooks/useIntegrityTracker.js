@@ -1,108 +1,197 @@
 /**
  * useIntegrityTracker Hook
  * 
- * Tracks behavioral telemetry during assignment submission to detect
+ * Tracks behavioral telemetry per question during assignment submission to detect
  * potential AI-generated content:
- * - Paste events and paste count
- * - Tab switches (focus/blur)
- * - Time to complete
- * - Typing speed (calculated from key events)
+ * - Paste events and paste count per question
+ * - Tab switches (focus/blur) per question
+ * - Time spent on each question
+ * - Typing speed per question (calculated from key events)
  * 
  * Usage:
- * const { integrityFlags, handlePaste, handleVisibilityChange, startTracking, getTrackingData } = useIntegrityTracker();
+ * const { startQuestionTracking, stopQuestionTracking, handlePaste, handleKeyDown, getAllQuestionTelemetry } = useIntegrityTracker();
  * 
- * Then attach:
- * - onPaste={handlePaste} to textarea/input
- * - useEffect(() => { ... }) for visibility tracking
- * - Call startTracking() when user starts the assignment
- * - Call getTrackingData() when submitting to get telemetry object
+ * Then attach to question inputs:
+ * - onFocus={() => startQuestionTracking(questionId)}
+ * - onBlur={() => stopQuestionTracking(questionId)}
+ * - onPaste={handlePaste}
+ * - onKeyDown={handleKeyDown}
+ * - Call getAllQuestionTelemetry() when submitting to get complete telemetry structure
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 
 export const useIntegrityTracker = () => {
-  const [integrityFlags, setIntegrityFlags] = useState({
-    pasted: false,
-    pasteCount: 0,
-    tabSwitches: 0,
-    timeToComplete: 0, // milliseconds
-    typingSpeed: 0, // words per minute
-  });
+  // Track telemetry per question ID
+  const [questionTelemetry, setQuestionTelemetry] = useState({});
+  const [currentQuestionId, setCurrentQuestionId] = useState(null);
+  const [globalTabSwitches, setGlobalTabSwitches] = useState(0);
+  
+  // Refs for tracking current question state
+  const questionStartTimes = useRef({});
+  const questionKeystrokes = useRef({});
+  const questionLastKeystroke = useRef({});
+  const globalStartTime = useRef(null);
 
-  const startTimeRef = useRef(null);
-  const keystrokeCountRef = useRef(0);
-  const lastKeystrokeTimeRef = useRef(null);
+  // Initialize global tracking
+  useEffect(() => {
+    globalStartTime.current = Date.now();
+  }, []);
 
-  // Start tracking when user begins the assignment
-  const startTracking = useCallback(() => {
-    startTimeRef.current = Date.now();
-    keystrokeCountRef.current = 0;
-    lastKeystrokeTimeRef.current = Date.now();
+  // Start tracking when user focuses on a question
+  const startQuestionTracking = useCallback((questionId) => {
+    if (!questionId) return;
+    
+    setCurrentQuestionId(questionId);
+    
+    // Initialize tracking for this question if not already done
+    if (!questionStartTimes.current[questionId]) {
+      questionStartTimes.current[questionId] = Date.now();
+      questionKeystrokes.current[questionId] = 0;
+      questionLastKeystroke.current[questionId] = Date.now();
+      
+      // Initialize telemetry entry for this question
+      setQuestionTelemetry(prev => ({
+        ...prev,
+        [questionId]: {
+          pasted: false,
+          pasteCount: 0,
+          tabSwitches: 0,
+          timeOnQuestion: 0,
+          typingSpeed: 0,
+        }
+      }));
+    }
+  }, []);
+
+  // Stop tracking when user leaves a question
+  const stopQuestionTracking = useCallback((questionId) => {
+    if (!questionId || !questionStartTimes.current[questionId]) return;
+    
+    const endTime = Date.now();
+    const timeElapsed = endTime - questionStartTimes.current[questionId];
+    const keystrokeCount = questionKeystrokes.current[questionId] || 0;
+    
+    // Calculate typing speed for this question
+    const totalWords = Math.floor(keystrokeCount / 5);
+    const timeInMinutes = timeElapsed / 60000;
+    const typingSpeed = timeInMinutes > 0 ? Math.round(totalWords / timeInMinutes) : 0;
+    
+    // Update telemetry with final values
+    setQuestionTelemetry(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        timeOnQuestion: timeElapsed,
+        time_taken_seconds: Math.round(timeElapsed / 1000),
+        typingSpeed: typingSpeed,
+      }
+    }));
+    
+    setCurrentQuestionId(null);
   }, []);
 
   // Handle paste events
-  const handlePaste = useCallback((e) => {
+  const handlePaste = useCallback((e, questionId = null) => {
     const pastedData = e.clipboardData?.getData('text') || '';
+    const targetQuestionId = questionId || currentQuestionId;
     
     // Only flag significant paste events (more than 50 characters)
-    if (pastedData.length > 50) {
-      setIntegrityFlags(prev => ({
+    if (targetQuestionId && pastedData.length > 50) {
+      setQuestionTelemetry(prev => ({
         ...prev,
-        pasted: true,
-        pasteCount: prev.pasteCount + 1
+        [targetQuestionId]: {
+          ...(prev[targetQuestionId] || {}),
+          pasted: true,
+          pasteCount: (prev[targetQuestionId]?.pasteCount || 0) + 1,
+        }
       }));
     }
-  }, []);
+  }, [currentQuestionId]);
+
+  // Handle keystrokes for typing speed calculation
+  const handleKeyDown = useCallback((e, questionId = null) => {
+    const targetQuestionId = questionId || currentQuestionId;
+    
+    if (targetQuestionId) {
+      questionKeystrokes.current[targetQuestionId] = 
+        (questionKeystrokes.current[targetQuestionId] || 0) + 1;
+      questionLastKeystroke.current[targetQuestionId] = Date.now();
+    }
+  }, [currentQuestionId]);
 
   // Handle visibility/tab switching
   const handleVisibilityChange = useCallback(() => {
-    if (document.hidden) {
-      setIntegrityFlags(prev => ({
+    if (document.hidden && currentQuestionId) {
+      // Track tab switch for current question
+      setGlobalTabSwitches(prev => prev + 1);
+      setQuestionTelemetry(prev => ({
         ...prev,
-        tabSwitches: prev.tabSwitches + 1
+        [currentQuestionId]: {
+          ...(prev[currentQuestionId] || {}),
+          tabSwitches: (prev[currentQuestionId]?.tabSwitches || 0) + 1,
+        }
       }));
     }
-  }, []);
+  }, [currentQuestionId]);
 
-  // Handle keystrokes for typing speed calculation
-  const handleKeyDown = useCallback(() => {
-    keystrokeCountRef.current += 1;
-    lastKeystrokeTimeRef.current = Date.now();
-  }, []);
+  // Get all telemetry data in the format expected by backend
+  const getAllQuestionTelemetry = useCallback(() => {
+    // Finalize any currently tracked question
+    if (currentQuestionId && questionStartTimes.current[currentQuestionId]) {
+      const endTime = Date.now();
+      const timeElapsed = endTime - questionStartTimes.current[currentQuestionId];
+      const keystrokeCount = questionKeystrokes.current[currentQuestionId] || 0;
+      const totalWords = Math.floor(keystrokeCount / 5);
+      const timeInMinutes = timeElapsed / 60000;
+      const typingSpeed = timeInMinutes > 0 ? Math.round(totalWords / timeInMinutes) : 0;
+      
+      setQuestionTelemetry(prev => ({
+        ...prev,
+        [currentQuestionId]: {
+          ...prev[currentQuestionId],
+          timeOnQuestion: timeElapsed,
+          time_taken_seconds: Math.round(timeElapsed / 1000),
+          typingSpeed: typingSpeed,
+        }
+      }));
+    }
 
-  // Get final telemetry data for submission
-  const getTrackingData = useCallback(() => {
-    const endTime = Date.now();
-    const timeElapsed = startTimeRef.current ? endTime - startTimeRef.current : 0;
+    // Calculate submission-level metrics
+    const totalTime = globalStartTime.current ? Date.now() - globalStartTime.current : 0;
     
-    // Calculate typing speed (rough estimate: 5 chars per word)
-    const totalWords = Math.floor(keystrokeCountRef.current / 5);
-    const timeInMinutes = timeElapsed / 60000;
-    const typingSpeed = timeInMinutes > 0 ? Math.round(totalWords / timeInMinutes) : 0;
-
     return {
-      pasted: integrityFlags.pasted,
-      pasteCount: integrityFlags.pasteCount,
-      tabSwitches: integrityFlags.tabSwitches,
-      timeToComplete: timeElapsed,
-      time_taken_seconds: Math.round(timeElapsed / 1000),
-      typingSpeed: typingSpeed
+      per_question: questionTelemetry,
+      submission_level: {
+        total_time_ms: totalTime,
+        total_time_seconds: Math.round(totalTime / 1000),
+        total_tab_switches: globalTabSwitches,
+        questions_attempted: Object.keys(questionTelemetry).length,
+      }
     };
-  }, [integrityFlags]);
+  }, [questionTelemetry, currentQuestionId, globalTabSwitches]);
 
   // Reset tracking
   const resetTracking = useCallback(() => {
-    setIntegrityFlags({
-      pasted: false,
-      pasteCount: 0,
-      tabSwitches: 0,
-      timeToComplete: 0,
-      typingSpeed: 0,
-    });
-    startTimeRef.current = null;
-    keystrokeCountRef.current = 0;
-    lastKeystrokeTimeRef.current = null;
+    setQuestionTelemetry({});
+    setCurrentQuestionId(null);
+    setGlobalTabSwitches(0);
+    questionStartTimes.current = {};
+    questionKeystrokes.current = {};
+    questionLastKeystroke.current = {};
+    globalStartTime.current = Date.now();
   }, []);
+
+  // Legacy method for backward compatibility
+  const startTracking = useCallback(() => {
+    globalStartTime.current = Date.now();
+  }, []);
+
+  // Legacy method for backward compatibility
+  const getTrackingData = useCallback(() => {
+    console.warn('getTrackingData() is deprecated. Use getAllQuestionTelemetry() instead.');
+    return getAllQuestionTelemetry();
+  }, [getAllQuestionTelemetry]);
 
   // Set up visibility change listener
   useEffect(() => {
@@ -113,13 +202,20 @@ export const useIntegrityTracker = () => {
   }, [handleVisibilityChange]);
 
   return {
-    integrityFlags,
+    // Per-question tracking methods
+    startQuestionTracking,
+    stopQuestionTracking,
     handlePaste,
     handleKeyDown,
-    handleVisibilityChange,
+    getAllQuestionTelemetry,
+    resetTracking,
+    currentQuestionId,
+    
+    // Legacy methods for backward compatibility
     startTracking,
     getTrackingData,
-    resetTracking
+    integrityFlags: {}, // Empty for compatibility
+    handleVisibilityChange,
   };
 };
 

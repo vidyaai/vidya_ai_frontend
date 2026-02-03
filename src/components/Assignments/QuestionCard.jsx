@@ -151,11 +151,14 @@ const QuestionCard = ({
   const handleSubquestionMultipleCorrectToggle = (subIndex) => {
     const subq = question.subquestions[subIndex];
     const newAllowMultiple = !subq.allowMultipleCorrect;
-    handleSubquestionChange(subIndex, 'allowMultipleCorrect', newAllowMultiple);
-    handleSubquestionChange(subIndex, 'multipleCorrectAnswers', newAllowMultiple ? [] : undefined);
-    if (newAllowMultiple) {
-      handleSubquestionChange(subIndex, 'correctAnswer', '');
-    }
+    const newSubquestions = [...(question.subquestions || [])];
+    newSubquestions[subIndex] = {
+      ...newSubquestions[subIndex],
+      allowMultipleCorrect: newAllowMultiple,
+      multipleCorrectAnswers: newAllowMultiple ? [] : undefined,
+      correctAnswer: newAllowMultiple ? '' : newSubquestions[subIndex].correctAnswer
+    };
+    onUpdate({ subquestions: newSubquestions });
   };
 
   const handleSubquestionMultipleCorrectChange = (subIndex, optionIndex, isChecked) => {
@@ -210,8 +213,14 @@ const QuestionCard = ({
   };
 
   const addSubquestion = () => {
-    const newSubquestions = [...(question.subquestions || []), {
-      id: Date.now(),
+    // Get next sequential ID for subquestions
+    const existingSubquestions = question.subquestions || [];
+    const nextId = existingSubquestions.length === 0 
+      ? 1 
+      : Math.max(...existingSubquestions.map(sq => sq.id || 0)) + 1;
+    
+    const newSubquestions = [...existingSubquestions, {
+      id: nextId,
       question: '',
       points: 1,
       type: 'short-answer',
@@ -2448,8 +2457,14 @@ const QuestionCard = ({
                             </label>
                             <button
                               onClick={() => {
-                                const newSubSubquestions = [...(subq.subquestions || []), {
-                                  id: Date.now(),
+                                // Get next sequential ID for nested subquestions
+                                const existingSubSubquestions = subq.subquestions || [];
+                                const nextId = existingSubSubquestions.length === 0 
+                                  ? 1 
+                                  : Math.max(...existingSubSubquestions.map(ssq => ssq.id || 0)) + 1;
+                                
+                                const newSubSubquestions = [...existingSubSubquestions, {
+                                  id: nextId,
                                   question: '',
                                   points: 1,
                                   type: 'short-answer'

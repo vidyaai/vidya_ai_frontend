@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignmentSubmissions.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   FileText, 
@@ -40,6 +40,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [selectedFlagForOverride, setSelectedFlagForOverride] = useState(null);
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideLoading, setOverrideLoading] = useState(false);
+  
+  // Ref for preserving scroll position when opening override modal
+  const submissionModalScrollRef = useRef(null);
+  // Ref to store scroll position value (persists across re-renders)
+  const savedScrollPosition = useRef(0);
 
   // Load submissions from API
   useEffect(() => {
@@ -48,6 +53,19 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       loadAssignmentQuestions();
     }
   }, [assignment?.id]);
+
+  // Restore scroll position when override modal state changes
+  // useLayoutEffect runs synchronously after DOM mutations but before paint
+  useLayoutEffect(() => {
+    // Restore scroll position if we have one saved
+    if (savedScrollPosition.current > 0 && submissionModalScrollRef.current) {
+      submissionModalScrollRef.current.scrollTop = savedScrollPosition.current;
+      // Only reset the saved position when modal closes
+      if (!overrideModalOpen) {
+        savedScrollPosition.current = 0;
+      }
+    }
+  }, [overrideModalOpen]);
 
   const loadSubmissions = async () => {
     try {
@@ -163,6 +181,9 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     try {
       setOverrideLoading(true);
       
+      // Save scroll position in ref before any state changes
+      savedScrollPosition.current = submissionModalScrollRef.current?.scrollTop || 0;
+      
       await assignmentApi.overrideAIFlag(
         assignment.id,
         selectedFlagForOverride.submissionId,
@@ -173,15 +194,25 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         }
       );
       
-      // Refresh submissions to show updated scores
-      await loadSubmissions();
+      // Fetch updated submissions using correct function name
+      const updatedSubmissions = await assignmentApi.getAssignmentSubmissions(assignment.id);
       
-      // Close modal and reset
+      // Close override modal first
       setOverrideModalOpen(false);
       setSelectedFlagForOverride(null);
       setOverrideReason('');
       
-      alert('AI flag override applied successfully');
+      // Update submissions list
+      setSubmissions(updatedSubmissions);
+      
+      // Update selectedSubmission with the new data to reflect changes immediately
+      if (selectedSubmission && selectedSubmission.id === selectedFlagForOverride.submissionId) {
+        const updatedSubmission = updatedSubmissions.find(s => s.id === selectedFlagForOverride.submissionId);
+        if (updatedSubmission) {
+          setSelectedSubmission(updatedSubmission);
+        }
+      }
+      
     } catch (error) {
       console.error('Failed to override AI flag:', error);
       alert('Failed to override AI flag. Please try again.');
@@ -281,7 +312,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   };
 
   // Helper function to render sub-question answer based on its type
-  const renderSubQuestionAnswer = (subQuestion, subAnswer, feedbackKeyPrefix = null) => {
+  // submission parameter is needed for AI Flag override functionality in nested multi-part questions
+  const renderSubQuestionAnswer = (subQuestion, subAnswer, feedbackKeyPrefix = null, submission = null) => {
+    // Use passed submission or fall back to selectedSubmission for override button functionality
+    const currentSubmission = submission || selectedSubmission;
+    
     console.log('Rendering sub-question answer:', subQuestion, subAnswer, typeof subAnswer);
 
     // Extract text and diagram if answer is an object with those keys
@@ -451,9 +486,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       case 'multi-part':
         // Recursively render nested multi-part questions
         // Pass the feedbackKeyPrefix as the prefix for nested levels
+        // Also pass currentSubmission for AI Flag override functionality
         return (
           <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
-            {renderMultiPartAnswer(subQuestion, subAnswer, null, feedbackKeyPrefix)}
+            {renderMultiPartAnswer(subQuestion, subAnswer, null, feedbackKeyPrefix, currentSubmission)}
           </div>
         );
 
@@ -570,7 +606,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
   // Comprehensive multi-part question renderer
   // feedbackKeyPrefix is used for nested multi-part questions (e.g., "2" for top-level, "2.1" for nested)
-  const renderMultiPartAnswer = (question, answer, questionId = null, feedbackKeyPrefix = null) => {
+  // submission parameter is needed for AI Flag override functionality
+  const renderMultiPartAnswer = (question, answer, questionId = null, feedbackKeyPrefix = null, submission = null) => {
+    // Use passed submission or fall back to selectedSubmission for override button functionality
+    const currentSubmission = submission || selectedSubmission;
+    
     if (!question || !question.subquestions) {
       return (
         <div className="bg-gray-700 rounded p-3">
@@ -656,8 +696,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               ? `${feedbackKeyPrefix}.${partNumber}` 
               : (questionId ? `${questionId}.${partNumber}` : null);
             
-            // Get feedback for this sub-question if available
-            const subQuestionFeedback = currentFeedbackKey ? getSubQuestionFeedback(currentFeedbackKey) : null;
+            // Get feedback for this sub-question if available (pass currentSubmission for proper feedback lookup)
+            const subQuestionFeedback = currentFeedbackKey ? getSubQuestionFeedback(currentFeedbackKey, currentSubmission) : null;
             
             return (
               <div key={subQuestion.id || index} className="bg-gray-700 rounded-lg p-4 border-l-4 border-teal-500">
@@ -713,7 +753,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 <div>
                   <p className="text-gray-300 font-medium text-sm mb-2">Answer:</p>
                   {subAnswer !== undefined ? (
-                    renderSubQuestionAnswer(subQuestion, subAnswer, currentFeedbackKey)
+                    renderSubQuestionAnswer(subQuestion, subAnswer, currentFeedbackKey, currentSubmission)
                   ) : (
                     <div className="bg-gray-800 rounded p-3">
                       <p className="text-gray-500 text-sm italic">No answer provided</p>
@@ -764,9 +804,16 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                             </div>
                           </div>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!currentSubmission?.id) {
+                                console.error('No submission ID available for override');
+                                return;
+                              }
+                              // Save scroll position BEFORE any state changes
+                              savedScrollPosition.current = submissionModalScrollRef.current?.scrollTop || 0;
                               setSelectedFlagForOverride({
-                                submissionId: submission.id,
+                                submissionId: currentSubmission.id,
                                 questionId: currentFeedbackKey,
                                 questionNumber: currentFeedbackKey,
                                 flag: subQuestionFeedback.ai_flag
@@ -820,7 +867,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   };
 
   // Helper function to render answer based on question type
-  const renderAnswer = (question, answer, questionId = null) => {
+  // submission parameter is needed for AI Flag override functionality in multi-part questions
+  const renderAnswer = (question, answer, questionId = null, submission = null) => {
     if (!question) {
       return (
         <div className="bg-gray-700 rounded p-3">
@@ -899,7 +947,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       case 'multi-part':
         // For top-level multi-part questions, pass questionId as the feedbackKeyPrefix
         // This will be used to construct feedback keys like "2.1", "2.2", etc.
-        return renderMultiPartAnswer(question, answer, questionId, questionId);
+        // Also pass submission for AI Flag override functionality
+        return renderMultiPartAnswer(question, answer, questionId, questionId, submission);
 
       default:
         // For short_answer, long_answer, true_false, and other types
@@ -1006,9 +1055,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
   // Helper function to get sub-question feedback from submission feedback
   // Feedback keys are structured as "questionNumber.partNumber" (e.g., "2.1", "2.2")
-  const getSubQuestionFeedback = (feedbackKey) => {
-    if (!selectedSubmission?.feedback) return null;
-    return selectedSubmission.feedback[feedbackKey];
+  // submission parameter allows getting feedback from a specific submission
+  const getSubQuestionFeedback = (feedbackKey, submission = null) => {
+    const targetSubmission = submission || selectedSubmission;
+    if (!targetSubmission?.feedback) return null;
+    return targetSubmission.feedback[feedbackKey];
   };
 
   // Submission Detail Modal
@@ -1044,7 +1095,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div ref={submissionModalScrollRef} className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-gray-800 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
@@ -1213,7 +1264,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                           <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
                           {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
                             ? renderAnswerWithDiagram(answer)
-                            : renderAnswer(question, answer, questionId)
+                            : renderAnswer(question, answer, questionId, submission)
                           }
                         </div>
                         
@@ -1260,7 +1311,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                     </div>
                                   </div>
                                   <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Save scroll position BEFORE any state changes
+                                      savedScrollPosition.current = submissionModalScrollRef.current?.scrollTop || 0;
                                       setSelectedFlagForOverride({
                                         submissionId: submission.id,
                                         questionId: questionId,
@@ -1473,8 +1527,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     if (!isOpen || !flagInfo) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-2xl w-full">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
           <div className="mb-6">
             <div className="flex items-start space-x-3 mb-4">
               <AlertCircle className={flagInfo.flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={24} />

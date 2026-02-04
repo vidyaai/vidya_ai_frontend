@@ -108,10 +108,10 @@ export const formatTime = (seconds) => {
 
 export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
   if (!text) return text;
-  
+
   // First convert LaTeX to HTML
   let processed = convertLatexToMathHTML(text);
-  
+
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
     const parts = timeStr.split(':');
@@ -125,26 +125,65 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     return 0;
   };
 
+  // Helper function to extract a readable title from URL
+  const getTitleFromUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const lastSegment = pathname.split('/').filter(Boolean).pop() || urlObj.hostname;
+
+      // If the last segment looks like a readable title, use it
+      const decodedSegment = decodeURIComponent(lastSegment);
+      if (decodedSegment && decodedSegment.length > 0 && decodedSegment.length < 80) {
+        return decodedSegment.replace(/[-_]/g, ' ').replace(/\.(html?|php|aspx?)$/i, '');
+      }
+
+      // Otherwise, use the hostname
+      return urlObj.hostname.replace(/^www\./, '');
+    } catch {
+      return url.length > 50 ? url.substring(0, 50) + '...' : url;
+    }
+  };
+
   const lines = processed.split('\n');
   const elements = [];
-  
+
   lines.forEach((line, index) => {
     if (!line.trim()) {
       elements.push(<br key={`br-${index}`} />);
       return;
     }
-    
+
+    // Check if this line is a heading (###, ##, #)
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const [, hashes, headingText] = headingMatch;
+      const level = hashes.length;
+      const HeadingTag = `h${level}`;
+      const headingClasses = {
+        1: 'text-2xl font-bold text-white mb-3 mt-4',
+        2: 'text-xl font-bold text-white mb-2 mt-3',
+        3: 'text-lg font-semibold text-white mb-2 mt-2',
+        4: 'text-base font-semibold text-white mb-1 mt-2',
+        5: 'text-sm font-semibold text-white mb-1 mt-1',
+        6: 'text-xs font-semibold text-white mb-1 mt-1'
+      };
+
+      elements.push(
+        <HeadingTag key={`heading-${index}`} className={headingClasses[level]}>
+          {headingText}
+        </HeadingTag>
+      );
+      return;
+    }
+
     const parts = [];
     let currentIndex = 0;
-    
-    // Updated regex to match timestamps with or without $ signs
-    const timestampRegex = /(\$?\d{1,2}:\d{2}\$?)/g;
-    const boldRegex = /(\*\*.*?\*\*|__.*?__)/g;
-    
-    // Combine both regexes to process in order
-    const combinedRegex = /(\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+
+    // Combine all regexes to process in order (markdown links first, then plain URLs, timestamps, bold)
+    const combinedRegex = /(\[([^\]]+)\]\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
     let match;
-    
+
     while ((match = combinedRegex.exec(line)) !== null) {
       if (match.index > currentIndex) {
         const beforeMatch = line.slice(currentIndex, match.index);
@@ -155,13 +194,46 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
           parts.push(beforeMatch);
         }
       }
-      
-      // Check if this is a timestamp (contains digits and colon)
-      if (/\d{1,2}:\d{2}/.test(match[0])) {
+
+      // Check if this is a markdown link [text](url)
+      if (match[0].startsWith('[') && match[0].includes('](')) {
+        const linkMatch = match[0].match(/\[([^\]]+)\]\(([^)]+)\)/);
+        if (linkMatch) {
+          const [, linkText, linkUrl] = linkMatch;
+          parts.push(
+            <a
+              key={`link-${index}-${match.index}`}
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline break-all"
+            >
+              {linkText}
+            </a>
+          );
+        }
+      } else if (match[0].startsWith('http://') || match[0].startsWith('https://')) {
+        // This is a plain URL - convert it to a clickable link with a nice title
+        const url = match[0];
+        const title = getTitleFromUrl(url);
+        parts.push(
+          <a
+            key={`url-${index}-${match.index}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline break-all inline-block"
+            title={url}
+          >
+            {title}
+          </a>
+        );
+      } else if (/\d{1,2}:\d{2}/.test(match[0])) {
+        // Check if this is a timestamp (contains digits and colon)
         // Extract just the time part (remove $ signs)
         const timeStr = match[0].replace(/\$/g, '');
         const totalSeconds = timeToSeconds(timeStr);
-        
+
         if (onSeekToTime && totalSeconds > 0) {
           parts.push(
             <button
@@ -189,10 +261,10 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
           </strong>
         );
       }
-      
+
       currentIndex = match.index + match[0].length;
     }
-    
+
     // Add remaining text
     if (currentIndex < line.length) {
       const remainingText = line.slice(currentIndex);
@@ -203,7 +275,7 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
         parts.push(remainingText);
       }
     }
-    
+
     if (parts.length > 0) {
       elements.push(
         <div key={`para-${index}`} className="mb-2 leading-relaxed">
@@ -212,14 +284,14 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
       );
     }
   });
-  
+
   return <div className="space-y-1">{elements}</div>;
 };
 
 // Keep the original parseMarkdown for non-AI messages
 export const parseMarkdown = (text, onSeekToTime = null) => {
   if (!text) return text;
-  
+
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
     const parts = timeStr.split(':');
@@ -233,37 +305,109 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
     return 0;
   };
 
+  // Helper function to extract a readable title from URL
+  const getTitleFromUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const lastSegment = pathname.split('/').filter(Boolean).pop() || urlObj.hostname;
+
+      // If the last segment looks like a readable title, use it
+      const decodedSegment = decodeURIComponent(lastSegment);
+      if (decodedSegment && decodedSegment.length > 0 && decodedSegment.length < 80) {
+        return decodedSegment.replace(/[-_]/g, ' ').replace(/\.(html?|php|aspx?)$/i, '');
+      }
+
+      // Otherwise, use the hostname
+      return urlObj.hostname.replace(/^www\./, '');
+    } catch {
+      return url.length > 50 ? url.substring(0, 50) + '...' : url;
+    }
+  };
+
   const lines = text.split('\n');
   const elements = [];
-  
+
   lines.forEach((line, index) => {
     if (!line.trim()) {
       elements.push(<br key={`br-${index}`} />);
       return;
     }
-    
+
+    // Check if this line is a heading (###, ##, #)
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const [, hashes, headingText] = headingMatch;
+      const level = hashes.length;
+      const HeadingTag = `h${level}`;
+      const headingClasses = {
+        1: 'text-2xl font-bold text-white mb-3 mt-4',
+        2: 'text-xl font-bold text-white mb-2 mt-3',
+        3: 'text-lg font-semibold text-white mb-2 mt-2',
+        4: 'text-base font-semibold text-white mb-1 mt-2',
+        5: 'text-sm font-semibold text-white mb-1 mt-1',
+        6: 'text-xs font-semibold text-white mb-1 mt-1'
+      };
+
+      elements.push(
+        <HeadingTag key={`heading-${index}`} className={headingClasses[level]}>
+          {headingText}
+        </HeadingTag>
+      );
+      return;
+    }
+
     const parts = [];
     let currentIndex = 0;
-    
-    // Updated regex to match timestamps with or without $ signs
-    const timestampRegex = /(\$?\d{1,2}:\d{2}\$?)/g;
-    const boldRegex = /(\*\*.*?\*\*|__.*?__)/g;
-    
-    // Combine both regexes to process in order
-    const combinedRegex = /(\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+
+    // Combine all regexes to process in order (markdown links first, then plain URLs, timestamps, bold)
+    const combinedRegex = /(\[([^\]]+)\]\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
     let match;
-    
+
     while ((match = combinedRegex.exec(line)) !== null) {
       if (match.index > currentIndex) {
         parts.push(line.slice(currentIndex, match.index));
       }
-      
-      // Check if this is a timestamp (contains digits and colon)
-      if (/\d{1,2}:\d{2}/.test(match[0])) {
+
+      // Check if this is a markdown link [text](url)
+      if (match[0].startsWith('[') && match[0].includes('](')) {
+        const linkMatch = match[0].match(/\[([^\]]+)\]\(([^)]+)\)/);
+        if (linkMatch) {
+          const [, linkText, linkUrl] = linkMatch;
+          parts.push(
+            <a
+              key={`link-${index}-${match.index}`}
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline break-all"
+            >
+              {linkText}
+            </a>
+          );
+        }
+      } else if (match[0].startsWith('http://') || match[0].startsWith('https://')) {
+        // This is a plain URL - convert it to a clickable link with a nice title
+        const url = match[0];
+        const title = getTitleFromUrl(url);
+        parts.push(
+          <a
+            key={`url-${index}-${match.index}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline break-all inline-block"
+            title={url}
+          >
+            {title}
+          </a>
+        );
+      } else if (/\d{1,2}:\d{2}/.test(match[0])) {
+        // Check if this is a timestamp (contains digits and colon)
         // Extract just the time part (remove $ signs)
         const timeStr = match[0].replace(/\$/g, '');
         const totalSeconds = timeToSeconds(timeStr);
-        
+
         if (onSeekToTime && totalSeconds > 0) {
           parts.push(
             <button
@@ -291,15 +435,15 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
           </strong>
         );
       }
-      
+
       currentIndex = match.index + match[0].length;
     }
-    
+
     // Add remaining text
     if (currentIndex < line.length) {
       parts.push(line.slice(currentIndex));
     }
-    
+
     if (parts.length > 0) {
       elements.push(
         <div key={`para-${index}`} className="mb-2 leading-relaxed">
@@ -308,7 +452,7 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
       );
     }
   });
-  
+
   return <div className="space-y-1">{elements}</div>;
 };
 

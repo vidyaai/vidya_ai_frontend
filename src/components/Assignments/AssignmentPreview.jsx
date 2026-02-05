@@ -143,7 +143,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
             
             <div className="space-y-2">
               {question.options?.map((option, optionIndex) => {
@@ -182,7 +182,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
             
             <div className="flex space-x-4">
               <label className="flex items-center">
@@ -207,7 +207,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
             
             <div className="bg-gray-700 rounded p-2">
               <span className="text-gray-400 text-sm">Fill in the blanks</span>
@@ -225,7 +225,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
           </div>
         );
 
@@ -239,7 +239,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
           </div>
         );
 
@@ -253,7 +253,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
           </div>
         );
 
@@ -270,7 +270,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {renderQuestionText(question)}
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
             
             <div className="bg-gray-900 rounded-lg p-3 border border-gray-700">
               <div className="flex items-center justify-between mb-2">
@@ -300,7 +300,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             </div>
             {renderQuestionText(question)}
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-              {question.diagram ? renderDiagramPreview(question.diagram) : (
+              {question?.diagram?.s3_url ? renderDiagramPreview(question.diagram) : (
                 <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600">
                   <div className="text-center">
                     <ImageIcon size={24} className="text-gray-500 mx-auto mb-1" />
@@ -339,11 +339,11 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             )}
             
             {/* Main Question Diagram Preview */}
-            {((question.hasMainDiagram && question.mainDiagram) || question.diagram) && (
+            {((question.hasMainDiagram && question?.mainDiagram?.s3_url) || question?.diagram?.s3_url) && (
               <div className="bg-gray-900 rounded-lg p-3 border border-orange-500/30 mb-4">
                 <div className="text-orange-400 text-xs font-medium mb-2">Main Diagram</div>
-                {question.mainDiagram ? renderDiagramPreview(question.mainDiagram) : 
-                 question.diagram ? renderDiagramPreview(question.diagram) : (
+                {question?.mainDiagram?.s3_url ? renderDiagramPreview(question.mainDiagram) : 
+                 question?.diagram?.s3_url ? renderDiagramPreview(question.diagram) : (
                   <div className="w-full h-20 bg-gray-800 rounded flex items-center justify-center border border-gray-700">
                     <div className="text-center">
                       <ImageIcon size={16} className="text-gray-500 mx-auto mb-1" />
@@ -385,11 +385,11 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                   <p className="text-gray-300 text-sm">{subq.question || `Part ${subIndex + 1} question...`}</p>
                   
                   {/* Sub-question Diagram */}
-                  {(subq.subDiagram || subq.diagram) && (
+                  {(subq?.subDiagram?.s3_url || subq?.diagram?.s3_url) && (
                     <div className="bg-gray-900 rounded-lg p-3 border border-orange-500/30 mt-2">
                       <div className="text-orange-400 text-xs font-medium mb-2">Sub-question Diagram</div>
-                      {subq.subDiagram ? renderDiagramPreview(subq.subDiagram) : 
-                       subq.diagram ? renderDiagramPreview(subq.diagram) : null}
+                      {subq?.subDiagram?.s3_url ? renderDiagramPreview(subq.subDiagram) : 
+                       subq?.diagram?.s3_url ? renderDiagramPreview(subq.diagram) : null}
                     </div>
                   )}
                   
@@ -428,12 +428,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                           <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
                           
                           {/* Nested sub-question diagram */}
-                          {(nestedSubq.subDiagram || nestedSubq.diagram) && (
+                          {(nestedSubq?.subDiagram?.s3_url || nestedSubq?.diagram?.s3_url) && (
                             <div className="mt-2 bg-gray-700 rounded p-2 border border-orange-500/30">
                               <div className="text-orange-300 text-xs font-medium mb-1">Diagram</div>
                               <div className="max-h-16 overflow-hidden">
-                                {nestedSubq.subDiagram ? renderDiagramPreview(nestedSubq.subDiagram) :
-                                 nestedSubq.diagram ? renderDiagramPreview(nestedSubq.diagram) : null}
+                                {nestedSubq?.subDiagram?.s3_url ? renderDiagramPreview(nestedSubq.subDiagram) :
+                                 nestedSubq?.diagram?.s3_url ? renderDiagramPreview(nestedSubq.diagram) : null}
                               </div>
                             </div>
                           )}
@@ -469,7 +469,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>
             
             {/* Show diagram if available */}
-            {question.diagram && renderDiagramPreview(question.diagram)}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
             
             <p className="text-gray-400 text-sm">Unknown question type: {question.type}</p>
           </div>

@@ -1,5 +1,5 @@
 // src/components/Assignments/AssignmentSubmissions.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   FileText, 
@@ -16,7 +16,8 @@ import {
   Search,
   Loader2,
   RefreshCw,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { assignmentApi } from './assignmentApi';
@@ -33,6 +34,17 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [userDetails, setUserDetails] = useState({});
   const [assignmentQuestions, setAssignmentQuestions] = useState([]);
   const [pdfLoading, setPdfLoading] = useState(false);
+  
+  // AI Flag Override state
+  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
+  const [selectedFlagForOverride, setSelectedFlagForOverride] = useState(null);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideLoading, setOverrideLoading] = useState(false);
+  
+  // Ref for preserving scroll position when opening override modal
+  const submissionModalScrollRef = useRef(null);
+  // Ref to store scroll position value (persists across re-renders)
+  const savedScrollPosition = useRef(0);
 
   // Load submissions from API
   useEffect(() => {
@@ -41,6 +53,19 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       loadAssignmentQuestions();
     }
   }, [assignment?.id]);
+
+  // Restore scroll position when override modal state changes
+  // useLayoutEffect runs synchronously after DOM mutations but before paint
+  useLayoutEffect(() => {
+    // Restore scroll position if we have one saved
+    if (savedScrollPosition.current > 0 && submissionModalScrollRef.current) {
+      submissionModalScrollRef.current.scrollTop = savedScrollPosition.current;
+      // Only reset the saved position when modal closes
+      if (!overrideModalOpen) {
+        savedScrollPosition.current = 0;
+      }
+    }
+  }, [overrideModalOpen]);
 
   const loadSubmissions = async () => {
     try {
@@ -150,6 +175,52 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     }
   };
 
+  const handleOverrideAIFlag = async (action) => {
+    if (!selectedFlagForOverride) return;
+    
+    try {
+      setOverrideLoading(true);
+      
+      // Save scroll position in ref before any state changes
+      savedScrollPosition.current = submissionModalScrollRef.current?.scrollTop || 0;
+      
+      await assignmentApi.overrideAIFlag(
+        assignment.id,
+        selectedFlagForOverride.submissionId,
+        {
+          question_id: selectedFlagForOverride.questionId,
+          action: action,
+          reason: overrideReason
+        }
+      );
+      
+      // Fetch updated submissions using correct function name
+      const updatedSubmissions = await assignmentApi.getAssignmentSubmissions(assignment.id);
+      
+      // Close override modal first
+      setOverrideModalOpen(false);
+      setSelectedFlagForOverride(null);
+      setOverrideReason('');
+      
+      // Update submissions list
+      setSubmissions(updatedSubmissions);
+      
+      // Update selectedSubmission with the new data to reflect changes immediately
+      if (selectedSubmission && selectedSubmission.id === selectedFlagForOverride.submissionId) {
+        const updatedSubmission = updatedSubmissions.find(s => s.id === selectedFlagForOverride.submissionId);
+        if (updatedSubmission) {
+          setSelectedSubmission(updatedSubmission);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Failed to override AI flag:', error);
+      alert('Failed to override AI flag. Please try again.');
+    } finally {
+      setOverrideLoading(false);
+    }
+  };
+
   const handleDownloadPDF = async (submission) => {
     try {
       setPdfLoading(true);
@@ -197,6 +268,25 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     }
   };
 
+  // Helper function to check for AI flags in submission
+  const getAIFlagSummary = (submission) => {
+    if (!submission.feedback) return null;
+    
+    let hardCount = 0;
+    let softCount = 0;
+    
+    Object.values(submission.feedback).forEach(feedback => {
+      if (feedback.ai_flag) {
+        if (feedback.ai_flag.flag_level === 'hard') hardCount++;
+        else if (feedback.ai_flag.flag_level === 'soft') softCount++;
+      }
+    });
+    
+    if (hardCount > 0) return { level: 'hard', count: hardCount };
+    if (softCount > 0) return { level: 'soft', count: softCount };
+    return null;
+  };
+
   // Helper function to get question details by ID
   const getQuestionById = (questionId) => {
     // First try to find by exact ID match
@@ -222,11 +312,39 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   };
 
   // Helper function to render sub-question answer based on its type
-  const renderSubQuestionAnswer = (subQuestion, subAnswer) => {
+  // submission parameter is needed for AI Flag override functionality in nested multi-part questions
+  const renderSubQuestionAnswer = (subQuestion, subAnswer, feedbackKeyPrefix = null, submission = null) => {
+    // Use passed submission or fall back to selectedSubmission for override button functionality
+    const currentSubmission = submission || selectedSubmission;
+    
+    console.log('Rendering sub-question answer:', subQuestion, subAnswer, typeof subAnswer);
+
+    // Extract text and diagram if answer is an object with those keys
+    let answerText = subAnswer;
+    let answerDiagram = null;
+    
+    if (typeof subAnswer === 'object' && subAnswer !== null && !Array.isArray(subAnswer)) {
+      if ('text' in subAnswer) {
+        answerText = subAnswer.text;
+        answerDiagram = subAnswer.diagram;
+      } else {
+        // If it's an object but not the {text, diagram} format, stringify it
+        answerText = JSON.stringify(subAnswer);
+      }
+    }
+    
     if (!subQuestion) {
       return (
-        <div className="bg-gray-800 rounded p-3">
-          <p className="text-gray-300">{typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}</p>
+        <div className="space-y-2">
+          <div className="bg-gray-800 rounded p-3">
+            <p className="text-gray-300">{typeof answerText === 'string' ? answerText : JSON.stringify(answerText)}</p>
+          </div>
+          {answerDiagram && (
+            <div className="bg-gray-800 rounded p-3">
+              <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+              <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
+            </div>
+          )}
         </div>
       );
     }
@@ -234,10 +352,28 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     switch (subQuestion.type) {
       case 'multiple_choice':
       case 'multiple-choice':
+        // Handle both single answer (string/integer) and multiple answers (array)
+        const selectedIndices = Array.isArray(answerText) 
+          ? answerText.map(idx => parseInt(idx))
+          : [parseInt(answerText)];
+        
+        const selectedOptions = selectedIndices
+          .map(idx => subQuestion.options?.[idx])
+          .filter(opt => opt !== undefined);
+
         return (
           <div className="space-y-2">
             <div className="bg-gray-800 rounded p-3">
-              <p className="text-teal-300 font-medium text-sm">Selected: {subAnswer}</p>
+              <p className="text-teal-300 font-medium text-sm">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
+              {selectedOptions.length > 0 ? (
+                <ul className="mt-1 space-y-1">
+                  {selectedOptions.map((opt, idx) => (
+                    <li key={idx} className="text-white text-sm">• {opt}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-white text-sm mt-1">{answerText}</p>
+              )}
             </div>
             {subQuestion.options && (
               <div className="bg-gray-900 rounded p-3">
@@ -247,7 +383,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     <div 
                       key={index} 
                       className={`text-xs p-2 rounded ${
-                        option === subAnswer 
+                        selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
                           : 'text-gray-400 bg-gray-800'
                       }`}
@@ -256,6 +392,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            {answerDiagram && (
+              <div className="bg-gray-800 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
               </div>
             )}
           </div>
@@ -273,7 +415,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 </span>
               </div>
               <pre className="text-gray-200 text-xs overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-2 rounded">
-                {subAnswer}
+                {answerText}
               </pre>
             </div>
             {subQuestion.subCode && (
@@ -284,55 +426,87 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 </pre>
               </div>
             )}
+            {answerDiagram && (
+              <div className="bg-gray-800 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
+              </div>
+            )}
           </div>
         );
 
       case 'true_false':
         return (
-          <div className="bg-gray-800 rounded p-3">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              subAnswer === 'true' || subAnswer === true 
-                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
-                : 'bg-red-500/20 text-red-300 border border-red-500/30'
-            }`}>
-              {subAnswer === 'true' || subAnswer === true ? 'True' : 'False'}
-            </span>
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                answerText === 'true' || answerText === true 
+                  ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+              }`}>
+                {answerText === 'true' || answerText === true ? 'True' : 'False'}
+              </span>
+            </div>
+            {answerDiagram && (
+              <div className="bg-gray-800 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
+              </div>
+            )}
           </div>
         );
 
       case 'fill-blank':
       case 'fill_blank':
         return (
-          <div className="bg-gray-800 rounded p-3">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
-                FILL IN THE BLANK
-              </span>
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
+                  FILL IN THE BLANK
+                </span>
+              </div>
+              <div className="bg-gray-900 rounded p-3">
+                <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
+                <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
+                  "{answerText}"
+                </p>
+              </div>
             </div>
-            <div className="bg-gray-900 rounded p-3">
-              <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
-              <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
-                "{subAnswer}"
-              </p>
-            </div>
+            {answerDiagram && (
+              <div className="bg-gray-800 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
+              </div>
+            )}
           </div>
         );
 
       case 'multi_part':
       case 'multi-part':
         // Recursively render nested multi-part questions
+        // Pass the feedbackKeyPrefix as the prefix for nested levels
+        // Also pass currentSubmission for AI Flag override functionality
         return (
           <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
-            {renderMultiPartAnswer(subQuestion, subAnswer)}
+            {renderMultiPartAnswer(subQuestion, subAnswer, null, feedbackKeyPrefix, currentSubmission)}
           </div>
         );
 
       default:
         return (
-          <div className="bg-gray-800 rounded p-3">
-            <p className="text-gray-200 text-sm whitespace-pre-wrap">
-              {typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}
-            </p>
+          <div className="space-y-2">
+            <div className="bg-gray-800 rounded p-3">
+              <p className="text-gray-200 text-sm whitespace-pre-wrap">
+                {typeof answerText === 'string' ? answerText : JSON.stringify(answerText)}
+              </p>
+            </div>
+            {answerDiagram && (
+              <div className="bg-gray-800 rounded p-3">
+                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
+              </div>
+            )}
           </div>
         );
     }
@@ -431,7 +605,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   };
 
   // Comprehensive multi-part question renderer
-  const renderMultiPartAnswer = (question, answer) => {
+  // feedbackKeyPrefix is used for nested multi-part questions (e.g., "2" for top-level, "2.1" for nested)
+  // submission parameter is needed for AI Flag override functionality
+  const renderMultiPartAnswer = (question, answer, questionId = null, feedbackKeyPrefix = null, submission = null) => {
+    // Use passed submission or fall back to selectedSubmission for override button functionality
+    const currentSubmission = submission || selectedSubmission;
+    
     if (!question || !question.subquestions) {
       return (
         <div className="bg-gray-700 rounded p-3">
@@ -493,7 +672,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               subAnswer = parsedAnswers[subQuestion.id] || 
                          parsedAnswers[index + 1] || 
                          parsedAnswers[index] ||
-                         parsedAnswers[String(subQuestion.id)];
+                         parsedAnswers[String(question.id) + String(subQuestion.id)];
             }
             
             // If still not found, search through all parsed answers
@@ -511,6 +690,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             
             const partNumber = index + 1;
             
+            // Construct feedback key: for top-level it's "questionId.partNumber", for nested it extends the prefix
+            // e.g., "2.1" for question 2 part 1, or "2.1.2" for question 2 part 1 sub-part 2
+            const currentFeedbackKey = feedbackKeyPrefix 
+              ? `${feedbackKeyPrefix}.${partNumber}` 
+              : (questionId ? `${questionId}.${partNumber}` : null);
+            
+            // Get feedback for this sub-question if available (pass currentSubmission for proper feedback lookup)
+            const subQuestionFeedback = currentFeedbackKey ? getSubQuestionFeedback(currentFeedbackKey, currentSubmission) : null;
+            
             return (
               <div key={subQuestion.id || index} className="bg-gray-700 rounded-lg p-4 border-l-4 border-teal-500">
                 {/* Sub-question header */}
@@ -527,6 +715,14 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         {subQuestion.points} pts
                       </span>
                     )}
+                    {/* Show score for this sub-question if available */}
+                    {subQuestionFeedback && (
+                      <div className="ml-auto bg-green-900/30 px-2 py-1 rounded border border-green-500/30">
+                        <span className="text-green-400 font-bold text-sm">
+                          {subQuestionFeedback.score || 0}/{subQuestionFeedback.max_points || subQuestion.points || 0}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Sub-question text */}
@@ -535,20 +731,20 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   </div>
 
                   {/* Sub-question code if present */}
-                  {subQuestion.hasSubCode && subQuestion.subCode && (
+                  {((subQuestion.hasSubCode && subQuestion.subCode) || (subQuestion.hasCode && subQuestion.code) || subQuestion.code) && (
                     <div className="mt-2 bg-gray-800 rounded p-3">
                       <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
                       <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
-                        {subQuestion.subCode}
+                        {subQuestion.subCode || subQuestion.code}
                       </pre>
                     </div>
                   )}
 
                   {/* Sub-question diagram if present */}
-                  {subQuestion.hasDiagram && subQuestion.subDiagram && (
-                    <div className="mt-2 bg-gray-800 rounded p-3">
+                  {((subQuestion.hasDiagram && subQuestion.subDiagram) || subQuestion.diagram) && (
+                    <div className="mt-2 bg-gray-800 rounded p-3 border border-gray-600">
                       <p className="text-gray-400 text-xs mb-2">Diagram:</p>
-                      <p className="text-gray-300 text-xs">{JSON.stringify(subQuestion.subDiagram)}</p>
+                      <DiagramImage diagramData={subQuestion.subDiagram || subQuestion.diagram} displayName="Sub-question diagram" />
                     </div>
                   )}
                 </div>
@@ -557,13 +753,110 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 <div>
                   <p className="text-gray-300 font-medium text-sm mb-2">Answer:</p>
                   {subAnswer !== undefined ? (
-                    renderSubQuestionAnswer(subQuestion, subAnswer)
+                    renderSubQuestionAnswer(subQuestion, subAnswer, currentFeedbackKey, currentSubmission)
                   ) : (
                     <div className="bg-gray-800 rounded p-3">
                       <p className="text-gray-500 text-sm italic">No answer provided</p>
                     </div>
                   )}
                 </div>
+
+                {/* Sub-question feedback if available */}
+                {subQuestionFeedback && (
+                  <div className="mt-4 space-y-2">
+                    {/* AI Flag Warning Banner for Sub-question */}
+                    {subQuestionFeedback.ai_flag && subQuestionFeedback.ai_flag.flag_level !== 'none' && (
+                      <div className={`rounded-lg p-3 border-2 ${
+                        subQuestionFeedback.ai_flag.flag_level === 'hard'
+                          ? 'bg-red-900/20 border-red-500'
+                          : 'bg-yellow-900/20 border-yellow-500'
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-2 flex-1">
+                            <AlertCircle className={subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={16} />
+                            <div className="flex-1">
+                              <p className={`font-bold text-sm mb-1 ${
+                                subQuestionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                              }`}>
+                                {subQuestionFeedback.ai_flag.flag_level === 'hard' 
+                                  ? 'AI-Generated Content (Penalized)' 
+                                  : 'Possible AI-Generated Content'}
+                              </p>
+                              {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
+                                <p className="text-xs text-gray-300 mb-1">
+                                  Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                                  Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                                </p>
+                              )}
+                              {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
+                                <div className="text-xs text-gray-300 mb-1">
+                                  <p className="font-medium">Detection Reasons:</p>
+                                  <ul className="list-disc list-inside space-y-0.5 mt-1">
+                                    {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                      <li key={idx}>{reason}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-400">
+                                Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!currentSubmission?.id) {
+                                console.error('No submission ID available for override');
+                                return;
+                              }
+                              // Save scroll position BEFORE any state changes
+                              savedScrollPosition.current = submissionModalScrollRef.current?.scrollTop || 0;
+                              setSelectedFlagForOverride({
+                                submissionId: currentSubmission.id,
+                                questionId: currentFeedbackKey,
+                                questionNumber: currentFeedbackKey,
+                                flag: subQuestionFeedback.ai_flag
+                              });
+                              setOverrideModalOpen(true);
+                            }}
+                            className="ml-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                          >
+                            Override
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                      <p className="text-green-400 font-medium text-sm mb-2 flex items-center">
+                        <Brain size={14} className="mr-1" />
+                        AI Feedback
+                      </p>
+                      
+                      {subQuestionFeedback.breakdown && (
+                        <div className="mb-2">
+                          <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
+                          <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                        </div>
+                      )}
+                      
+                      {subQuestionFeedback.strengths && (
+                        <div className="mb-2">
+                          <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
+                          <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                        </div>
+                      )}
+                      
+                      {subQuestionFeedback.areas_for_improvement && (
+                        <div>
+                          <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
+                          <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
               </div>
             );
@@ -574,7 +867,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   };
 
   // Helper function to render answer based on question type
-  const renderAnswer = (question, answer) => {
+  // submission parameter is needed for AI Flag override functionality in multi-part questions
+  const renderAnswer = (question, answer, questionId = null, submission = null) => {
     if (!question) {
       return (
         <div className="bg-gray-700 rounded p-3">
@@ -586,11 +880,28 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     switch (question.type) {
       case 'multiple_choice':
       case 'multiple-choice':
+        // Handle both single answer (string) and multiple answers (array)
+        const selectedIndices = Array.isArray(answer) 
+          ? answer.map(idx => parseInt(idx))
+          : [parseInt(answer)];
+        
+        const selectedOptions = selectedIndices
+          .map(idx => question.options?.[idx])
+          .filter(opt => opt !== undefined);
+
         return (
           <div className="space-y-3">
             <div className="bg-gray-700 rounded p-3">
-              <p className="text-gray-300 font-medium">Selected Answer:</p>
-              <p className="text-white mt-1">{answer}</p>
+              <p className="text-gray-300 font-medium">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
+              {selectedOptions.length > 0 ? (
+                <ul className="mt-2 space-y-1">
+                  {selectedOptions.map((opt, idx) => (
+                    <li key={idx} className="text-white">• {opt}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-white mt-1">{answer}</p>
+              )}
             </div>
             {question.options && (
               <div className="bg-gray-800 rounded p-3 border border-gray-600">
@@ -600,7 +911,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     <li 
                       key={index} 
                       className={`text-sm p-2 rounded ${
-                        option === answer 
+                        selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
                           : 'text-gray-400'
                       }`}
@@ -634,7 +945,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
       case 'multi_part':
       case 'multi-part':
-        return renderMultiPartAnswer(question, answer);
+        // For top-level multi-part questions, pass questionId as the feedbackKeyPrefix
+        // This will be used to construct feedback keys like "2.1", "2.2", etc.
+        // Also pass submission for AI Flag override functionality
+        return renderMultiPartAnswer(question, answer, questionId, questionId, submission);
 
       default:
         // For short_answer, long_answer, true_false, and other types
@@ -739,6 +1053,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     );
   };
 
+  // Helper function to get sub-question feedback from submission feedback
+  // Feedback keys are structured as "questionNumber.partNumber" (e.g., "2.1", "2.2")
+  // submission parameter allows getting feedback from a specific submission
+  const getSubQuestionFeedback = (feedbackKey, submission = null) => {
+    const targetSubmission = submission || selectedSubmission;
+    if (!targetSubmission?.feedback) return null;
+    return targetSubmission.feedback[feedbackKey];
+  };
+
   // Submission Detail Modal
   const SubmissionDetailModal = ({ submission, onClose }) => {
     if (!submission) return null;
@@ -772,7 +1095,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div ref={submissionModalScrollRef} className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-gray-800 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
@@ -903,6 +1226,26 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               <p className="text-white font-medium mb-2">Question:</p>
                               <p className="text-gray-200 whitespace-pre-wrap">{question.question}</p>
                               
+                              {/* Show code if available */}
+                              {question.code && (
+                                <div className="mt-3">
+                                  <p className="text-gray-400 text-sm mb-2">Code:</p>
+                                  <pre className="bg-gray-800 p-3 rounded text-sm text-green-400 overflow-x-auto font-mono">
+                                    {question.code}
+                                  </pre>
+                                </div>
+                              )}
+                              
+                              {/* Show diagram if available */}
+                              {question.diagram && (
+                                <div className="mt-3">
+                                  <p className="text-gray-400 text-sm mb-2">Diagram:</p>
+                                  <div className="bg-gray-800 p-3 rounded border border-gray-600">
+                                    <DiagramImage diagramData={question.diagram} displayName="Question diagram" />
+                                  </div>
+                                </div>
+                              )}
+                              
                               {/* Additional question content for specific types */}
                               {question.type === 'code_writing' && question.starter_code && (
                                 <div className="mt-3">
@@ -921,38 +1264,101 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                           <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
                           {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
                             ? renderAnswerWithDiagram(answer)
-                            : renderAnswer(question, answer)
+                            : renderAnswer(question, answer, questionId, submission)
                           }
                         </div>
                         
                         {/* Question Feedback */}
                         {questionFeedback && (
-                          <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
-                            <p className="text-green-400 font-medium mb-3 flex items-center">
-                              <Brain size={16} className="mr-2" />
-                              AI Feedback
-                            </p>
-                            
-                            {questionFeedback.breakdown && (
-                              <div className="mb-3">
-                                <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
-                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                          <div className="space-y-3">
+                            {/* AI Flag Warning Banner */}
+                            {questionFeedback.ai_flag && questionFeedback.ai_flag.flag_level !== 'none' && (
+                              <div className={`rounded-lg p-4 border-2 ${
+                                questionFeedback.ai_flag.flag_level === 'hard'
+                                  ? 'bg-red-900/20 border-red-500'
+                                  : 'bg-yellow-900/20 border-yellow-500'
+                              }`}>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start space-x-3 flex-1">
+                                    <AlertCircle className={questionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={20} />
+                                    <div className="flex-1">
+                                      <p className={`font-bold mb-2 ${
+                                        questionFeedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                                      }`}>
+                                        {questionFeedback.ai_flag.flag_level === 'hard' 
+                                          ? 'AI-Generated Content Detected (Score Penalized)' 
+                                          : 'Possible AI-Generated Content'}
+                                      </p>
+                                      {questionFeedback.ai_flag.original_score && questionFeedback.ai_flag.penalized_score && (
+                                        <p className="text-sm text-gray-300 mb-2">
+                                          Original: <span className="line-through">{questionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
+                                          Penalized: <span className="font-bold text-red-300">{questionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
+                                        </p>
+                                      )}
+                                      {questionFeedback.ai_flag.reasons && questionFeedback.ai_flag.reasons.length > 0 && (
+                                        <div className="text-sm text-gray-300 mb-2">
+                                          <p className="font-medium">Detection Reasons:</p>
+                                          <ul className="list-disc list-inside space-y-1 mt-1">
+                                            {questionFeedback.ai_flag.reasons.map((reason, idx) => (
+                                              <li key={idx}>{reason}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      <p className="text-xs text-gray-400">
+                                        Confidence: {(questionFeedback.ai_flag.confidence * 100).toFixed(1)}%
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Save scroll position BEFORE any state changes
+                                      savedScrollPosition.current = submissionModalScrollRef.current?.scrollTop || 0;
+                                      setSelectedFlagForOverride({
+                                        submissionId: submission.id,
+                                        questionId: questionId,
+                                        questionNumber: questionNumber,
+                                        flag: questionFeedback.ai_flag
+                                      });
+                                      setOverrideModalOpen(true);
+                                    }}
+                                    className="ml-3 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                                  >
+                                    Override
+                                  </button>
+                                </div>
                               </div>
                             )}
                             
-                            {questionFeedback.strengths && (
-                              <div className="mb-3">
-                                <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
-                                <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
-                              </div>
-                            )}
-                            
-                            {questionFeedback.areas_for_improvement && (
-                              <div>
-                                <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
-                                <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
-                              </div>
-                            )}
+                            {/* Regular Feedback */}
+                            <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                              <p className="text-green-400 font-medium mb-3 flex items-center">
+                                <Brain size={16} className="mr-2" />
+                                AI Feedback
+                              </p>
+                              
+                              {questionFeedback.breakdown && (
+                                <div className="mb-3">
+                                  <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
+                                  <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                                </div>
+                              )}
+                              
+                              {questionFeedback.strengths && (
+                                <div className="mb-3">
+                                  <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
+                                  <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                                </div>
+                              )}
+                              
+                              {questionFeedback.areas_for_improvement && (
+                                <div>
+                                  <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
+                                  <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1030,6 +1436,53 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
                           {/* Feedback Content */}
                           <div className="space-y-4">
+                            {/* AI Flag Warning Banner for PDF submissions */}
+                            {feedback.ai_flag && feedback.ai_flag.flag_level !== 'none' && (
+                              <div className={`rounded-lg p-4 border-2 ${
+                                feedback.ai_flag.flag_level === 'hard'
+                                  ? 'bg-red-900/20 border-red-500'
+                                  : 'bg-yellow-900/20 border-yellow-500'
+                              }`}>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start space-x-3 flex-1">
+                                    <AlertCircle className={feedback.ai_flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={20} />
+                                    <div className="flex-1">
+                                      <p className={`font-bold mb-2 ${
+                                        feedback.ai_flag.flag_level === 'hard' ? 'text-red-300' : 'text-yellow-300'
+                                      }`}>
+                                        {feedback.ai_flag.flag_level === 'hard' 
+                                          ? 'AI-Generated Content (Penalized)' 
+                                          : 'Possible AI-Generated Content'}
+                                      </p>
+                                      {feedback.ai_flag.original_score && feedback.ai_flag.penalized_score && (
+                                        <p className="text-sm text-gray-300 mb-2">
+                                          Original: <span className="line-through">{feedback.ai_flag.original_score.toFixed(1)}</span> → 
+                                          Penalized: <span className="font-bold text-red-300">{feedback.ai_flag.penalized_score.toFixed(1)}</span>
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-gray-400">
+                                        Confidence: {(feedback.ai_flag.confidence * 100).toFixed(1)}%
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedFlagForOverride({
+                                        submissionId: submission.id,
+                                        questionId: questionId,
+                                        questionNumber: questionId,
+                                        flag: feedback.ai_flag
+                                      });
+                                      setOverrideModalOpen(true);
+                                    }}
+                                    className="ml-3 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                                  >
+                                    Override
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            
                             {feedback.breakdown && (
                               <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
                                 <p className="text-gray-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
@@ -1063,6 +1516,123 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // AI Flag Override Modal
+  const AIFlagOverrideModal = ({ isOpen, onClose, flagInfo, overrideReason, setOverrideReason, onOverride, loading }) => {
+    if (!isOpen || !flagInfo) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="mb-6">
+            <div className="flex items-start space-x-3 mb-4">
+              <AlertCircle className={flagInfo.flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={24} />
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-white mb-2">Override AI Flag</h2>
+                <p className="text-gray-400">
+                  Question {flagInfo.questionNumber} - {flagInfo.flag.flag_level === 'hard' ? 'Hard Flag (Penalized)' : 'Soft Flag (Warning)'}
+                </p>
+              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className={`rounded-lg p-4 border mb-4 ${
+              flagInfo.flag.flag_level === 'hard'
+                ? 'bg-red-900/20 border-red-500/50'
+                : 'bg-yellow-900/20 border-yellow-500/50'
+            }`}>
+              <p className="text-sm text-gray-300 mb-2">
+                <span className="font-medium">Confidence:</span> {(flagInfo.flag.confidence * 100).toFixed(1)}%
+              </p>
+              {flagInfo.flag.reasons && flagInfo.flag.reasons.length > 0 && (
+                <div className="text-sm text-gray-300">
+                  <p className="font-medium mb-1">Detection Reasons:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {flagInfo.flag.reasons.map((reason, idx) => (
+                      <li key={idx}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Reason for Override (Optional)
+            </label>
+            <textarea
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Explain why you're overriding this flag..."
+              rows={3}
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-gray-400 mb-3">Choose an action:</p>
+            
+            <button
+              onClick={() => onOverride('dismiss')}
+              disabled={loading}
+              className="w-full px-4 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors text-left flex items-center justify-between disabled:opacity-50"
+            >
+              <span>
+                <span className="font-bold">Dismiss Flag</span>
+                <span className="block text-sm text-gray-400 mt-1">
+                  Remove AI flag completely {flagInfo.flag.flag_level === 'hard' && '(restore original score)'}
+                </span>
+              </span>
+              {loading && <Loader2 size={18} className="animate-spin" />}
+            </button>
+
+            {flagInfo.flag.flag_level === 'soft' && (
+              <button
+                onClick={() => onOverride('apply_penalty')}
+                disabled={loading}
+                className="w-full px-4 py-3 bg-red-900/30 border border-red-500/50 text-red-300 font-medium rounded-lg hover:bg-red-900/50 transition-colors text-left flex items-center justify-between disabled:opacity-50"
+              >
+                <span>
+                  <span className="font-bold">Apply Penalty</span>
+                  <span className="block text-sm text-red-400 mt-1">
+                    Upgrade to hard flag and reduce score by 50%
+                  </span>
+                </span>
+                {loading && <Loader2 size={18} className="animate-spin" />}
+              </button>
+            )}
+
+            {flagInfo.flag.flag_level === 'hard' && (
+              <button
+                onClick={() => onOverride('remove_penalty')}
+                disabled={loading}
+                className="w-full px-4 py-3 bg-yellow-900/30 border border-yellow-500/50 text-yellow-300 font-medium rounded-lg hover:bg-yellow-900/50 transition-colors text-left flex items-center justify-between disabled:opacity-50"
+              >
+                <span>
+                  <span className="font-bold">Remove Penalty</span>
+                  <span className="block text-sm text-yellow-400 mt-1">
+                    Keep flag as warning only, restore original score
+                  </span>
+                </span>
+                {loading && <Loader2 size={18} className="animate-spin" />}
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="w-full px-4 py-3 bg-gray-800 text-gray-300 font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>
@@ -1333,6 +1903,9 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Score
                   </th>
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden md:table-cell">
+                    AI Flag
+                  </th>
                   <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
@@ -1386,6 +1959,23 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
                       {submission.score ? `${submission.score}${submission.percentage ? ` (${submission.percentage}%)` : ''}` : '-'}
                     </td>
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
+                      {(() => {
+                        const aiFlagSummary = getAIFlagSummary(submission);
+                        if (!aiFlagSummary) return <span className="text-gray-500 text-xs">-</span>;
+                        return (
+                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                            aiFlagSummary.level === 'hard'
+                              ? 'bg-red-900/30 border-red-500/50 text-red-300'
+                              : 'bg-yellow-900/30 border-yellow-500/50 text-yellow-300'
+                          }`}>
+                            <AlertCircle size={12} className="mr-1" />
+                            {aiFlagSummary.level === 'hard' ? '🚫 ' : '⚠️ '}
+                            {aiFlagSummary.count} Q{aiFlagSummary.count > 1 ? 's' : ''}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 sm:px-6 py-4">
                       <button
                         onClick={() => handleViewSubmission(submission)}
@@ -1418,6 +2008,20 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       <SubmissionDetailModal 
         submission={selectedSubmission} 
         onClose={() => setSelectedSubmission(null)} 
+      />
+      
+      <AIFlagOverrideModal
+        isOpen={overrideModalOpen}
+        onClose={() => {
+          setOverrideModalOpen(false);
+          setSelectedFlagForOverride(null);
+          setOverrideReason('');
+        }}
+        flagInfo={selectedFlagForOverride}
+        overrideReason={overrideReason}
+        setOverrideReason={setOverrideReason}
+        onOverride={handleOverrideAIFlag}
+        loading={overrideLoading}
       />
       
       <AIGradingModal

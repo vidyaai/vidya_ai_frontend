@@ -22,6 +22,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [assignmentTitle, setAssignmentTitle] = useState(preloadedData?.title || '');
   const [assignmentDescription, setAssignmentDescription] = useState(preloadedData?.description || '');
   const [assignmentDueDate, setAssignmentDueDate] = useState('');
+  const [aiPenaltyPercentage, setAiPenaltyPercentage] = useState(preloadedData?.ai_penalty_percentage || 50);
+  const [currentAssignmentId, setCurrentAssignmentId] = useState(preloadedData?.id || null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
@@ -95,6 +97,13 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     return question;
   };
 
+  // Helper function to get next sequential ID
+  const getNextQuestionId = () => {
+    if (questions.length === 0) return 1;
+    const maxId = Math.max(...questions.map(q => q.id || 0));
+    return maxId + 1;
+  };
+
   // Update state when preloadedData changes
   useEffect(() => {
     if (preloadedData) {
@@ -107,7 +116,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         return {
           ...normalizedQ,
           // Ensure each question has a unique ID that works with the frontend
-          id: question.id || Date.now() + index,
+          id: question.id || (index + 1),
           // Ensure order is set
           order: question.order || index + 1
         };
@@ -145,7 +154,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
 
   const addQuestion = (type) => {
     const baseQuestion = {
-      id: Date.now(),
+      id: getNextQuestionId(),
       type,
       question: '',
       options: type === 'multiple-choice' ? ['', '', '', ''] : [],
@@ -524,7 +533,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         linked_videos: preloadedData?.linked_videos || preloadedData?.linkedVideos || null,
         uploaded_files: preloadedData?.uploaded_files || preloadedData?.uploadedFiles || null,
         generation_prompt: preloadedData?.generation_prompt || null,
-        generation_options: preloadedData?.generation_options || null
+        generation_options: preloadedData?.generation_options || null,
+        ai_penalty_percentage: aiPenaltyPercentage
       };
 
       // Show loading modal for publishing with Google Form generation
@@ -539,10 +549,10 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       }
 
       let assignmentId;
-      if (preloadedData?.id) {
+      if (currentAssignmentId || preloadedData?.id) {
         // Update existing assignment
-        await assignmentApi.updateAssignment(preloadedData.id, assignmentData);
-        assignmentId = preloadedData.id;
+        assignmentId = currentAssignmentId || preloadedData.id;
+        await assignmentApi.updateAssignment(assignmentId, assignmentData);
         if (status !== 'published') {
           alert('Assignment updated successfully!');
         }
@@ -550,6 +560,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         // Create new assignment
         const response = await assignmentApi.createAssignment(assignmentData);
         assignmentId = response.id;
+        setCurrentAssignmentId(assignmentId); // Save the ID for future updates
         if (status !== 'published') {
           alert('Assignment saved successfully!');
         }
@@ -853,6 +864,40 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     onChange={(e) => setAssignmentDueDate(e.target.value)}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    AI Plagiarism Penalty (%)
+                    <span className="ml-2 text-xs text-gray-400">Score reduction for AI-flagged answers</span>
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={aiPenaltyPercentage}
+                      onChange={(e) => setAiPenaltyPercentage(Number(e.target.value))}
+                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={aiPenaltyPercentage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val >= 0 && val <= 100) setAiPenaltyPercentage(val);
+                      }}
+                      className="w-20 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                    <span className="text-gray-400 text-sm">%</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {aiPenaltyPercentage === 0 ? 'No penalty applied' : 
+                     aiPenaltyPercentage === 100 ? 'Full score deduction (0 points)' :
+                     `${aiPenaltyPercentage}% score reduction for AI-detected answers`}
+                  </p>
                 </div>
               </div>
             </div>

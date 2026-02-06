@@ -213,7 +213,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       }));
 
       const generateData = {
-        prompt: assignmentDescription || '',
+        generation_prompt: assignmentDescription || '',  // Fixed: was 'prompt', should be 'generation_prompt'
         title: assignmentTitle || '',
         generation_options: generationOptions,
         uploaded_files: uploadedFiles.map(f => ({

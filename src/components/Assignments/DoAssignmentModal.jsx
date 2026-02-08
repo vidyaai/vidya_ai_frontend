@@ -1078,11 +1078,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               )}
             </div>
             
-            {/* Show code if available */}
-            {question.code && (
+            {/* Show starter code template only (NOT the code field which may contain the solution) */}
+            {question.starterCode && (
               <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
                 <pre className="text-sm text-green-400">
-                    {question.code}
+                    {question.starterCode}
                 </pre>
               </div>
             )}

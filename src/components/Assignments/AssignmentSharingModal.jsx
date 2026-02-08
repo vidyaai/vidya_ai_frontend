@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Search, Users, Lock, Copy, Check, Loader2, FileText, Link as LinkIcon, Globe, Upload, AlertTriangle, UserPlus, Share2, Trash2 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { courseApi } from '../Courses/courseApi';
 
 // Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,9 +36,30 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [isProcessingCsv, setIsProcessingCsv] = useState(false);
   const csvInputRef = useRef(null);
 
+  // Course sharing state
+  const [courseEnrollments, setCourseEnrollments] = useState([]);
+  const [shareWithCourse, setShareWithCourse] = useState(false);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+
   useEffect(() => {
     loadSharedAssignmentData();
+    // If the assignment belongs to a course, load course enrollments
+    if (assignment.course_id) {
+      loadCourseEnrollments();
+    }
   }, [assignment.id]);
+
+  const loadCourseEnrollments = async () => {
+    try {
+      setLoadingEnrollments(true);
+      const data = await courseApi.listEnrollments(assignment.course_id);
+      setCourseEnrollments(data);
+    } catch (err) {
+      console.error('Failed to load course enrollments:', err);
+    } finally {
+      setLoadingEnrollments(false);
+    }
+  };
 
   const loadSharedAssignmentData = async () => {
     try {
@@ -457,6 +479,47 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
             {/* User Invitation - Only for private */}
             {!isPublic && (
               <div>
+                {/* Share with Course option */}
+                {assignment.course_id && courseEnrollments.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      onClick={() => {
+                        if (!shareWithCourse) {
+                          // Add all course students who are not already in selectedUsers or existingUsers
+                          const existingEmails = new Set([
+                            ...selectedUsers.map(u => u.email?.toLowerCase()),
+                            ...existingUsers.map(u => u.email?.toLowerCase())
+                          ].filter(Boolean));
+                          const newUsers = courseEnrollments
+                            .filter(e => !existingEmails.has(e.email?.toLowerCase()))
+                            .map(e => ({
+                              uid: e.user_id || `pending_${e.email}`,
+                              email: e.email,
+                              displayName: null,
+                              isPending: e.user_id?.startsWith('pending_') ?? true
+                            }));
+                          setSelectedUsers(prev => [...prev, ...newUsers]);
+                        } else {
+                          // Remove course-enrolled users from selected list
+                          const courseEmails = new Set(courseEnrollments.map(e => e.email?.toLowerCase()));
+                          setSelectedUsers(prev => prev.filter(u => !courseEmails.has(u.email?.toLowerCase())));
+                        }
+                        setShareWithCourse(!shareWithCourse);
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-colors ${
+                        shareWithCourse
+                          ? 'bg-teal-600/20 border-teal-500/40 text-teal-400'
+                          : 'bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-600'
+                      }`}
+                    >
+                      <span className="flex items-center space-x-2">
+                        <Users size={16} />
+                        <span>Share with entire course ({courseEnrollments.length} students)</span>
+                      </span>
+                      {shareWithCourse && <Check size={16} />}
+                    </button>
+                  </div>
+                )}
                 <label className="block text-sm font-medium text-gray-300 mb-3">Invite Students</label>
                 
                 {existingUsers.length > 0 && (

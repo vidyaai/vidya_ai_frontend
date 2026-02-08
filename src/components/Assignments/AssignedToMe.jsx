@@ -11,11 +11,15 @@ import {
   Eye,
   Loader2,
   Download,
-  ExternalLink
+  ExternalLink,
+  BookOpen
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import DoAssignmentModal from './DoAssignmentModal';
 import { assignmentApi } from './assignmentApi';
+import CourseCard from '../Courses/CourseCard';
+import StudentCourseView from '../Courses/StudentCourseView';
+import { courseApi } from '../Courses/courseApi';
 
 const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
@@ -26,10 +30,28 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   const [error, setError] = useState(null);
   const [downloadingPdfId, setDownloadingPdfId] = useState(null);
 
+  // Course state
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [courseDetailId, setCourseDetailId] = useState(null);
+
   // Load assigned assignments from API
   useEffect(() => {
     loadAssignedAssignments();
+    loadEnrolledCourses();
   }, []);
+
+  const loadEnrolledCourses = async () => {
+    try {
+      setLoadingCourses(true);
+      const data = await courseApi.listCourses('student');
+      setEnrolledCourses(data);
+    } catch (err) {
+      console.error('Failed to load enrolled courses:', err);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
 
   const loadAssignedAssignments = async () => {
     try {
@@ -206,6 +228,21 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
     }
   };
 
+  // If viewing a course detail
+  if (courseDetailId) {
+    return (
+      <StudentCourseView
+        courseId={courseDetailId}
+        onBack={() => setCourseDetailId(null)}
+        onNavigateToHome={onNavigateToHome}
+        onOpenAssignment={(a) => {
+          setSelectedAssignment(a);
+          setDoAssignmentModalOpen(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Top Navigation */}
@@ -233,6 +270,29 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Enrolled Courses Section */}
+        {!loadingCourses && enrolledCourses.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+              <BookOpen size={20} className="text-blue-400" />
+              <span>My Courses</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {enrolledCourses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  onClick={() => setCourseDetailId(course.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Open Assignments Label */}
+        {!loadingCourses && enrolledCourses.length > 0 && (
+          <h2 className="text-lg font-semibold text-white mb-4">Open Assignments</h2>
+        )}
         {/* Statistics Cards */}
         {!loading && !error && assignedAssignments.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

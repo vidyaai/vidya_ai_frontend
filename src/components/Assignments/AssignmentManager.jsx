@@ -25,11 +25,9 @@ const AssignmentManager = ({ onNavigateToHome }) => {
       const view = urlParams.get('view');
       if (view === 'assigned-to-me') {
         setCurrentView('assigned-to-me');
-        // Clean up URL
         window.history.replaceState({}, '', window.location.pathname);
       } else if (view === 'my-assignments') {
         setCurrentView('my-assignments');
-        // Clean up URL
         window.history.replaceState({}, '', window.location.pathname);
       }
     }

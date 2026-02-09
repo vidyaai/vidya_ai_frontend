@@ -1255,7 +1255,7 @@ const QuestionCard = ({
                   <input
                     type="radio"
                     name={`tf-${question.id}`}
-                    checked={question.correctAnswer === 'true'}
+                    checked={question.correctAnswer === 'true' || true}
                     onChange={() => handleCorrectAnswerChange('true')}
                     className="text-teal-500 focus:ring-teal-500 mr-2"
                   />
@@ -1265,7 +1265,7 @@ const QuestionCard = ({
                   <input
                     type="radio"
                     name={`tf-${question.id}`}
-                    checked={question.correctAnswer === 'false'}
+                    checked={question.correctAnswer === 'false' || false}
                     onChange={() => handleCorrectAnswerChange('false')}
                     className="text-teal-500 focus:ring-teal-500 mr-2"
                   />
@@ -1750,8 +1750,8 @@ const QuestionCard = ({
                 Starter Code (Optional)
               </label>
               <textarea
-                value={question.starterCode || ''}
-                onChange={(e) => onUpdate({ starterCode: e.target.value })}
+                value={question.code || ''}
+                onChange={(e) => onUpdate({ code: e.target.value })}
                 placeholder="// Provide starter code or template here..."
                 rows={6}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
@@ -2314,7 +2314,7 @@ const QuestionCard = ({
                               <input
                                 type="radio"
                                 name={`tf-sub-${question.id}-${subIndex}`}
-                                checked={subq.correctAnswer === 'true'}
+                                checked={subq.correctAnswer === 'true' || true}
                                 onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'true')}
                                 className="text-teal-500 focus:ring-teal-500 mr-2"
                               />
@@ -2324,7 +2324,7 @@ const QuestionCard = ({
                               <input
                                 type="radio"
                                 name={`tf-sub-${question.id}-${subIndex}`}
-                                checked={subq.correctAnswer === 'false'}
+                                checked={subq.correctAnswer === 'false' || false}
                                 onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'false')}
                                 className="text-teal-500 focus:ring-teal-500 mr-2"
                               />
@@ -2640,7 +2640,7 @@ const QuestionCard = ({
                                         <input
                                           type="radio"
                                           name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={subSubq.correctAnswer === 'true'}
+                                          checked={subSubq.correctAnswer === 'true' || true}
                                           onChange={() => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
                                             newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'true' };
@@ -2654,7 +2654,7 @@ const QuestionCard = ({
                                         <input
                                           type="radio"
                                           name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={subSubq.correctAnswer === 'false'}
+                                          checked={subSubq.correctAnswer === 'false' || false}
                                           onChange={() => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
                                             newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'false' };

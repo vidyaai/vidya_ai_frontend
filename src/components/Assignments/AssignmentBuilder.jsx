@@ -169,7 +169,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       'code-writing': {
         codeLanguage: 'python',
         outputType: 'code',
-        starterCode: ''
+        code: ''
       },
       'diagram-analysis': {
         diagram: null
@@ -282,6 +282,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             errors.push(`Question ${questionNum}: A correct answer must be selected for multiple choice questions`);
           }
         }
+      } else if (question.type === 'true-false') {
+        // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
+        const validTrueFalseAnswers = ['true', 'false', true, false];
+        if (!validTrueFalseAnswers.includes(question.correctAnswer)) {
+            errors.push(`Question ${questionNum}: Correct answer for True/False must be either "True" or "False"`);
+        }
       } else if (question.type !== 'multi-part') {
         // Check Sample Answer requirement for non-multiple-choice, non-multi-part questions
         if (!question.correctAnswer || question.correctAnswer.trim() === '') {
@@ -367,6 +373,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 errors.push(`Sub-question ${subNum}: A correct answer must be selected for multiple choice questions`);
               }
             }
+          } else if (subQ.type === 'true-false') {
+            // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
+            const validTrueFalseAnswers = ['true', 'false', true, false];
+            if (!validTrueFalseAnswers.includes(subQ.correctAnswer)) {
+                errors.push(`Sub-question ${subNum}: Correct answer for True/False must be either "True" or "False"`);
+            }
           } else if (subQ.type !== 'multi-part') {
             // Check sample answer for non-multiple-choice, non-multi-part sub-questions
             if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
@@ -430,6 +442,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                   if (!subSubQ.correctAnswer || subSubQ.correctAnswer.trim() === '') {
                     errors.push(`Sub-sub-question ${subSubNum}: A correct answer must be selected for multiple choice questions`);
                   }
+                }
+              } else if (subSubQ.type === 'true-false') {
+                // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
+                const validTrueFalseAnswers = ['true', 'false', true, false];
+                if (!validTrueFalseAnswers.includes(subSubQ.correctAnswer)) {
+                  errors.push(`Sub-sub-question ${subSubNum}: Correct answer for True/False must be either "True" or "False"`);
                 }
               } else {
                 // Check sample answer for non-multiple-choice sub-sub-questions

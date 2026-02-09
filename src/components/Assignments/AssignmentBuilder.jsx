@@ -14,7 +14,6 @@ import TopBar from '../generic/TopBar';
 import QuestionCard from './QuestionCard';
 import AssignmentPreview from './AssignmentPreview';
 import { assignmentApi } from './assignmentApi';
-import { courseApi } from '../Courses/courseApi';
 
 const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [questions, setQuestions] = useState(preloadedData?.questions || []);
@@ -28,11 +27,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
-
-  // Course selection
-  const [selectedCourseId, setSelectedCourseId] = useState(preloadedData?.course_id || null);
-  const [instructorCourses, setInstructorCourses] = useState([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
   
   // Google Form generation states
   const [publishingWithFormGeneration, setPublishingWithFormGeneration] = useState(false);
@@ -110,22 +104,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     return maxId + 1;
   };
 
-  // Load instructor courses for the course selector dropdown
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoadingCourses(true);
-        const data = await courseApi.listCourses('instructor');
-        setInstructorCourses(data);
-      } catch (err) {
-        console.error('Failed to load courses:', err);
-      } finally {
-        setLoadingCourses(false);
-      }
-    };
-    fetchCourses();
-  }, []);
-
   // Update state when preloadedData changes
   useEffect(() => {
     if (preloadedData) {
@@ -191,7 +169,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       'code-writing': {
         codeLanguage: 'python',
         outputType: 'code',
-        starterCode: ''
+        code: ''
       },
       'diagram-analysis': {
         diagram: null
@@ -304,6 +282,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             errors.push(`Question ${questionNum}: A correct answer must be selected for multiple choice questions`);
           }
         }
+      } else if (question.type === 'true-false') {
+        // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
+        const validTrueFalseAnswers = ['true', 'false', true, false];
+        if (!validTrueFalseAnswers.includes(question.correctAnswer)) {
+            errors.push(`Question ${questionNum}: Correct answer for True/False must be either "True" or "False"`);
+        }
       } else if (question.type !== 'multi-part') {
         // Check Sample Answer requirement for non-multiple-choice, non-multi-part questions
         if (!question.correctAnswer || question.correctAnswer.trim() === '') {
@@ -389,6 +373,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 errors.push(`Sub-question ${subNum}: A correct answer must be selected for multiple choice questions`);
               }
             }
+          } else if (subQ.type === 'true-false') {
+            // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
+            const validTrueFalseAnswers = ['true', 'false', true, false];
+            if (!validTrueFalseAnswers.includes(subQ.correctAnswer)) {
+                errors.push(`Sub-question ${subNum}: Correct answer for True/False must be either "True" or "False"`);
+            }
           } else if (subQ.type !== 'multi-part') {
             // Check sample answer for non-multiple-choice, non-multi-part sub-questions
             if (!subQ.correctAnswer || subQ.correctAnswer.trim() === '') {
@@ -452,6 +442,12 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                   if (!subSubQ.correctAnswer || subSubQ.correctAnswer.trim() === '') {
                     errors.push(`Sub-sub-question ${subSubNum}: A correct answer must be selected for multiple choice questions`);
                   }
+                }
+              } else if (subSubQ.type === 'true-false') {
+                // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
+                const validTrueFalseAnswers = ['True', 'False', 'true', 'false', true, false, '1', '0', 1, 0];
+                if (!validTrueFalseAnswers.includes(subSubQ.correctAnswer)) {
+                  errors.push(`Sub-sub-question ${subSubNum}: Correct answer for True/False must be either "True" or "False"`);
                 }
               } else {
                 // Check sample answer for non-multiple-choice sub-sub-questions
@@ -556,8 +552,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         uploaded_files: preloadedData?.uploaded_files || preloadedData?.uploadedFiles || null,
         generation_prompt: preloadedData?.generation_prompt || null,
         generation_options: preloadedData?.generation_options || null,
-        ai_penalty_percentage: aiPenaltyPercentage,
-        course_id: selectedCourseId || null
+        ai_penalty_percentage: aiPenaltyPercentage
       };
 
       // Show loading modal for publishing with Google Form generation
@@ -887,23 +882,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     onChange={(e) => setAssignmentDueDate(e.target.value)}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Course (Optional)
-                  </label>
-                  <select
-                    value={selectedCourseId || ''}
-                    onChange={(e) => setSelectedCourseId(e.target.value || null)}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  >
-                    <option value="">Open Assignment (no course)</option>
-                    {instructorCourses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.course_code ? `${c.course_code} — ` : ''}{c.title}
-                      </option>
-                    ))}
-                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">

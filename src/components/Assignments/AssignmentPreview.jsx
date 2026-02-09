@@ -173,6 +173,17 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
         );
 
       case 'true-false':
+        const isTrue = question.correctAnswer === true || 
+                       question.correctAnswer === 'true' || 
+                       question.correctAnswer === 'True' ||
+                       question.correctAnswer === 1 || 
+                       question.correctAnswer === '1';
+        const isFalse = question.correctAnswer === false || 
+                        question.correctAnswer === 'false' || 
+                        question.correctAnswer === 'False' ||
+                        question.correctAnswer === 0 || 
+                        question.correctAnswer === '0';
+        
         return (
           <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="flex items-start justify-between mb-3">
@@ -186,11 +197,11 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             
             <div className="flex space-x-4">
               <label className="flex items-center">
-                <input type="radio" disabled className="text-teal-500 mr-2" />
+                <input type="radio" checked={isTrue} disabled className="text-teal-500 mr-2" />
                 <span className="text-gray-400 text-sm">True</span>
               </label>
               <label className="flex items-center">
-                <input type="radio" disabled className="text-teal-500 mr-2" />
+                <input type="radio" checked={isFalse} disabled className="text-teal-500 mr-2" />
                 <span className="text-gray-400 text-sm">False</span>
               </label>
             </div>
@@ -282,7 +293,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                 </span>
               </div>
               <div className="bg-gray-800 rounded p-2 font-mono text-sm text-gray-400">
-                {question.starterCode || '// Write your code here...'}
+                {question.code || '// Write your code here...'}
               </div>
             </div>
           </div>

@@ -445,7 +445,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 }
               } else if (subSubQ.type === 'true-false') {
                 // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
-                const validTrueFalseAnswers = ['true', 'false', true, false];
+                const validTrueFalseAnswers = ['True', 'False', 'true', 'false', true, false, '1', '0', 1, 0];
                 if (!validTrueFalseAnswers.includes(subSubQ.correctAnswer)) {
                   errors.push(`Sub-sub-question ${subSubNum}: Correct answer for True/False must be either "True" or "False"`);
                 }

@@ -282,7 +282,7 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                 </span>
               </div>
               <div className="bg-gray-800 rounded p-2 font-mono text-sm text-gray-400">
-                {question.starterCode || '// Write your code here...'}
+                {question.code || '// Write your code here...'}
               </div>
             </div>
           </div>

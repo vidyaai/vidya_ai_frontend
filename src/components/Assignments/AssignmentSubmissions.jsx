@@ -17,10 +17,12 @@ import {
   Loader2,
   RefreshCw,
   Image as ImageIcon,
-  X
+  X,
+  Upload
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { assignmentApi } from './assignmentApi';
+import BulkSubmissionModal from './BulkSubmissionModal';
 
 const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -40,6 +42,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const [selectedFlagForOverride, setSelectedFlagForOverride] = useState(null);
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideLoading, setOverrideLoading] = useState(false);
+  
+  // Bulk Upload state
+  const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
+  const [bulkUploading, setBulkUploading] = useState(false);
   
   // Ref for preserving scroll position when opening override modal
   const submissionModalScrollRef = useRef(null);
@@ -75,6 +81,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       
       // Extract unique user IDs from submissions
       const userIds = [...new Set(data.map(sub => sub.user_id).filter(Boolean))];
+      
+      // Add current user id to the list if not already present
+      const currentUserId = data[0]?.assignment?.user_id; // Assuming all submissions belong to the same assignment and thus same user_id
+      if (currentUserId && !userIds.includes(currentUserId)) {
+        userIds.push(currentUserId);
+      }
       
       // Fetch user details if we have user IDs
       let users = {};
@@ -248,6 +260,16 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     } finally {
       setPdfLoading(false);
     }
+  };
+
+  const handleBulkUpload = () => {
+    setBulkUploadModalOpen(true);
+  };
+
+  const handleBulkUploadComplete = () => {
+    setBulkUploadModalOpen(false);
+    // Refresh submissions to show new uploads
+    loadSubmissions();
   };
 
   const formatDate = (dateString) => {
@@ -1075,10 +1097,16 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           <div className="flex items-center justify-between p-6 border-b border-gray-800">
             <div>
               <h2 className="text-2xl font-bold text-white">
-                {userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User'}
+                {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
+                  ? submission.user_id.split('_')[1] || submission.user_id  // Extract student name from bulk_StudentName_...
+                  : (userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User')
+                }
               </h2>
               <p className="text-gray-400 mt-1">
-                {userDetails[submission.user_id]?.email || `User ID: ${submission.user_id}`}
+                {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
+                  ? `Uploaded by ${userDetails[submission.submitted_by_user_id]?.displayName} on behalf of student`
+                  : userDetails[submission.user_id]?.email || `User ID: ${submission.user_id}`
+                }
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -1717,6 +1745,17 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 <span className="hidden sm:inline">Refresh</span>
                 <span className="sm:hidden">↻</span>
               </button>
+              <button
+                onClick={handleBulkUpload}
+                disabled={loading || bulkUploading}
+                className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-800 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                title="Upload multiple PDFs as on-behalf submissions"
+              >
+                <Upload size={18} className="mr-2" />
+                <span className="hidden sm:inline">Upload PDFs</span>
+                <span className="sm:hidden">📄</span>
+              </button>
+
               {selectedForGrading.length > 0 && (
                 <button
                   onClick={handleSendForAIGrading}
@@ -1758,6 +1797,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Submissions</option>
+                <option value="processing">Processing</option>
                 <option value="submitted">Submitted</option>
                 <option value="grading">Grading in Progress</option>
                 <option value="graded">Graded</option>
@@ -1802,9 +1842,9 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                 <p className="text-xl sm:text-2xl font-bold text-white">
-                  {submissions.filter(s => s.status === 'pending').length}
+                  {submissions.filter(s => s.status === 'processing').length}
                 </p>
-                <p className="text-gray-400 text-sm sm:text-base">Pending</p>
+                <p className="text-gray-400 text-sm sm:text-base">Processing</p>
               </div>
             </div>
           </div>
@@ -1926,10 +1966,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     <td className="px-3 sm:px-6 py-4">
                       <div className="min-w-0">
                         <p className="text-white font-medium truncate">
-                          {userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User'}
+                          {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
+                            ? submission.user_id.split('_')[1] || submission.user_id  // Extract student name from bulk_StudentName_...
+                            : (userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User')
+                          }
                         </p>
                         <p className="text-gray-400 text-sm truncate">
-                          {userDetails[submission.user_id]?.email || `User ID: ${submission.user_id}`}
+                          {submission.submission_method === 'on-behalf' ?  userDetails[submission.submitted_by_user_id]?.email : userDetails[submission.user_id]?.email || 'No email available'}
                         </p>
                       </div>
                     </td>
@@ -1938,21 +1981,24 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="flex items-center">
-                        <FileText size={16} className="text-gray-400 mr-2" />
-                        <span className="text-gray-300 text-sm capitalize">{submission.submission_method || 'in-app'}</span>
+                          <span className="text-gray-300 text-sm capitalize">{submission.submission_method || 'in-app'}</span>
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border inline-flex items-center ${
                         submission.status === 'graded' || submission.score
                           ? 'bg-green-500/20 text-green-400 border-green-500/30' 
                           : submission.status === 'grading'
                           ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                          : submission.status === 'processing'
+                          ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                           : submission.status === 'submitted'
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                           : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                       }`}>
-                        {/* {(submission.status === 'grading') ? <><Loader2 size={16} className="animate-spin" /></> : <></>} */}
+                        {submission.status === 'processing' && (
+                          <Loader2 size={12} className="animate-spin mr-1" />
+                        )}
                         {submission.status}
                       </span>
                     </td>
@@ -2029,6 +2075,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         onClose={() => setGradingModalOpen(false)}
         onConfirm={confirmAIGrading}
         count={selectedForGrading.length}
+      />
+
+      <BulkSubmissionModal
+        assignment={assignment}
+        isOpen={bulkUploadModalOpen}
+        onClose={() => setBulkUploadModalOpen(false)}
+        onUploadComplete={handleBulkUploadComplete}
       />
     </div>
   );

@@ -1981,7 +1981,14 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="flex items-center">
-                          <span className="text-gray-300 text-sm capitalize">{submission.submission_method || 'in-app'}</span>
+                        <span className="text-gray-300 text-sm capitalize">
+                          {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
+                            ? 'bulk upload'
+                            : submission.submission_method === 'pdf'
+                            ? 'PDF upload'
+                            : submission.submission_method || 'in-app'
+                          }
+                        </span>
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4">

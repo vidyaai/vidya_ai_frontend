@@ -1,5 +1,5 @@
 // src/components/Assignments/AIAssignmentGeneratorWizard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -15,7 +15,8 @@ import {
   Target,
   Loader2,
   Video,
-  Link
+  Link,
+  Image
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { api } from '../generic/utils.jsx';
@@ -30,6 +31,9 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAssignment, setGeneratedAssignment] = useState(null);
+  const [progressLogs, setProgressLogs] = useState([]);
+  const [generationError, setGenerationError] = useState(null);
+  const logContainerRef = useRef(null);
   
   // Step 1: Upload & Describe
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -91,6 +95,9 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     'diagram-analysis': false,
     'multi-part': false
   });
+
+  // Diagram generation model
+  const [diagramModel, setDiagramModel] = useState('nonai');
 
   // Navigation helpers
   const goNext = () => setCurrentStep(prev => Math.min(prev + 1, 4));
@@ -199,7 +206,9 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         engineeringDiscipline,
         includeCode: questionTypes['code-writing'],
         includeDiagrams: questionTypes['diagram-analysis'],
-        includeCalculations: questionTypes['numerical']
+        includeCalculations: questionTypes['numerical'],
+        diagramEngine: diagramModel === 'nonai' ? 'nonai' : 'ai',
+        diagramModel: diagramModel === 'nonai' ? 'flash' : diagramModel,
       };
 
       // Build linked_videos array from selected videos
@@ -224,12 +233,17 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         linked_videos: linkedVideos
       };
 
-      const result = await assignmentApi.generateAssignment(generateData);
+      setProgressLogs([]);
+      setGenerationError(null);
+      setCurrentStep(4); // Move to generating screen immediately
+
+      const result = await assignmentApi.generateAssignmentStream(generateData, (event) => {
+        setProgressLogs(prev => [...prev, { ...event, id: Date.now() + Math.random(), ts: new Date() }]);
+      });
       setGeneratedAssignment(result);
-      setCurrentStep(4); // Move to final screen
     } catch (error) {
       console.error('Error generating assignment:', error);
-      // You might want to show an error message here
+      setGenerationError(error.message || 'An unexpected error occurred');
     } finally {
       setIsGenerating(false);
     }
@@ -561,12 +575,14 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">None</option>
-              <option value="general">General Engineering</option>
               <option value="electrical">Electrical Engineering</option>
               <option value="mechanical">Mechanical Engineering</option>
               <option value="civil">Civil Engineering</option>
-              <option value="computer">Computer Engineering</option>
-              <option value="chemical">Chemical Engineering</option>
+              <option value="computer_eng">Computer Engineering</option>
+              <option value="cs">Computer Science</option>
+              <option value="math">Mathematics</option>
+              <option value="physics">Physics</option>
+              <option value="chemistry">Chemistry</option>
             </select>
           </div>
         </div>
@@ -653,20 +669,76 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-          <h4 className="text-white font-medium mb-2">Selected Types Summary</h4>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(questionTypes)
-              .filter(([type, selected]) => selected)
-              .map(([type, _]) => (
-                <span key={type} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
-                  {type.replace('-', ' ')}
-                </span>
-              ))}
+        <div className="mt-6 flex flex-col md:flex-row gap-4">
+          {/* Selected Types Summary */}
+          <div className="flex-1 p-4 bg-gray-800 rounded-lg">
+            <h4 className="text-white font-medium mb-2">Selected Types Summary</h4>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(questionTypes)
+                .filter(([type, selected]) => selected)
+                .map(([type, _]) => (
+                  <span key={type} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
+                    {type.replace('-', ' ')}
+                  </span>
+                ))}
+            </div>
+            {Object.values(questionTypes).every(selected => !selected) && (
+              <p className="text-gray-400 text-sm">No question types selected yet</p>
+            )}
           </div>
-          {Object.values(questionTypes).every(selected => !selected) && (
-            <p className="text-gray-400 text-sm">No question types selected yet</p>
-          )}
+
+          {/* Diagram Generation Model */}
+          <div className="md:w-72 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Image size={18} className="text-teal-400" />
+              <h4 className="text-white font-medium">Image Generation</h4>
+            </div>
+            <p className="text-gray-400 text-xs mb-3">Model used for diagram-analysis questions</p>
+            <div className="space-y-2">
+              {[
+                { value: 'nonai', label: 'Non AI', desc: 'Code-based (matplotlib, SVG)', color: 'gray' },
+                { value: 'flash', label: 'Gemini Flash', desc: 'Fast AI image generation', color: 'blue' },
+                { value: 'pro', label: 'Gemini Pro', desc: 'Highest quality AI images', color: 'purple' },
+              ].map((option) => (
+                <div
+                  key={option.value}
+                  onClick={() => setDiagramModel(option.value)}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all duration-150 ${
+                    diagramModel === option.value
+                      ? option.color === 'gray'
+                        ? 'bg-gray-600/30 border border-gray-500 ring-1 ring-gray-500/50'
+                        : option.color === 'blue'
+                          ? 'bg-blue-500/15 border border-blue-500/60 ring-1 ring-blue-500/30'
+                          : 'bg-purple-500/15 border border-purple-500/60 ring-1 ring-purple-500/30'
+                      : 'bg-gray-900/50 border border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                    diagramModel === option.value
+                      ? option.color === 'gray'
+                        ? 'border-gray-400'
+                        : option.color === 'blue'
+                          ? 'border-blue-400'
+                          : 'border-purple-400'
+                      : 'border-gray-500'
+                  }`}>
+                    {diagramModel === option.value && (
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        option.color === 'gray' ? 'bg-gray-400' :
+                        option.color === 'blue' ? 'bg-blue-400' : 'bg-purple-400'
+                      }`} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-medium ${
+                      diagramModel === option.value ? 'text-white' : 'text-gray-300'
+                    }`}>{option.label}</p>
+                    <p className="text-gray-500 text-xs truncate">{option.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -763,24 +835,31 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       );
     }
 
-    if (isGenerating) {
+    if (isGenerating || (progressLogs.length > 0 && !generatedAssignment && !generationError)) {
+      return <GeneratingProgressView
+        numQuestions={numQuestions}
+        progressLogs={progressLogs}
+        logContainerRef={logContainerRef}
+        engineeringDiscipline={engineeringDiscipline}
+        diagramModel={diagramModel}
+      />;
+    }
+
+    if (generationError && !generatedAssignment) {
       return (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full mb-6">
-              <Loader2 size={32} className="text-white animate-spin" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-full mb-6">
+              <AlertCircle size={32} className="text-red-400" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Generating Assignment</h2>
-            <p className="text-gray-400">AI is creating questions based on your content and preferences...</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Generation Failed</h2>
+            <p className="text-gray-400 max-w-lg mx-auto">{generationError}</p>
           </div>
-
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800">
-            <div className="flex items-center justify-center">
-              <div className="animate-pulse text-center">
-                <p className="text-white text-lg">Creating {numQuestions} questions...</p>
-                <p className="text-gray-400 text-sm mt-2">This may take a few moments</p>
-              </div>
-            </div>
+          <div className="text-center">
+            <button
+              onClick={() => { setGenerationError(null); setProgressLogs([]); setCurrentStep(3); }}
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >Go Back & Retry</button>
           </div>
         </div>
       );
@@ -1076,6 +1155,222 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         </div>
       )}
 
+    </div>
+  );
+};
+
+// ─── Animated Generating Progress View ────────────────────────────────
+const ICON_MAP = {
+  classify: '🔍',
+  generate: '🎨',
+  review: '🔎',
+  regen: '🔄',
+  upload: '☁️',
+  rephrase: '✏️',
+  success: '✅',
+  fail: '❌',
+  warn: '⚠️',
+  info: 'ℹ️',
+  question: '📝',
+};
+
+function classifyLog(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('domainrouter classified') || m.includes('classified:')) return { icon: ICON_MAP.classify, color: 'text-blue-400', phase: 'Classifying' };
+  if (m.includes('agent decided')) return { icon: '🤖', color: 'text-purple-400', phase: 'Routing' };
+  if (m.includes('executing') && m.includes('tool')) return { icon: ICON_MAP.generate, color: 'text-teal-400', phase: 'Generating Diagram' };
+  if (m.includes('generating matplotlib') || m.includes('generating svg')) return { icon: '📊', color: 'text-cyan-400', phase: 'Rendering' };
+  if (m.includes('claude code generation successful') || m.includes('claude generated')) return { icon: '🧠', color: 'text-indigo-400', phase: 'AI Code Gen' };
+  if (m.includes('rendered successfully') || m.includes('svg→png conversion')) return { icon: '🖼️', color: 'text-green-400', phase: 'Rendered' };
+  if (m.includes('uploading diagram') || m.includes('uploaded successfully')) return { icon: ICON_MAP.upload, color: 'text-sky-400', phase: 'Uploading' };
+  if (m.includes('diagram review:') && m.includes('failed')) return { icon: ICON_MAP.fail, color: 'text-red-400', phase: 'Review Failed' };
+  if (m.includes('diagram review:') && m.includes('pass')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Review Passed' };
+  if (m.includes('regenerat')) return { icon: ICON_MAP.regen, color: 'text-amber-400', phase: 'Regenerating' };
+  if (m.includes('rephrased') || m.includes('rephrase')) return { icon: ICON_MAP.rephrase, color: 'text-violet-400', phase: 'Rephrasing' };
+  if (m.includes('successfully added diagram') || m.includes('successfully generated')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Complete' };
+  if (m.includes('analyzing question')) return { icon: ICON_MAP.question, color: 'text-yellow-400', phase: 'Analyzing' };
+  if (m.includes('generated') && m.includes('questions')) return { icon: '✨', color: 'text-yellow-400', phase: 'Questions Ready' };
+  if (m.includes('starting multi-agent')) return { icon: '🚀', color: 'text-orange-400', phase: 'Diagram Pipeline' };
+  if (m.includes('starting assignment generation') || m.includes('content sources extracted')) return { icon: '📦', color: 'text-gray-400', phase: 'Preparing' };
+  if (m.includes('engine:') && m.includes('subject:')) return { icon: '⚙️', color: 'text-gray-300', phase: 'Configuration' };
+  if (m.includes('diagram analysis complete') || m.includes('cleanup complete')) return { icon: '🏁', color: 'text-green-400', phase: 'Finalizing' };
+  if (m.includes('question review')) return { icon: '📋', color: 'text-blue-300', phase: 'Reviewing' };
+  if (m.includes('warning') || m.includes('skipping')) return { icon: ICON_MAP.warn, color: 'text-yellow-500', phase: 'Warning' };
+  return { icon: ICON_MAP.info, color: 'text-gray-400', phase: 'Processing' };
+}
+
+function truncateLogMessage(msg, maxLen = 120) {
+  // Remove verbose prefixes
+  let cleaned = msg
+    .replace(/^(Starting|DEBUG -|INFO -)\s*/i, '')
+    .replace(/^(controllers\.config - INFO - )/i, '');
+  if (cleaned.length > maxLen) cleaned = cleaned.slice(0, maxLen) + '…';
+  return cleaned;
+}
+
+function extractQuestionNum(msg) {
+  const m = msg.match(/(?:question|Q)\s*(\d+)/i);
+  return m ? parseInt(m[1]) : null;
+}
+
+const GeneratingProgressView = ({ numQuestions, progressLogs, logContainerRef, engineeringDiscipline, diagramModel }) => {
+  const [elapsedSec, setElapsedSec] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setElapsedSec(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Auto-scroll
+  useEffect(() => {
+    if (logContainerRef?.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [progressLogs]);
+
+  // Derive active question being processed
+  const latestQuestionNum = (() => {
+    for (let i = progressLogs.length - 1; i >= 0; i--) {
+      const n = extractQuestionNum(progressLogs[i].message);
+      if (n !== null) return n;
+    }
+    return null;
+  })();
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  // Phase summary: count completed questions
+  const completedQuestions = new Set();
+  progressLogs.forEach(l => {
+    if (l.message.toLowerCase().includes('successfully added diagram') || l.message.toLowerCase().includes('successfully generated')) {
+      const n = extractQuestionNum(l.message);
+      if (n !== null) completedQuestions.add(n);
+    }
+  });
+
+  // Current status message
+  const latestMeaningfulLog = progressLogs.length > 0
+    ? progressLogs[progressLogs.length - 1]
+    : null;
+  const latestClassified = latestMeaningfulLog ? classifyLog(latestMeaningfulLog.message) : null;
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full mb-4 relative">
+          <Sparkles size={28} className="text-white animate-pulse" />
+          <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center">
+            <Loader2 size={12} className="text-white animate-spin" />
+          </span>
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-1">Generating Assignment</h2>
+        <p className="text-gray-400 text-sm">
+          {latestClassified
+            ? <span className={latestClassified.color}>{latestClassified.icon} {latestClassified.phase}</span>
+            : 'Initializing…'}
+          <span className="text-gray-600 mx-2">•</span>
+          <span className="text-gray-500 font-mono text-xs">{formatTime(elapsedSec)}</span>
+        </p>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
+          <p className="text-lg font-bold text-yellow-400">{numQuestions}</p>
+          <p className="text-gray-500 text-xs">Questions</p>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
+          <p className="text-lg font-bold text-teal-400">{latestQuestionNum !== null ? latestQuestionNum + 1 : 0}<span className="text-gray-600 text-sm">/{numQuestions}</span></p>
+          <p className="text-gray-500 text-xs">Processing</p>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
+          <p className="text-lg font-bold text-green-400">{completedQuestions.size}</p>
+          <p className="text-gray-500 text-xs">Diagrams Done</p>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${Math.max(5, ((latestQuestionNum !== null ? latestQuestionNum + 1 : 0) / Math.max(numQuestions, 1)) * 100)}%` }}
+        />
+      </div>
+
+      {/* Live log feed */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900/80">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Live Progress</span>
+          </div>
+          <span className="text-gray-600 text-xs font-mono">{progressLogs.length} events</span>
+        </div>
+
+        <div
+          ref={logContainerRef}
+          className="max-h-80 overflow-y-auto px-2 py-2 space-y-0.5 scroll-smooth"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
+        >
+          {progressLogs.length === 0 && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="text-gray-600 animate-spin mr-2" />
+              <span className="text-gray-500 text-sm">Waiting for backend…</span>
+            </div>
+          )}
+          {progressLogs.map((log, idx) => {
+            const classified = classifyLog(log.message);
+            const isLatest = idx === progressLogs.length - 1;
+            const qNum = extractQuestionNum(log.message);
+
+            // Skip noisy HTTP/httpx lines
+            if (log.message.includes('HTTP Request:') || log.message.includes('httpx')) return null;
+            // Skip overly verbose lines
+            if (log.message.startsWith('Starting assignment generation with options:')) return null;
+            if (log.message.startsWith('Generation prompt:')) return null;
+            if (log.message.startsWith('Linked videos:') || log.message.startsWith('Uploaded files:')) return null;
+            if (log.message.includes('Dynamically loaded schemdraw')) return null;
+
+            return (
+              <div
+                key={log.id}
+                className={`flex items-start gap-2 px-2 py-1.5 rounded-md transition-all duration-300 ${
+                  isLatest ? 'bg-gray-800/80' : 'hover:bg-gray-800/40'
+                } ${log.level === 'warning' ? 'border-l-2 border-amber-500/50' : ''}`}
+                style={{ animation: isLatest ? 'fadeSlideIn 0.3s ease-out' : 'none' }}
+              >
+                <span className="text-sm flex-shrink-0 mt-0.5 w-5 text-center">{classified.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs leading-relaxed ${isLatest ? 'text-gray-200' : 'text-gray-400'}`}>
+                    {qNum !== null && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 text-[10px] font-mono mr-1.5">
+                        Q{qNum}
+                      </span>
+                    )}
+                    {truncateLogMessage(log.message)}
+                  </p>
+                </div>
+                <span className={`text-[10px] font-medium flex-shrink-0 mt-0.5 ${classified.color}`}>
+                  {classified.phase}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CSS for animation */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -548,6 +548,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         engineering_level: preloadedData?.engineering_level || 'undergraduate',
         engineering_discipline: preloadedData?.engineering_discipline || 'general',
         question_types: [...new Set(questions.map(q => q.type))],
+        course_id: preloadedData?.course_id || null,
         linked_videos: preloadedData?.linked_videos || preloadedData?.linkedVideos || null,
         uploaded_files: preloadedData?.uploaded_files || preloadedData?.uploadedFiles || null,
         generation_prompt: preloadedData?.generation_prompt || null,

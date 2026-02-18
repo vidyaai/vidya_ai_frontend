@@ -29,8 +29,8 @@ import CreateCourseModal from '../Courses/CreateCourseModal';
 import CourseDetailView from '../Courses/CourseDetailView';
 import { courseApi } from '../Courses/courseApi';
 
-const MyAssignments = ({ onBack, onNavigateToHome }) => {
-  const [currentView, setCurrentView] = useState('main');
+const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSection }) => {
+  const [currentView, setCurrentView] = useState(initialCourseId ? 'course-detail' : 'main');
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [sharingModalOpen, setSharingModalOpen] = useState(false);
   const [parseModalOpen, setParseModalOpen] = useState(false);
@@ -40,6 +40,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [error, setError] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(null);
+  const [downloadingSolutionPDF, setDownloadingSolutionPDF] = useState(null);
   const [googleFormLinks, setGoogleFormLinks] = useState({});
 
   // Course state
@@ -47,7 +48,7 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
   const [selectedCourseId, setSelectedCourseId] = useState(undefined); // undefined = show courses grid, null = "Open Assignments"
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [showCreateCourse, setShowCreateCourse] = useState(false);
-  const [courseDetailId, setCourseDetailId] = useState(null);
+  const [courseDetailId, setCourseDetailId] = useState(initialCourseId || null);
 
   // Load courses on mount
   useEffect(() => {
@@ -126,7 +127,8 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
   };
 
   const handleParsedAssignment = (assignmentData) => {
-    setParsedAssignmentData(assignmentData);
+    // Preserve the course_id if we came from a course detail view
+    setParsedAssignmentData({ ...assignmentData, course_id: courseDetailId || assignmentData.course_id || null });
     setParseModalOpen(false);
     setCurrentView('assignment-builder');
   };
@@ -206,12 +208,40 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
     }
   };
 
+  const handleDownloadSolutionPDF = async (assignment) => {
+    try {
+      setDownloadingSolutionPDF(assignment.id);
+      const response = await assignmentApi.downloadSolutionPDF(assignment.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${assignment.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_Solution_Key.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download solution PDF:', err);
+      alert('Failed to download solution PDF. Please try again.');
+    } finally {
+      setDownloadingSolutionPDF(null);
+    }
+  };
+
   const handleContinueFromGenerator = (generatedData) => {
-    setParsedAssignmentData(generatedData);
+    // Preserve the course_id if we came from a course detail view
+    setParsedAssignmentData({ ...generatedData, course_id: courseDetailId || generatedData.course_id || null });
     setCurrentView('assignment-builder');
   };
 
   const handleBackToMain = () => {
+    // If we were in a course detail view, go back to it instead of the courses grid
+    if (courseDetailId && (currentView === 'assignment-builder' || currentView === 'ai-generator' || currentView === 'submissions')) {
+      setCurrentView('course-detail');
+      setParsedAssignmentData(null);
+      return;
+    }
     setCurrentView('main');
     setParsedAssignmentData(null);
     setCourseDetailId(null);
@@ -271,6 +301,9 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
         onCreateAssignment={handleCreateAssignmentForCourse}
         onEditAssignment={(a) => handleEditAssignment(a)}
         onViewSubmissions={(a) => handleViewSubmissions(a)}
+        onImportDocument={handleParseFromDocument}
+        onGenerateWithAI={handleGenerateAssignment}
+        initialSection={courseDetailId === initialCourseId ? initialSection : null}
       />
     );
   }
@@ -378,24 +411,12 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
 
               {/* Actual courses */}
               {courses.map((course) => (
-                <div key={course.id} className="relative group">
-                  <CourseCard
-                    thumbnail={true}
-                    course={course}
-                    onClick={() => handleSelectCourse(course.id)}
-                  />
-                  {/* Settings cog on hover */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenCourseDetail(course.id);
-                    }}
-                    className="absolute top-3 right-3 p-1.5 rounded-lg bg-gray-800/80 text-gray-400 hover:text-teal-400 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Course Settings"
-                  >
-                    <Edit size={14} />
-                  </button>
-                </div>
+                <CourseCard
+                  key={course.id}
+                  thumbnail={true}
+                  course={course}
+                  onClick={() => handleOpenCourseDetail(course.id)}
+                />
               ))}
             </div>
           )}
@@ -616,12 +637,24 @@ const MyAssignments = ({ onBack, onNavigateToHome }) => {
                           onClick={() => handleDownloadPDF(assignment)}
                           disabled={downloadingPDF === assignment.id}
                           className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Download assignment as PDF"
+                          title="Download question paper PDF"
                         >
                           {downloadingPDF === assignment.id ? (
                             <Loader2 size={16} className="animate-spin" />
                           ) : (
                             <Download size={16} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDownloadSolutionPDF(assignment)}
+                          disabled={downloadingSolutionPDF === assignment.id}
+                          className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Download solution key PDF"
+                        >
+                          {downloadingSolutionPDF === assignment.id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <BookOpen size={16} />
                           )}
                         </button>
                         

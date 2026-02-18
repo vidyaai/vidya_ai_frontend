@@ -132,6 +132,53 @@ export const courseApi = {
     const response = await api.get(`/api/courses/${courseId}/assignments`, { headers: HEADERS });
     return response.data;
   },
+
+  // ── Teaching Assistants ───────────────────────────────────────────────
+
+  async listTAs(courseId) {
+    const response = await api.get(
+      `/api/courses/${courseId}/enrollments?role=ta`,
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
+
+  async addTA(courseId, email) {
+    const response = await api.post(
+      `/api/courses/${courseId}/enroll`,
+      { students: [{ email }], role: 'ta' },
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
+
+  async removeTA(courseId, enrollmentId) {
+    const response = await api.delete(
+      `/api/courses/${courseId}/enrollments/${enrollmentId}`,
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
+
+  // ── Videos (materials of type video) ──────────────────────────────────
+
+  async listVideos(courseId) {
+    const response = await api.get(
+      `/api/courses/${courseId}/materials?material_type=video`,
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
+
+  // ── Lecture Notes (materials of type lecture_notes) ────────────────────
+
+  async listLectureNotes(courseId) {
+    const response = await api.get(
+      `/api/courses/${courseId}/materials?material_type=lecture_notes`,
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
 };
 
 export default courseApi;

@@ -133,6 +133,67 @@ export const assignmentApi = {
     return response.data;
   },
 
+  // Generate assignment with real-time SSE log streaming
+  async generateAssignmentStream(generateData, onLogEvent) {
+    const { auth } = await import('../../firebase/config');
+    const { API_URL } = await import('../generic/utils.jsx');
+    
+    let token = '';
+    try {
+      const user = auth?.currentUser;
+      if (user) token = await user.getIdToken();
+    } catch (_) { /* continue */ }
+
+    const response = await fetch(`${API_URL}/api/assignments/generate-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: JSON.stringify(generateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Generation failed: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') break;
+        try {
+          const event = JSON.parse(payload);
+          if (event.type === 'result') {
+            result = event.data;
+          } else if (event.type === 'error') {
+            throw new Error(event.message);
+          } else if (event.type === 'log' && onLogEvent) {
+            onLogEvent(event);
+          }
+        } catch (e) {
+          if (e.message && !e.message.startsWith('Unexpected')) throw e;
+        }
+      }
+    }
+
+    if (!result) throw new Error('No assignment result received from stream');
+    return result;
+  },
+
   // Get submissions for an assignment (assignment owner only)
   async getAssignmentSubmissions(assignmentId) {
     const response = await api.get(`/api/assignments/${assignmentId}/submissions`, {
@@ -181,11 +242,20 @@ export const assignmentApi = {
     return response.data;
   },
 
-  // Download assignment as PDF
+  // Download assignment as PDF (question paper — no answers)
   async downloadAssignmentPDF(assignmentId) {
     const response = await api.get(`/api/assignments/${assignmentId}/download-pdf`, {
       headers: { 'ngrok-skip-browser-warning': 'true' },
-      responseType: 'blob'  // Important: specify blob response type for binary data
+      responseType: 'blob'
+    });
+    return response;
+  },
+
+  // Download solution/answer-key PDF (professor only)
+  async downloadSolutionPDF(assignmentId) {
+    const response = await api.get(`/api/assignments/${assignmentId}/download-solution-pdf`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      responseType: 'blob'
     });
     return response;
   },

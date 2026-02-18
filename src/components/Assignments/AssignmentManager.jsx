@@ -17,17 +17,25 @@ import AssignedToMe from './AssignedToMe';
 
 const AssignmentManager = ({ onNavigateToHome }) => {
   const [currentView, setCurrentView] = useState('main');
+  const [initialCourseId, setInitialCourseId] = useState(null);
+  const [initialSection, setInitialSection] = useState(null);
 
   // Handle URL query parameter for direct navigation
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const view = urlParams.get('view');
+      const courseId = urlParams.get('courseId');
+      const section = urlParams.get('section');
       if (view === 'assigned-to-me') {
         setCurrentView('assigned-to-me');
+        if (courseId) setInitialCourseId(courseId);
+        if (section) setInitialSection(section);
         window.history.replaceState({}, '', window.location.pathname);
       } else if (view === 'my-assignments') {
         setCurrentView('my-assignments');
+        if (courseId) setInitialCourseId(courseId);
+        if (section) setInitialSection(section);
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
@@ -46,11 +54,11 @@ const AssignmentManager = ({ onNavigateToHome }) => {
   };
 
   if (currentView === 'my-assignments') {
-    return <MyAssignments onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+    return <MyAssignments onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} initialCourseId={initialCourseId} initialSection={initialSection} />;
   }
 
   if (currentView === 'assigned-to-me') {
-    return <AssignedToMe onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+    return <AssignedToMe onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} initialCourseId={initialCourseId} initialSection={initialSection} />;
   }
 
   return (

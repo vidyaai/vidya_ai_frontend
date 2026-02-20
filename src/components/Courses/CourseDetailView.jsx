@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { courseApi } from './courseApi';
+import { assignmentApi } from '../Assignments/assignmentApi';
 
 // Sidebar sections
 const SECTIONS = [
@@ -879,6 +880,8 @@ const VideosSection = ({ courseId }) => {
 const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, onViewSubmissions, onImportDocument, onGenerateWithAI }) => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingPDF, setDownloadingPDF] = useState(null);
+  const [downloadingSolutionPDF, setDownloadingSolutionPDF] = useState(null);
 
   useEffect(() => { loadAssignments(); }, [courseId]);
 
@@ -891,6 +894,46 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
       console.error('Failed to load assignments');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (assignment) => {
+    try {
+      setDownloadingPDF(assignment.id);
+      const response = await assignmentApi.downloadAssignmentPDF(assignment.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${assignment.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_Assignment.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to download assignment PDF. Please try again.');
+    } finally {
+      setDownloadingPDF(null);
+    }
+  };
+
+  const handleDownloadSolutionPDF = async (assignment) => {
+    try {
+      setDownloadingSolutionPDF(assignment.id);
+      const response = await assignmentApi.downloadSolutionPDF(assignment.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${assignment.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_Solutions.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to download solutions PDF. Please try again.');
+    } finally {
+      setDownloadingSolutionPDF(null);
     }
   };
 
@@ -946,17 +989,31 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
                 <div>{a.total_questions} questions {'\u2022'} {a.total_points} pts</div>
                 {a.due_date && <div>Due: {new Date(a.due_date).toLocaleDateString()}</div>}
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => onEditAssignment?.(a)}
                   className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors"
                 >Edit</button>
-                {a.status === 'published' && (
-                  <button
-                    onClick={() => onViewSubmissions?.(a)}
-                    className="px-3 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 rounded text-xs transition-colors"
-                  >Submissions</button>
-                )}
+                <button
+                  onClick={() => onViewSubmissions?.(a)}
+                  className="px-3 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 rounded text-xs transition-colors"
+                >Submissions</button>
+                <button
+                  onClick={() => handleDownloadPDF(a)}
+                  disabled={downloadingPDF === a.id}
+                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download assignment PDF"
+                >
+                  {downloadingPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                </button>
+                <button
+                  onClick={() => handleDownloadSolutionPDF(a)}
+                  disabled={downloadingSolutionPDF === a.id}
+                  className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download solutions PDF"
+                >
+                  {downloadingSolutionPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
+                </button>
               </div>
             </div>
           ))}

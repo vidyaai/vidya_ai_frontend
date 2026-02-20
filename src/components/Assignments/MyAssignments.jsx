@@ -605,8 +605,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                           <Edit size={16} />
                         )}
                       </button>
-                      {/* Only show Share button for published assignments */}
-                      {assignment.status === 'published' && (
+                      {/* Share only for standalone (non-course) published assignments */}
+                      {!assignment.course_id && assignment.status === 'published' && (
                         <button
                           onClick={() => handleShareAssignment(assignment)}
                           className="p-2 text-gray-400 hover:text-green-400 transition-colors"
@@ -623,53 +623,49 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    {/* Only show View Submissions and Download PDF buttons for published assignments */}
-                    {assignment.status === 'published' && (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleViewSubmissions(assignment)}
-                          className="p-2 bg-teal-600 hover:bg-teal-700 text-white rounded transition-colors"
-                          title="View Submissions"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDownloadPDF(assignment)}
-                          disabled={downloadingPDF === assignment.id}
-                          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Download question paper PDF"
-                        >
-                          {downloadingPDF === assignment.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <Download size={16} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDownloadSolutionPDF(assignment)}
-                          disabled={downloadingSolutionPDF === assignment.id}
-                          className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Download solution key PDF"
-                        >
-                          {downloadingSolutionPDF === assignment.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <BookOpen size={16} />
-                          )}
-                        </button>
-                        
-                        {/* Google Form Link */}
-                        {googleFormLinks[assignment.id] && (
-                          <button
-                            onClick={() => window.open(googleFormLinks[assignment.id], '_blank')}
-                            className="p-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-                            title="Open Google Form"
-                          >
-                            <Globe size={16} />
-                          </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleViewSubmissions(assignment)}
+                        className="p-2 bg-teal-600 hover:bg-teal-700 text-white rounded transition-colors"
+                        title="View Submissions"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPDF(assignment)}
+                        disabled={downloadingPDF === assignment.id}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Download assignment PDF"
+                      >
+                        {downloadingPDF === assignment.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Download size={16} />
                         )}
-                      </div>
-                    )}
+                      </button>
+                      <button
+                        onClick={() => handleDownloadSolutionPDF(assignment)}
+                        disabled={downloadingSolutionPDF === assignment.id}
+                        className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Download solutions PDF"
+                      >
+                        {downloadingSolutionPDF === assignment.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <BookOpen size={16} />
+                        )}
+                      </button>
+                      {/* Google Form only for standalone (non-course) assignments */}
+                      {!assignment.course_id && googleFormLinks[assignment.id] && (
+                        <button
+                          onClick={() => window.open(googleFormLinks[assignment.id], '_blank')}
+                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                          title="Open Google Form"
+                        >
+                          <Globe size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -4,17 +4,6 @@ import createMDX from '@next/mdx'
 const nextConfig = {
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
   reactStrictMode: true,
-  experimental: {
-    // Pre-compile large packages so they don't cause partial-chunk syntax errors
-    // on cold start (first browser load after dev server restart).
-    optimizePackageImports: [
-      'firebase',
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore',
-      'lucide-react',
-    ],
-  },
   images: {
     domains: ['via.placeholder.com', 'devapi.vidyaai.co', 'api.vidyaai.co'],
     unoptimized: process.env.NODE_ENV === 'development',

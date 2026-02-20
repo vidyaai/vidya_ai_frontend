@@ -201,8 +201,7 @@ const ChatBoxComponent = ({
           query: currentQuery,
           timestamp: currentTime,
           is_image_query: queryType === 'frame',
-          conversation_history: conversationContext,
-          session_id: activeSessionId
+          conversation_history: conversationContext
         }, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -213,8 +212,7 @@ const ChatBoxComponent = ({
           query: currentQuery,
           timestamp: currentTime,
           is_image_query: queryType === 'frame',
-          conversation_history: conversationContext,
-          session_id: activeSessionId
+          conversation_history: conversationContext
         }, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -557,7 +555,7 @@ const ChatBoxComponent = ({
                   </span>
                 )}
               </div>
-              <div className="text-white break-words overflow-wrap-anywhere">
+              <div className="text-white">
                 {message.sender === 'ai' ? (
                   parseMarkdownWithMath(message.text, onSeekToTime)
                 ) : (

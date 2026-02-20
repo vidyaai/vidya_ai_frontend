@@ -7,7 +7,6 @@ import TranscriptComponent from './TranscriptComponent';
 import ChatBoxComponent from './ChatBoxComponent';
 import ChatHistory from './ChatHistory.jsx';
 import QuizPanel from './QuizPanel';
-import SummarizeVideoButton from './SummarizeVideoButton';
 import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import VideoUploader from './VideoUploader.jsx';
@@ -684,7 +683,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           </div>
         </div>
         
-        <div className="w-full xl:w-2/5 relative space-y-4">
+        <div className="w-full xl:w-2/5 relative">
           <ChatBoxComponent
             currentVideo={currentVideo}
             currentTime={currentTime}
@@ -697,12 +696,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             activeSessionId={activeSessionId}
             onSelectHistory={handleSelectSession}
             showHistory={showHistory}
-          />
-
-          {/* Summarize Video Button - DEBUG: Showing unconditionally */}
-          <SummarizeVideoButton
-            currentVideo={currentVideo}
-            transcript={transcript}
           />
         </div>
       </div>

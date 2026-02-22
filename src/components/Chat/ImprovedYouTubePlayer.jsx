@@ -699,7 +699,7 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             showHistory={showHistory}
           />
 
-          {/* Summarize Video Button */}
+          {/* Summarize Video Button - DEBUG: Showing unconditionally */}
           <SummarizeVideoButton
             currentVideo={currentVideo}
             transcript={transcript}

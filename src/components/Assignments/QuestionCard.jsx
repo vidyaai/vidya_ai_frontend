@@ -1255,13 +1255,7 @@ const QuestionCard = ({
                   <input
                     type="radio"
                     name={`tf-${question.id}`}
-                    checked={
-                      question.correctAnswer === 'True' ||
-                      question.correctAnswer === 'true' ||
-                      question.correctAnswer === true ||
-                      question.correctAnswer === '1' ||
-                      question.correctAnswer === 1
-                    }
+                    checked={question.correctAnswer === 'True' || 'true' || true || '1' || 1}
                     onChange={() => handleCorrectAnswerChange('true')}
                     className="text-teal-500 focus:ring-teal-500 mr-2"
                   />
@@ -1271,13 +1265,7 @@ const QuestionCard = ({
                   <input
                     type="radio"
                     name={`tf-${question.id}`}
-                    checked={
-                      question.correctAnswer === 'False' ||
-                      question.correctAnswer === 'false' ||
-                      question.correctAnswer === false ||
-                      question.correctAnswer === '0' ||
-                      question.correctAnswer === 0
-                    }
+                    checked={question.correctAnswer === 'False' || 'false' || false || '0' || 0}
                     onChange={() => handleCorrectAnswerChange('false')}
                     className="text-teal-500 focus:ring-teal-500 mr-2"
                   />
@@ -2326,13 +2314,7 @@ const QuestionCard = ({
                               <input
                                 type="radio"
                                 name={`tf-sub-${question.id}-${subIndex}`}
-                                checked={
-                                  subq.correctAnswer === 'True' ||
-                                  subq.correctAnswer === 'true' ||
-                                  subq.correctAnswer === true ||
-                                  subq.correctAnswer === '1' ||
-                                  subq.correctAnswer === 1
-                                }
+                                checked={subq.correctAnswer === 'True' || 'true' || true || '1' || 1}
                                 onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'true')}
                                 className="text-teal-500 focus:ring-teal-500 mr-2"
                               />
@@ -2342,13 +2324,7 @@ const QuestionCard = ({
                               <input
                                 type="radio"
                                 name={`tf-sub-${question.id}-${subIndex}`}
-                                checked={
-                                  subq.correctAnswer === 'False' ||
-                                  subq.correctAnswer === 'false' ||
-                                  subq.correctAnswer === false ||
-                                  subq.correctAnswer === '0' ||
-                                  subq.correctAnswer === 0
-                                }
+                                checked={subq.correctAnswer === 'False' || 'false' || false || '0' || 0}
                                 onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'false')}
                                 className="text-teal-500 focus:ring-teal-500 mr-2"
                               />
@@ -2664,13 +2640,7 @@ const QuestionCard = ({
                                         <input
                                           type="radio"
                                           name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={
-                                            subSubq.correctAnswer === 'True' ||
-                                            subSubq.correctAnswer === 'true' ||
-                                            subSubq.correctAnswer === true ||
-                                            subSubq.correctAnswer === '1' ||
-                                            subSubq.correctAnswer === 1
-                                          }
+                                          checked={subSubq.correctAnswer === 'True' || 'true' || true || '1' || 1}
                                           onChange={() => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
                                             newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'true' };
@@ -2684,13 +2654,7 @@ const QuestionCard = ({
                                         <input
                                           type="radio"
                                           name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={
-                                            subSubq.correctAnswer === 'False' ||
-                                            subSubq.correctAnswer === 'false' ||
-                                            subSubq.correctAnswer === false ||
-                                            subSubq.correctAnswer === '0' ||
-                                            subSubq.correctAnswer === 0
-                                          }
+                                          checked={subSubq.correctAnswer === 'False' || 'false' || false || '0' || 0}
                                           onChange={() => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
                                             newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'false' };

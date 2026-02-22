@@ -609,6 +609,32 @@ export const assignmentApi = {
     } catch (err) {
       throw new Error(`Failed to generate formats: ${err.message}`);
     }
+  },
+
+  // Bulk upload multiple PDFs as on-behalf submissions
+  async bulkUploadPDFs(assignmentId, pdfFiles) {
+    if (!pdfFiles || pdfFiles.length === 0) {
+      throw new Error('No PDF files provided');
+    }
+
+    const formData = new FormData();
+    
+    // Append each PDF file
+    pdfFiles.forEach((file, index) => {
+      formData.append('files', file, file.name);
+    });
+
+    const response = await api.post(
+      `/api/assignments/${assignmentId}/bulk-upload-pdfs`,
+      formData,
+      {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'ngrok-skip-browser-warning': 'true' 
+        }
+      }
+    );
+    return response.data;
   }
 };
 

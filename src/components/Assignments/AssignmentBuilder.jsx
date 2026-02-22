@@ -16,13 +16,23 @@ import AssignmentPreview from './AssignmentPreview';
 import { assignmentApi } from './assignmentApi';
 
 const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
+  console.log('AssignmentBuilder: Received preloadedData:', preloadedData);
+  console.log('AssignmentBuilder: Received preloadedData:', preloadedData?.ai_penalty_percentage);
+
+  let initialAiPenalty = 50; // Default value
+  if (preloadedData) {
+    if (preloadedData.ai_penalty_percentage !== undefined && preloadedData.ai_penalty_percentage !== null) {
+      initialAiPenalty = preloadedData.ai_penalty_percentage;
+    }
+  }
+
   const [questions, setQuestions] = useState(preloadedData?.questions || []);
   const [showQuestionTypes, setShowQuestionTypes] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [assignmentTitle, setAssignmentTitle] = useState(preloadedData?.title || '');
   const [assignmentDescription, setAssignmentDescription] = useState(preloadedData?.description || '');
   const [assignmentDueDate, setAssignmentDueDate] = useState('');
-  const [aiPenaltyPercentage, setAiPenaltyPercentage] = useState(preloadedData?.ai_penalty_percentage || 50);
+  const [aiPenaltyPercentage, setAiPenaltyPercentage] = useState(initialAiPenalty);
   const [currentAssignmentId, setCurrentAssignmentId] = useState(preloadedData?.id || null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);

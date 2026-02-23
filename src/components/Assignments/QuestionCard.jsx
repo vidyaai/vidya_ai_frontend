@@ -712,6 +712,94 @@ const QuestionCard = ({
     );
   };
 
+  const PreviewDiagramImage = ({ diagramData, displayName, onError }) => {
+    const [imageUrl, setImageUrl] = useState(null);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        // If we already have a URL (cached), use it
+        if (imageUrl) return;
+        
+        // Check if we have a cached URL for this diagram
+        if (diagramData.file_id && imageUrls[diagramData.file_id]) {
+          setImageUrl(imageUrls[diagramData.file_id]);
+          setLoading(false);
+          return;
+        }
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setLoading(false);
+          return;
+        }
+        
+        // If no s3_key, we can't fetch from server
+        if (!diagramData.s3_key) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setError(false);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
+          setImageUrl(url);
+          
+          // Cache the URL if we have a file_id
+          if (diagramData.file_id) {
+            setImageUrls(prev => ({
+              ...prev,
+              [diagramData.file_id]: url
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to load diagram URL:', error);
+          setError(true);
+          onError && onError();
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.s3_key, diagramData.s3_url, diagramData.file_id, imageUrl, imageUrls]);
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-32 bg-gray-800 rounded">
+          <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
+          <span className="text-gray-300">Loading image...</span>
+        </div>
+      );
+    }
+
+    if (error || !imageUrl) {
+      return (
+        <div className="p-4 text-center">
+          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+          <p className="text-gray-400 text-sm">Failed to load image</p>
+          <p className="text-gray-500 text-xs">{displayName}</p>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={imageUrl} 
+        alt={displayName}
+        className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-gray-900 mx-auto block"
+        onError={(e) => {
+          console.error('Failed to load diagram:', imageUrl);
+          onError && onError();
+        }}
+      />
+    );
+  };
+
   // Render diagram display component
   const renderDiagramDisplay = (diagramData, isUploading = false, onDelete = null, onReplace = null, field = 'diagram', subIndex = null) => {
     if (isUploading) {
@@ -893,7 +981,7 @@ const QuestionCard = ({
           {/* Modal Content */}
           <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
             <div className="bg-gray-800 rounded">
-              <DiagramImage 
+              <PreviewDiagramImage 
                 diagramData={diagramData}
                 displayName={displayName}
                 onError={() => {

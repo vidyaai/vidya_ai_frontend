@@ -286,7 +286,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         }
       } else if (question.type === 'true-false') {
         // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
-        const validTrueFalseAnswers = ['true', 'false', true, false];
+        const validTrueFalseAnswers = ['True', 'False', 'true', 'false', true, false, '1', '0', 1, 0];
         if (!validTrueFalseAnswers.includes(question.correctAnswer)) {
             errors.push(`Question ${questionNum}: Correct answer for True/False must be either "True" or "False"`);
         }
@@ -377,7 +377,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             }
           } else if (subQ.type === 'true-false') {
             // For true/false, correctAnswer must be either "True" or "False" or boolean true/false
-            const validTrueFalseAnswers = ['true', 'false', true, false];
+            const validTrueFalseAnswers = ['True', 'False', 'true', 'false', true, false, '1', '0', 1, 0];
             if (!validTrueFalseAnswers.includes(subQ.correctAnswer)) {
                 errors.push(`Sub-question ${subNum}: Correct answer for True/False must be either "True" or "False"`);
             }

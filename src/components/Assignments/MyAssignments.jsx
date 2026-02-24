@@ -607,7 +607,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    {!assignment.course_id && assignment.status === 'published' && (<div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleViewSubmissions(assignment)}
                         className="p-2 bg-teal-600 hover:bg-teal-700 text-white rounded transition-colors"
@@ -639,7 +639,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                           <BookOpen size={16} />
                         )}
                       </button>
-                    </div>
+                    </div>)}
                   </div>
                 </div>
               ))}

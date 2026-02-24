@@ -994,6 +994,7 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
                   onClick={() => onEditAssignment?.(a)}
                   className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors"
                 >Edit</button>
+                {a.status === 'published' && <>
                 <button
                   onClick={() => onViewSubmissions?.(a)}
                   className="px-3 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 rounded text-xs transition-colors"
@@ -1014,6 +1015,7 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
                 >
                   {downloadingSolutionPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
                 </button>
+                </>}
               </div>
             </div>
           ))}

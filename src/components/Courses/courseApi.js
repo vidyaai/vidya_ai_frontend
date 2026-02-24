@@ -133,6 +133,11 @@ export const courseApi = {
     return response.data;
   },
 
+  async listCoursePublishedAssignments(courseId) {
+    const response = await api.get(`/api/courses/${courseId}/assignments?status=published`, { headers: HEADERS });
+    return response.data;
+  },
+
   // ── Teaching Assistants ───────────────────────────────────────────────
 
   async listTAs(courseId) {

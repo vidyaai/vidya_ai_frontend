@@ -357,7 +357,7 @@ const StudentAssignmentsSection = ({ courseId, onOpenAssignment }) => {
   const loadAssignments = async () => {
     try {
       setLoading(true);
-      const data = await courseApi.listCourseAssignments(courseId);
+      const data = await courseApi.listCoursePublishedAssignments(courseId);
       setAssignments(data);
       await loadStatuses(data);
     } catch (err) {

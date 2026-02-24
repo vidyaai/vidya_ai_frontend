@@ -4,7 +4,7 @@ import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } f
 import { assignmentApi } from './assignmentApi';
 import DisplayTextWithEquations from './DisplayTextWithEquations';
 
-const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
+const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus, isPublished = false }) => {
   const calculateQuestionPoints = (question) => {
     if (question.type === 'multi-part') {
       const subquestions = question.subquestions || [];
@@ -539,7 +539,8 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
         <div className="mt-6 pt-4 border-t border-gray-700 space-y-2">
           <button 
             onClick={() => onSave('draft')}
-            disabled={saving}
+            disabled={saving || isPublished}
+            title={isPublished ? 'Already published — cannot revert to draft' : 'Save as draft'}
             className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : 'Save as Draft'}

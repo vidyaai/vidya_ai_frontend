@@ -37,6 +37,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
+  const [isPublished, setIsPublished] = useState(preloadedData?.status === 'published');
   
   // Google Form generation states
   const [publishingWithFormGeneration, setPublishingWithFormGeneration] = useState(false);
@@ -594,6 +595,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
           alert('Assignment saved successfully!');
         }
       }
+
+      // Lock the assignment as published once saved with published status
+      if (status === 'published') {
+        setIsPublished(true);
+      }
       
       // If publishing, generate all formats (PDF + Google Forms) with progress tracking
       if (status === 'published' && assignmentId) {
@@ -802,8 +808,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => saveAssignment('draft')}
-                  disabled={saving || publishingWithFormGeneration}
-                  className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  disabled={saving || publishingWithFormGeneration || isPublished}
+                  title={isPublished ? 'Already published — cannot revert to draft' : 'Save as draft'}
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save size={18} className="mr-2" />
                   {saving ? 'Saving...' : 'Save Draft'}
@@ -1043,6 +1050,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 onSave={saveAssignment}
                 saving={saving}
                 validationStatus={validationStatus}
+                isPublished={isPublished}
               />
             </div>
           )}

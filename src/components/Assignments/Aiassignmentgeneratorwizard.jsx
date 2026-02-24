@@ -23,6 +23,7 @@ import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { assignmentApi } from './assignmentApi';
 import { fileToBase64 } from './ImportFromDocumentModal';
+import DisplayTextWithEquations from './DisplayTextWithEquations';
 
 const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder }) => {
   const { currentUser } = useAuth();
@@ -913,7 +914,12 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     <span className="text-teal-400 text-sm">{question.points} pts</span>
                   </div>
                 </div>
-                <p className="text-gray-300 text-sm">{question.question}</p>
+                <p className="text-gray-300 text-sm">
+                  <DisplayTextWithEquations
+                    text={question.question}
+                    equations={question.equations || []}
+                  />
+                </p>
                 <span className="text-gray-500 text-xs">
                   {question.type.replace('-', ' ')} question
                 </span>

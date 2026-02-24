@@ -11,7 +11,6 @@ import {
   Eye,
   Loader2,
   Download,
-  ExternalLink,
   BookOpen
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
@@ -516,7 +515,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSectio
                     ))}
                   </div>
 
-                  {/* Export Options - PDF and Google Form */}
+                  {/* Export Options - PDF */}
                   <div className="flex items-center gap-2 mb-4">
                     <button
                       onClick={async () => {
@@ -548,18 +547,6 @@ const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSectio
                       )}
                       <span>{downloadingPdfId === assignment.id ? 'Downloading...' : 'PDF'}</span>
                     </button>
-                    {(assignment.google_form_response_url) && (
-                      <a
-                        href={assignment.google_form_response_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-xs transition-colors"
-                        title="Open Google Form"
-                      >
-                        <ExternalLink size={14} />
-                        <span>Google Form</span>
-                      </a>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-700">

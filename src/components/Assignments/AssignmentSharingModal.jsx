@@ -23,12 +23,10 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
-  const [isGeneratingGoogleForm, setIsGeneratingGoogleForm] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formatUrls, setFormatUrls] = useState({
-    pdf: null,
-    googleForm: null
+    pdf: null
   });
   
   // CSV upload states
@@ -67,7 +65,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       
       const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
       const pdfUrl = assignmentApi.getPDFDownloadURL(assignment.id);
-      let googleFormUrl = assignment.google_form_url || assignment.google_form_response_url || null;
       
       if (sharedData && sharedData.id) {
         // Existing share link found - show success view
@@ -124,36 +121,17 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
         setExistingUsers([...users, ...pendingUsers]);
       }
       
-      setFormatUrls({ pdf: pdfUrl, googleForm: googleFormUrl });
-      
-      if (!googleFormUrl) {
-        generateGoogleFormInBackground();
-      }
+      setFormatUrls({ pdf: pdfUrl });
     } catch (err) {
       console.error('Error loading shared assignment data:', err);
       setFormatUrls({
-        pdf: assignmentApi.getPDFDownloadURL(assignment.id),
-        googleForm: null
+        pdf: assignmentApi.getPDFDownloadURL(assignment.id)
       });
     } finally {
       setLoading(false);
     }
   };
   
-  const generateGoogleFormInBackground = async () => {
-    try {
-      setIsGeneratingGoogleForm(true);
-      const result = await assignmentApi.generateGoogleForm(assignment.id);
-      if (result && result.google_resource_url) {
-        setFormatUrls(prev => ({ ...prev, googleForm: result.google_resource_url }));
-      }
-    } catch (err) {
-      console.error('Error generating Google Form:', err);
-    } finally {
-      setIsGeneratingGoogleForm(false);
-    }
-  };
-
   const handleDownloadPDF = async () => {
     try {
       setIsDownloadingPDF(true);
@@ -443,20 +421,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                     {isDownloadingPDF ? <Loader2 size={16} className="animate-spin" /> : <LinkIcon size={16} />}
                     <span>{isDownloadingPDF ? 'Downloading...' : 'Download'}</span>
                   </button>
-                </div>
-                {/* Google Form */}
-                <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-500/10 rounded-lg"><Globe className="text-green-400" size={18} /></div>
-                    <div><div className="font-medium text-white">Google Form</div><div className="text-sm text-gray-400">Interactive online form</div></div>
-                  </div>
-                  {isGeneratingGoogleForm ? (
-                    <div className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg flex items-center space-x-2 text-sm"><Loader2 size={16} className="animate-spin" /><span>Generating...</span></div>
-                  ) : formatUrls.googleForm ? (
-                    <a href={formatUrls.googleForm} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"><LinkIcon size={16} /><span>Open</span></a>
-                  ) : (
-                    <button onClick={generateGoogleFormInBackground} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"><Globe size={16} /><span>Generate</span></button>
-                  )}
                 </div>
               </div>
             </div>

@@ -38,15 +38,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [saveError, setSaveError] = useState(null);
   const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
   const [isPublished, setIsPublished] = useState(preloadedData?.status === 'published');
-  
-  // Google Form generation states
-  const [publishingWithFormGeneration, setPublishingWithFormGeneration] = useState(false);
-  const [formGenerationProgress, setFormGenerationProgress] = useState({
-    step: '',
-    message: '',
-    isComplete: false,
-    hasError: false
-  });
 
   const questionTypes = [
     { type: 'multiple-choice', label: 'Multiple Choice', icon: '○', category: 'Basic' },
@@ -567,17 +558,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         ai_penalty_percentage: aiPenaltyPercentage
       };
 
-      // Show loading modal for publishing with Google Form generation
-      if (status === 'published') {
-        setPublishingWithFormGeneration(true);
-        setFormGenerationProgress({
-          step: 'saving',
-          message: 'Saving assignment...',
-          isComplete: false,
-          hasError: false
-        });
-      }
-
       let assignmentId;
       if (currentAssignmentId || preloadedData?.id) {
         // Update existing assignment
@@ -599,64 +579,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       // Lock the assignment as published once saved with published status
       if (status === 'published') {
         setIsPublished(true);
-      }
-      
-      // If publishing, generate all formats (PDF + Google Forms) with progress tracking
-      if (status === 'published' && assignmentId) {
-        try {
-          // Update progress - starting Google Form generation
-          setFormGenerationProgress({
-            step: 'generating-form',
-            message: 'Creating Google Form...',
-            isComplete: false,
-            hasError: false
-          });
-
-          console.log('Generating PDF and Google Forms for published assignment...');
-          const formatResults = await assignmentApi.generateAllFormats(assignmentId);
-          
-          // Update progress - completing
-          setFormGenerationProgress({
-            step: 'completing',
-            message: 'Finalizing...',
-            isComplete: false,
-            hasError: false
-          });
-
-          // Wait a moment before showing completion
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          // Mark as complete
-          setFormGenerationProgress({
-            step: 'completed',
-            message: 'Assignment published successfully!',
-            isComplete: true,
-            hasError: false
-          });
-
-          // Wait 2 seconds to show success message, then navigate back
-          setTimeout(() => {
-            setPublishingWithFormGeneration(false);
-            onBack(); // Navigate back to assignments list
-          }, 2000);
-
-        } catch (error) {
-          console.error('Error generating formats:', error);
-          
-          // Show error state but still mark as complete since assignment was saved
-          setFormGenerationProgress({
-            step: 'completed',
-            message: 'Assignment saved, but there was an issue with Google Form generation.',
-            isComplete: true,
-            hasError: true
-          });
-
-          // Wait 3 seconds to show error message, then navigate back
-          setTimeout(() => {
-            setPublishingWithFormGeneration(false);
-            onBack(); // Navigate back to assignments list
-          }, 3000);
-        }
+        onBack(); // Navigate back to assignments list
       }
     } catch (error) {
       console.error('Failed to save assignment:', error);
@@ -666,108 +589,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     }
   };
 
-  // Google Form Generation Modal Component
-  const GoogleFormGenerationModal = () => {
-    if (!publishingWithFormGeneration) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 text-center">
-          <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-full mb-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
-              Publishing Assignment
-            </h3>
-            <p className="text-gray-300">
-              {formGenerationProgress.message || 'Processing your assignment...'}
-            </p>
-          </div>
-          
-          <div className="space-y-3 text-left">
-            <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${
-                formGenerationProgress.step === 'saving' || formGenerationProgress.isComplete 
-                  ? 'bg-green-500' 
-                  : formGenerationProgress.step === 'saving' 
-                    ? 'bg-teal-500 animate-pulse' 
-                    : 'bg-gray-500'
-              }`}></div>
-              <span className={`text-sm ${
-                formGenerationProgress.step === 'saving' || formGenerationProgress.isComplete
-                  ? 'text-green-400' 
-                  : 'text-gray-400'
-              }`}>
-                Saving assignment
-              </span>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${
-                formGenerationProgress.step === 'generating-form' || formGenerationProgress.isComplete
-                  ? 'bg-green-500' 
-                  : formGenerationProgress.step === 'generating-form'
-                    ? 'bg-teal-500 animate-pulse' 
-                    : 'bg-gray-500'
-              }`}></div>
-              <span className={`text-sm ${
-                formGenerationProgress.step === 'generating-form' || formGenerationProgress.isComplete
-                  ? 'text-green-400' 
-                  : 'text-gray-400'
-              }`}>
-                Creating Google Form
-              </span>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${
-                formGenerationProgress.step === 'completing' || formGenerationProgress.isComplete
-                  ? 'bg-green-500' 
-                  : formGenerationProgress.step === 'completing'
-                    ? 'bg-teal-500 animate-pulse' 
-                    : 'bg-gray-500'
-              }`}></div>
-              <span className={`text-sm ${
-                formGenerationProgress.step === 'completing' || formGenerationProgress.isComplete
-                  ? 'text-green-400' 
-                  : 'text-gray-400'
-              }`}>
-                Finalizing
-              </span>
-            </div>
-          </div>
-          
-          {formGenerationProgress.hasError && (
-            <div className="mt-6 p-4 bg-red-900/30 border border-red-700 rounded-lg">
-              <p className="text-red-400 text-sm">
-                There was an issue generating the Google Form, but your assignment has been saved successfully.
-              </p>
-            </div>
-          )}
-          
-          {formGenerationProgress.isComplete && !formGenerationProgress.hasError && (
-            <div className="mt-6">
-              <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg mb-4">
-                <p className="text-green-400 text-sm">
-                  ✅ Assignment published successfully with Google Form!
-                </p>
-              </div>
-              <p className="text-gray-300 text-sm">
-                Redirecting you back to assignments...
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Google Form Generation Modal */}
-      <GoogleFormGenerationModal />
-      
       {/* Top Navigation */}
       <TopBar onNavigateToHome={onNavigateToHome} />
       
@@ -777,13 +600,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={publishingWithFormGeneration ? undefined : onBack}
-                disabled={publishingWithFormGeneration}
-                className={`p-2 transition-colors ${
-                  publishingWithFormGeneration 
-                    ? 'text-gray-600 cursor-not-allowed' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
+                onClick={onBack}
+                className="p-2 text-gray-400 hover:text-white transition-colors"
               >
                 <ArrowLeft size={24} />
               </button>
@@ -808,7 +626,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => saveAssignment('draft')}
-                  disabled={saving || publishingWithFormGeneration || isPublished}
+                  disabled={saving || isPublished}
                   title={isPublished ? 'Already published — cannot revert to draft' : 'Save as draft'}
                   className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -818,7 +636,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                 <div className="relative group">
                   <button
                     onClick={() => saveAssignment('published')}
-                    disabled={saving || publishingWithFormGeneration || !validationStatus.isValid}
+                    disabled={saving || !validationStatus.isValid}
                     className={`inline-flex items-center px-4 py-2 font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                       validationStatus.isValid 
                         ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700' 
@@ -827,7 +645,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     title={validationStatus.isValid ? 'Ready to publish' : `Cannot publish: ${validationStatus.errors.length} validation error(s)`}
                   >
                     <Save size={18} className="mr-2" />
-                    {publishingWithFormGeneration ? 'Publishing...' : saving ? 'Publishing...' : 'Save & Publish'}
+                    {saving ? 'Publishing...' : 'Save & Publish'}
                     {!validationStatus.isValid && (
                       <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
                         {validationStatus.errors.length}

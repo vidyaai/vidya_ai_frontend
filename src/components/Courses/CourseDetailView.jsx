@@ -977,19 +977,19 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {assignments.map((a) => (
-            <div key={a.id} className="bg-gray-900 rounded-xl border border-gray-800 p-5 hover:border-gray-700 transition-colors">
+            <div key={a.id} className="bg-gray-900 rounded-xl border border-gray-800 p-5 hover:border-gray-700 transition-colors flex flex-col">
               <div className="flex items-start justify-between mb-2">
                 <h4 className="text-white font-semibold text-sm">{a.title}</h4>
                 <span className={`px-2 py-0.5 rounded-full text-xs ${a.status === 'published' ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
                   {a.status}
                 </span>
               </div>
-              <p className="text-gray-500 text-xs mb-3 line-clamp-2">{a.description}</p>
+              <p className="text-gray-500 text-xs mb-3 line-clamp-2 flex-1">{a.description}</p>
               <div className="text-xs text-gray-500 space-y-1 mb-3">
                 <div>{a.total_questions} questions {'\u2022'} {a.total_points} pts</div>
                 {a.due_date && <div>Due: {new Date(a.due_date).toLocaleDateString()}</div>}
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap mt-auto">
                 <button
                   onClick={() => onEditAssignment?.(a)}
                   className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors"

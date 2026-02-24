@@ -11,7 +11,6 @@ import {
   Video,
   GraduationCap,
   Download,
-  ExternalLink,
   Calendar,
   Users,
   Mail,
@@ -548,17 +547,6 @@ const StudentAssignmentsSection = ({ courseId, onOpenAssignment }) => {
                     )}
                     <span>{downloadingPdfId === a.id ? 'Downloading...' : 'PDF'}</span>
                   </button>
-                  {a.google_form_response_url && (
-                    <a
-                      href={a.google_form_response_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-xs transition-colors"
-                    >
-                      <ExternalLink size={14} />
-                      <span>Google Form</span>
-                    </a>
-                  )}
                 </div>
 
                 {/* Action button */}

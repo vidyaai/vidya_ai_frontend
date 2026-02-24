@@ -945,13 +945,6 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               <FileText size={18} className="mr-2" />
               Google Docs (Coming Soon)
             </button>
-            <button
-              disabled
-              className="inline-flex items-center px-6 py-3 bg-gray-700 text-gray-400 font-medium rounded-lg cursor-not-allowed"
-            >
-              <FileText size={18} className="mr-2" />
-              Google Forms (Coming Soon)
-            </button>
           </div>
         </div>
       </div>

@@ -13,7 +13,6 @@ import {
   FileText,
   Loader2,
   Download,
-  Globe,
   Eye,
   BookOpen
 } from 'lucide-react';
@@ -41,7 +40,6 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(null);
   const [downloadingSolutionPDF, setDownloadingSolutionPDF] = useState(null);
-  const [googleFormLinks, setGoogleFormLinks] = useState({});
 
   // Course state
   const [courses, setCourses] = useState([]);
@@ -84,20 +82,6 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
         data = data.filter(a => !a.course_id);
       }
       setAssignments(data);
-      
-      // Load Google Form links for published assignments
-      const formLinks = {};
-      for (const assignment of data.filter(a => a.status === 'published')) {
-        try {
-          const googleFormURL = await assignmentApi.getGoogleFormURL(assignment.id);
-          if (googleFormURL) {
-            formLinks[assignment.id] = googleFormURL;
-          }
-        } catch (err) {
-          console.error(`Failed to load Google Form link for assignment ${assignment.id}:`, err);
-        }
-      }
-      setGoogleFormLinks(formLinks);
     } catch (err) {
       console.error('Failed to load assignments:', err);
       setError('Failed to load assignments. Please try again.');
@@ -655,16 +639,6 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                           <BookOpen size={16} />
                         )}
                       </button>
-                      {/* Google Form only for standalone (non-course) assignments */}
-                      {!assignment.course_id && googleFormLinks[assignment.id] && (
-                        <button
-                          onClick={() => window.open(googleFormLinks[assignment.id], '_blank')}
-                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-                          title="Open Google Form"
-                        >
-                          <Globe size={16} />
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

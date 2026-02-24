@@ -276,7 +276,7 @@ const OverviewSection = ({ course, editing, editData, saving, onStartEdit, onCan
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Course Overview</h2>
         <button
@@ -420,7 +420,7 @@ const EnrolledStudentsSection = ({ courseId }) => {
   const pendingCount = enrollments.filter((e) => e.status === 'pending').length;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Enrolled Students</h2>
 
       <div className="flex items-center space-x-6 text-sm text-gray-400">
@@ -608,7 +608,7 @@ const LectureNotesSection = ({ courseId }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Lecture Notes</h2>
         <input ref={fileInputRef} type="file" accept=".pdf,.docx,.pptx" onChange={handleFileSelect} className="hidden" />
@@ -786,7 +786,7 @@ const VideosSection = ({ courseId }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Videos</h2>
         <input ref={fileInputRef} type="file" accept="video/*,.mp4,.webm,.mov,.avi,.mkv,.ogg" onChange={handleFileSelect} className="hidden" />
@@ -837,7 +837,7 @@ const VideosSection = ({ courseId }) => {
       ) : videos.length === 0 ? (
         <div className="text-center py-8 text-gray-500"><Video size={32} className="mx-auto mb-2 opacity-50" /><p>No videos uploaded yet</p></div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {videos.map((v) => (
             <div key={v.id} className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-purple-500/5">
               {/* Thumbnail / Frame area */}
@@ -1077,7 +1077,7 @@ const TeachingAssistantsSection = ({ courseId }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Teaching Assistants</h2>
 
       <form onSubmit={handleAddTA} className="flex gap-2">

@@ -135,7 +135,7 @@ const StudentCourseView = ({ courseId, onBack, onNavigateToHome, onOpenAssignmen
 
 // ─── SECTION: Course Overview (read-only) ────────────────────────────────
 const OverviewSection = ({ course }) => (
-  <div className="max-w-2xl space-y-6">
+  <div className="space-y-6">
     <h2 className="text-xl font-bold text-white">Course Overview</h2>
 
     <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-5">
@@ -219,7 +219,7 @@ const LectureNotesSection = ({ courseId }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Lecture Notes</h2>
 
       {loading ? (
@@ -298,7 +298,7 @@ const VideosSection = ({ courseId }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Videos</h2>
 
       {loading ? (
@@ -311,7 +311,7 @@ const VideosSection = ({ courseId }) => {
           <p>No videos available yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {videos.map((v) => (
             <div
               key={v.id}
@@ -599,7 +599,7 @@ const TAViewSection = ({ courseId }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Teaching Assistants</h2>
 
       {loading ? (

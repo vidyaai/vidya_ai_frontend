@@ -471,7 +471,7 @@ const StudentAssignmentsSection = ({ courseId, onOpenAssignment }) => {
             return (
               <div
                 key={a.id}
-                className="bg-gray-900 rounded-xl border border-gray-800 p-5 hover:border-gray-700 transition-colors"
+                className="bg-gray-900 rounded-xl border border-gray-800 p-5 hover:border-gray-700 transition-colors flex flex-col"
               >
                 {/* Title + status badge */}
                 <div className="flex items-start justify-between mb-3">
@@ -534,7 +534,7 @@ const StudentAssignmentsSection = ({ courseId, onOpenAssignment }) => {
                 )}
 
                 {/* Export row */}
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 mt-auto">
                   <button
                     onClick={() => handleDownloadPdf(a)}
                     disabled={downloadingPdfId === a.id}

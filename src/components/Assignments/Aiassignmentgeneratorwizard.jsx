@@ -22,10 +22,11 @@ import TopBar from '../generic/TopBar';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { assignmentApi } from './assignmentApi';
+import { courseApi } from '../Courses/courseApi';
 import { fileToBase64 } from './ImportFromDocumentModal';
 import DisplayTextWithEquations from './DisplayTextWithEquations';
 
-const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder }) => {
+const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder, inCourseContext = false, courseId = null }) => {
   const { currentUser } = useAuth();
   
   // Wizard state
@@ -41,19 +42,41 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [assignmentDescription, setAssignmentDescription] = useState('');
   
-  // Video selection from gallery
+  // Video selection from gallery / course
   const [availableVideos, setAvailableVideos] = useState([]);
   const [selectedVideos, setSelectedVideos] = useState([]);
   const [isLoadingVideos, setIsLoadingVideos] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  // Course lecture notes selection
+  const [availableLectureNotes, setAvailableLectureNotes] = useState([]);
+  const [selectedLectureNotes, setSelectedLectureNotes] = useState([]);
+  const [isLoadingLectureNotes, setIsLoadingLectureNotes] = useState(false);
+  const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
 
   // Fetch available videos on mount
   useEffect(() => {
     const fetchAvailableVideos = async () => {
       setIsLoadingVideos(true);
       try {
-        const response = await assignmentApi.getAvailableVideos();
-        setAvailableVideos(response.videos || []);
+        if (inCourseContext && courseId) {
+          // Use course materials directly — transcript_text & transcript_status are resolved by backend
+          const materials = await courseApi.listVideos(courseId);
+          setAvailableVideos(
+            (materials || [])
+              .filter(m => m.transcript_status === 'completed' && m.transcript_text)
+              .map(m => ({
+                id: m.id,
+                title: m.title,
+                source_type: m.video_id ? 'gallery' : 'uploaded',
+                transcript_text: m.transcript_text,
+                created_at: m.created_at,
+              }))
+          );
+        } else {
+          const response = await assignmentApi.getAvailableVideos();
+          setAvailableVideos(response.videos || []);
+        }
       } catch (error) {
         console.error('Error fetching available videos:', error);
       } finally {
@@ -61,7 +84,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       }
     };
     fetchAvailableVideos();
-  }, []);
+  }, [inCourseContext, courseId]);
 
   // Toggle video selection
   const toggleVideoSelection = (video) => {
@@ -78,6 +101,36 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   // Remove a selected video
   const removeSelectedVideo = (videoId) => {
     setSelectedVideos(prev => prev.filter(v => v.id !== videoId));
+  };
+
+  // Fetch course lecture notes when in course context
+  useEffect(() => {
+    if (!inCourseContext || !courseId) return;
+    const fetchLectureNotes = async () => {
+      setIsLoadingLectureNotes(true);
+      try {
+        const notes = await courseApi.listLectureNotes(courseId);
+        setAvailableLectureNotes(notes || []);
+      } catch (error) {
+        console.error('Error fetching course lecture notes:', error);
+      } finally {
+        setIsLoadingLectureNotes(false);
+      }
+    };
+    fetchLectureNotes();
+  }, [inCourseContext, courseId]);
+
+  // Toggle course lecture note selection
+  const toggleLectureSelection = (note) => {
+    setSelectedLectureNotes(prev => {
+      const isSelected = prev.some(n => n.id === note.id);
+      return isSelected ? prev.filter(n => n.id !== note.id) : [...prev, note];
+    });
+  };
+
+  // Remove a selected lecture note
+  const removeSelectedLecture = (noteId) => {
+    setSelectedLectureNotes(prev => prev.filter(n => n.id !== noteId));
   };
 
   // Step 2: Assignment Settings
@@ -171,12 +224,13 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     }));
   };
 
-  // Validation - at least one content source required (description, videos, or files)
+  // Validation - at least one content source required (description, videos, files, or course lectures)
   const canProceedFromStep1 = () => {
     const hasDescription = assignmentDescription.trim().length > 0;
     const hasVideos = selectedVideos.length > 0;
     const hasFiles = uploadedFiles.length > 0;
-    return hasDescription || hasVideos || hasFiles;
+    const hasLectureNotes = selectedLectureNotes.length > 0;
+    return hasDescription || hasVideos || hasFiles || hasLectureNotes;
   };
 
   const hasSelectedQuestionTypes = () => {
@@ -222,15 +276,46 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         transcript_text: v.transcript_text
       }));
 
+      // Merge manually uploaded files with downloaded course lecture notes
+      let allUploadedFiles = uploadedFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        content: f.content
+      }));
+
+      // Download selected course lecture notes and append
+      if (inCourseContext && courseId && selectedLectureNotes.length > 0) {
+        const downloadedNotes = await Promise.all(
+          selectedLectureNotes.map(async (note) => {
+            try {
+              const { download_url } = await courseApi.downloadMaterial(courseId, note.id);
+              const resp = await fetch(download_url);
+              const blob = await resp.blob();
+              const content = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              return {
+                name: note.file_name || note.title,
+                type: note.mime_type || 'application/octet-stream',
+                content,
+              };
+            } catch (e) {
+              console.error('Failed to download course lecture note:', note.title, e);
+              return null;
+            }
+          })
+        );
+        allUploadedFiles = [...allUploadedFiles, ...downloadedNotes.filter(Boolean)];
+      }
+
       const generateData = {
-        generation_prompt: assignmentDescription || '',  // Fixed: was 'prompt', should be 'generation_prompt'
+        generation_prompt: assignmentDescription || '',
         title: assignmentTitle || '',
         generation_options: generationOptions,
-        uploaded_files: uploadedFiles.map(f => ({
-          name: f.name,
-          type: f.type,
-          content: f.content
-        })),
+        uploaded_files: allUploadedFiles,
         linked_videos: linkedVideos
       };
 
@@ -290,7 +375,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       <div className="text-center mb-8">
         <Sparkles size={48} className="text-teal-400 mx-auto mb-4" />
         <h2 className="text-3xl font-bold text-white mb-2">Content Sources</h2>
-        <p className="text-gray-400">Provide at least one content source: description, video from gallery, or lecture notes</p>
+        <p className="text-gray-400">Provide at least one content source: description, {inCourseContext ? 'course video, or course lecture' : 'video from gallery, or lecture notes'}</p>
       </div>
 
       {/* Requirement indicator */}
@@ -298,7 +383,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 flex items-center space-x-3">
           <AlertCircle size={20} className="text-orange-400 flex-shrink-0" />
           <p className="text-orange-300 text-sm">
-            Please provide at least one of: Assignment Focus Description, Video from Gallery, or Lecture Notes
+            Please provide at least one of: Assignment Focus Description, {inCourseContext ? 'Course Video, or Course Lecture' : 'Video from Gallery, or Lecture Notes'}
           </p>
         </div>
       )}
@@ -331,7 +416,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           <div className="flex items-center space-x-2 mb-4">
             <Video size={20} className="text-blue-400" />
             <label className="block text-white font-medium">
-              Videos from Gallery
+              {inCourseContext ? 'Course Videos' : 'Videos from Gallery'}
             </label>
             <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 2</span>
           </div>
@@ -349,11 +434,11 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 {availableVideos.length === 0 ? (
                   <>
                     <p className="text-gray-400 text-sm">No videos available</p>
-                    <p className="text-gray-500 text-xs">Upload videos in Gallery first</p>
+                    <p className="text-gray-500 text-xs">{inCourseContext ? 'No course videos available' : 'Upload videos in Gallery first'}</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-gray-400 text-sm mb-2">Select videos from your gallery</p>
+                    <p className="text-gray-400 text-sm mb-2">{inCourseContext ? 'Select from course videos' : 'Select videos from your gallery'}</p>
                     <button
                       onClick={() => setIsVideoModalOpen(true)}
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -400,56 +485,83 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           </p>
         </div>
 
-        {/* File Upload */}
+        {/* File Upload / Course Lecture Selector */}
         <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex flex-col">
           <div className="flex items-center space-x-2 mb-4">
             <Upload size={20} className="text-purple-400" />
             <label className="block text-white font-medium">
-              Upload Lecture Notes
+              {inCourseContext ? 'Course Lectures' : 'Upload Lecture Notes'}
             </label>
             <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 3</span>
           </div>
           
           <div className="flex-1">
-            {uploadedFiles.length === 0 ? (
-              <label className="cursor-pointer block">
-                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
-                  <Upload size={28} className="text-gray-500 mb-2" />
-                  <p className="text-gray-400 text-sm">
-                    <span className="text-teal-400 font-medium">Choose files</span> or drag and drop
-                  </p>
-                  <p className="text-gray-500 text-xs mt-1">PDF, Word, PPT, Excel, Markdown</p>
+            {inCourseContext ? (
+              /* Course lecture note selector */
+              isLoadingLectureNotes ? (
+                <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg">
+                  <Loader2 size={24} className="text-teal-400 animate-spin" />
+                  <span className="ml-2 text-gray-400">Loading lectures...</span>
                 </div>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
-                />
-              </label>
-            ) : (
-              // Files uploaded - show file list
-              <div className="min-h-[8rem]">
-                <div className="space-y-2 mb-3">
-                  {uploadedFiles.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between bg-gray-800 rounded-lg p-2">
-                      <div className="flex items-center space-x-2 min-w-0 flex-1">
-                        {getFileIcon(file.type)}
-                        <p className="text-white text-sm font-medium truncate">{file.name}</p>
-                      </div>
+              ) : selectedLectureNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg">
+                  <FileText size={28} className="text-gray-500 mb-2" />
+                  {availableLectureNotes.length === 0 ? (
+                    <>
+                      <p className="text-gray-400 text-sm">No course lectures available</p>
+                      <p className="text-gray-500 text-xs">Upload lecture notes to this course first</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-400 text-sm mb-2">Select from course lectures</p>
                       <button
-                        onClick={() => removeFile(file.id)}
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                        onClick={() => setIsLectureModalOpen(true)}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
                       >
-                        <X size={16} />
+                        Browse Lectures ({availableLectureNotes.length})
                       </button>
-                    </div>
-                  ))}
+                    </>
+                  )}
                 </div>
+              ) : (
+                <div className="min-h-[8rem]">
+                  <div className="space-y-2 mb-3">
+                    {selectedLectureNotes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex items-center justify-between p-2 bg-purple-500/20 border border-purple-500 rounded-lg"
+                      >
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                          <FileText size={16} className="text-purple-400 flex-shrink-0" />
+                          <p className="text-white text-sm font-medium truncate">{note.title}</p>
+                        </div>
+                        <button
+                          onClick={() => removeSelectedLecture(note.id)}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setIsLectureModalOpen(true)}
+                    className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors"
+                  >
+                    + Add More Lectures
+                  </button>
+                </div>
+              )
+            ) : (
+              /* Regular file upload */
+              uploadedFiles.length === 0 ? (
                 <label className="cursor-pointer block">
-                  <div className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors text-center">
-                    + Add More Files
+                  <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
+                    <Upload size={28} className="text-gray-500 mb-2" />
+                    <p className="text-gray-400 text-sm">
+                      <span className="text-teal-400 font-medium">Choose files</span> or drag and drop
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">PDF, Word, PPT, Excel, Markdown</p>
                   </div>
                   <input
                     type="file"
@@ -459,12 +571,43 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
                   />
                 </label>
-              </div>
+              ) : (
+                <div className="min-h-[8rem]">
+                  <div className="space-y-2 mb-3">
+                    {uploadedFiles.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between bg-gray-800 rounded-lg p-2">
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                          {getFileIcon(file.type)}
+                          <p className="text-white text-sm font-medium truncate">{file.name}</p>
+                        </div>
+                        <button
+                          onClick={() => removeFile(file.id)}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="cursor-pointer block">
+                    <div className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors text-center">
+                      + Add More Files
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
+                    />
+                  </label>
+                </div>
+              )
             )}
           </div>
           
           <p className="text-gray-500 text-sm mt-3">
-            Questions will be generated from uploaded content
+            {inCourseContext ? 'Questions will be generated from selected course materials' : 'Questions will be generated from uploaded content'}
           </p>
         </div>
       </div>
@@ -1072,7 +1215,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <div>
-                <h3 className="text-xl font-bold text-white">Select Videos from Gallery</h3>
+                <h3 className="text-xl font-bold text-white">{inCourseContext ? 'Select Course Videos' : 'Select Videos from Gallery'}</h3>
                 <p className="text-gray-400 text-sm mt-1">
                   Choose videos to generate questions from their transcripts
                 </p>
@@ -1091,7 +1234,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 <div className="text-center py-12">
                   <Video size={48} className="text-gray-500 mx-auto mb-4" />
                   <p className="text-gray-400 mb-2">No videos with transcripts available</p>
-                  <p className="text-gray-500 text-sm">Upload videos in the Gallery to use them here</p>
+                  <p className="text-gray-500 text-sm">{inCourseContext ? 'Add videos to this course to use them here' : 'Upload videos in the Gallery to use them here'}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1145,6 +1288,93 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 <button
                   onClick={() => setIsVideoModalOpen(false)}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Lecture Selection Modal */}
+      {isLectureModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-white">Select Course Lectures</h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  Choose lecture notes to generate questions from their content
+                </p>
+              </div>
+              <button
+                onClick={() => setIsLectureModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body - Lecture List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {availableLectureNotes.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText size={48} className="text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">No lecture notes available</p>
+                  <p className="text-gray-500 text-sm">Upload lecture notes to this course to use them here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availableLectureNotes.map((note) => {
+                    const isSelected = selectedLectureNotes.some(n => n.id === note.id);
+                    return (
+                      <div
+                        key={note.id}
+                        onClick={() => toggleLectureSelection(note)}
+                        className={`flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-purple-500/20 border-2 border-purple-500'
+                            : 'bg-gray-800 border-2 border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-400'
+                          }`}>
+                            {isSelected && <CheckCircle size={16} className="text-white" />}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{note.title}</p>
+                            <p className="text-gray-400 text-sm">
+                              {note.file_name || 'Lecture document'} • {note.created_at ? new Date(note.created_at).toLocaleDateString() : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <FileText size={16} className="text-gray-400 flex-shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-700 bg-gray-800/50">
+              <p className="text-gray-400 text-sm">
+                {selectedLectureNotes.length} lecture(s) selected
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsLectureModalOpen(false)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setIsLectureModalOpen(false)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                 >
                   Done
                 </button>

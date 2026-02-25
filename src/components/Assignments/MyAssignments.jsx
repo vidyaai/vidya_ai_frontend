@@ -47,6 +47,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [showCreateCourse, setShowCreateCourse] = useState(false);
   const [courseDetailId, setCourseDetailId] = useState(initialCourseId || null);
+  const [courseDetailReturnSection, setCourseDetailReturnSection] = useState(null);
 
   // Load courses on mount
   useEffect(() => {
@@ -222,6 +223,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   const handleBackToMain = () => {
     // If we were in a course detail view, go back to it instead of the courses grid
     if (courseDetailId && (currentView === 'assignment-builder' || currentView === 'ai-generator' || currentView === 'submissions')) {
+      setCourseDetailReturnSection('assignments');
       setCurrentView('course-detail');
       setParsedAssignmentData(null);
       return;
@@ -240,6 +242,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
 
   const handleOpenCourseDetail = (courseId) => {
     setCourseDetailId(courseId);
+    setCourseDetailReturnSection(null);
     setCurrentView('course-detail');
   };
 
@@ -278,17 +281,25 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
 
   if (currentView === 'course-detail' && courseDetailId) {
     return (
-      <CourseDetailView
-        courseId={courseDetailId}
-        onBack={handleBackToMain}
-        onNavigateToHome={onNavigateToHome}
-        onCreateAssignment={handleCreateAssignmentForCourse}
-        onEditAssignment={(a) => handleEditAssignment(a)}
-        onViewSubmissions={(a) => handleViewSubmissions(a)}
-        onImportDocument={handleParseFromDocument}
-        onGenerateWithAI={handleGenerateAssignment}
-        initialSection={courseDetailId === initialCourseId ? initialSection : null}
-      />
+      <>
+        <CourseDetailView
+          courseId={courseDetailId}
+          onBack={handleBackToMain}
+          onNavigateToHome={onNavigateToHome}
+          onCreateAssignment={handleCreateAssignmentForCourse}
+          onEditAssignment={(a) => handleEditAssignment(a)}
+          onViewSubmissions={(a) => handleViewSubmissions(a)}
+          onImportDocument={handleParseFromDocument}
+          onGenerateWithAI={handleGenerateAssignment}
+          initialSection={courseDetailReturnSection || (courseDetailId === initialCourseId ? initialSection : null)}
+        />
+        {parseModalOpen && (
+          <ImportFromDocumentModal
+            onClose={() => setParseModalOpen(false)}
+            onParsed={handleParsedAssignment}
+          />
+        )}
+      </>
     );
   }
 

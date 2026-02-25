@@ -272,6 +272,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
       onBack={handleBackToMain} 
       onNavigateToHome={onNavigateToHome} 
       onContinueToBuilder={handleContinueFromGenerator}
+      inCourseContext={!!courseDetailId}
+      courseId={courseDetailId || null}
     />;
   }
 

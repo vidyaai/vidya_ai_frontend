@@ -272,6 +272,16 @@ const VideosSection = ({ courseId }) => {
 
   useEffect(() => { loadVideos(); }, [courseId]);
 
+  // Poll every 5s while any video is still being transcribed
+  useEffect(() => {
+    const hasPending = videos.some(
+      v => v.transcript_status === 'processing' || v.transcript_status === 'pending'
+    );
+    if (!hasPending) return;
+    const timer = setTimeout(() => loadVideos(), 5000);
+    return () => clearTimeout(timer);
+  }, [videos]);
+
   const loadVideos = async () => {
     try {
       setLoading(true);
@@ -331,6 +341,13 @@ const VideosSection = ({ courseId }) => {
               {/* Info */}
               <div className="px-3 py-2.5">
                 <p className="text-sm text-white font-medium truncate">{v.title}</p>
+                {/* Transcript status badge */}
+                {(v.transcript_status === 'processing' || v.transcript_status === 'pending') && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Loader2 size={11} className="text-yellow-400 animate-spin flex-shrink-0" />
+                    <span className="text-xs text-yellow-400">Transcribing…</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   {v.description && <p className="text-xs text-gray-500 truncate">{v.description}</p>}
                   {v.file_size && <span className="text-xs text-gray-600">{formatFileSize(v.file_size)}</span>}

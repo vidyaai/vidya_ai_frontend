@@ -135,7 +135,7 @@ const QuestionCard = ({
   };
 
   const handlePointsChange = (value) => {
-    onUpdate({ points: parseInt(value) || 1 });
+    onUpdate({ points: parseFloat(value) || 1 });
   };
 
   const handleRubricChange = (value) => {
@@ -712,6 +712,94 @@ const QuestionCard = ({
     );
   };
 
+  const PreviewDiagramImage = ({ diagramData, displayName, onError }) => {
+    const [imageUrl, setImageUrl] = useState(null);
+    const [loading, setLoading] = useState(!!diagramData.s3_key && !diagramData.s3_url);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+      const loadImageUrl = async () => {
+        // If we already have a URL (cached), use it
+        if (imageUrl) return;
+        
+        // Check if we have a cached URL for this diagram
+        if (diagramData.file_id && imageUrls[diagramData.file_id]) {
+          setImageUrl(imageUrls[diagramData.file_id]);
+          setLoading(false);
+          return;
+        }
+        
+        // If s3_url is present, use it directly (bypass presigned URL generation)
+        if (diagramData.s3_url) {
+          setImageUrl(diagramData.s3_url);
+          setLoading(false);
+          return;
+        }
+        
+        // If no s3_key, we can't fetch from server
+        if (!diagramData.s3_key) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setError(false);
+          const url = await assignmentApi.getDiagramUrl(diagramData.s3_key);
+          setImageUrl(url);
+          
+          // Cache the URL if we have a file_id
+          if (diagramData.file_id) {
+            setImageUrls(prev => ({
+              ...prev,
+              [diagramData.file_id]: url
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to load diagram URL:', error);
+          setError(true);
+          onError && onError();
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadImageUrl();
+    }, [diagramData.s3_key, diagramData.s3_url, diagramData.file_id, imageUrl, imageUrls]);
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-32 bg-gray-800 rounded">
+          <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
+          <span className="text-gray-300">Loading image...</span>
+        </div>
+      );
+    }
+
+    if (error || !imageUrl) {
+      return (
+        <div className="p-4 text-center">
+          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+          <p className="text-gray-400 text-sm">Failed to load image</p>
+          <p className="text-gray-500 text-xs">{displayName}</p>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={imageUrl} 
+        alt={displayName}
+        className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-gray-900 mx-auto block"
+        onError={(e) => {
+          console.error('Failed to load diagram:', imageUrl);
+          onError && onError();
+        }}
+      />
+    );
+  };
+
   // Render diagram display component
   const renderDiagramDisplay = (diagramData, isUploading = false, onDelete = null, onReplace = null, field = 'diagram', subIndex = null) => {
     if (isUploading) {
@@ -893,7 +981,7 @@ const QuestionCard = ({
           {/* Modal Content */}
           <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
             <div className="bg-gray-800 rounded">
-              <DiagramImage 
+              <PreviewDiagramImage 
                 diagramData={diagramData}
                 displayName={displayName}
                 onError={() => {
@@ -1255,8 +1343,8 @@ const QuestionCard = ({
                   <input
                     type="radio"
                     name={`tf-${question.id}`}
-                    checked={question.correctAnswer === 'True' || 'true' || true || '1' || 1}
-                    onChange={() => handleCorrectAnswerChange('true')}
+                    checked={['True', 'true', true, '1', 1].includes(question.correctAnswer)}
+                    onChange={() => handleCorrectAnswerChange('True')}
                     className="text-teal-500 focus:ring-teal-500 mr-2"
                   />
                   <span className="text-white">True</span>
@@ -1265,8 +1353,8 @@ const QuestionCard = ({
                   <input
                     type="radio"
                     name={`tf-${question.id}`}
-                    checked={question.correctAnswer === 'False' || 'false' || false || '0' || 0}
-                    onChange={() => handleCorrectAnswerChange('false')}
+                    checked={['False', 'false', false, '0', 0].includes(question.correctAnswer)}
+                    onChange={() => handleCorrectAnswerChange('False')}
                     className="text-teal-500 focus:ring-teal-500 mr-2"
                   />
                   <span className="text-white">False</span>
@@ -2046,8 +2134,9 @@ const QuestionCard = ({
                             ? calculateMultipartPoints(subq.subquestions, subq.optionalParts, subq.requiredPartsCount)
                             : subq.points || 1
                           }
-                          onChange={(e) => handleSubquestionChange(subIndex, 'points', parseInt(e.target.value) || 1)}
-                          min="1"
+                          onChange={(e) => handleSubquestionChange(subIndex, 'points', parseFloat(e.target.value) || 1)}
+                          min="0.5"
+                          step="0.5"
                           disabled={subq.type === 'multi-part'}
                           className="w-16 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
@@ -2314,8 +2403,8 @@ const QuestionCard = ({
                               <input
                                 type="radio"
                                 name={`tf-sub-${question.id}-${subIndex}`}
-                                checked={subq.correctAnswer === 'True' || 'true' || true || '1' || 1}
-                                onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'true')}
+                                checked={['True', 'true', true, '1', 1].includes(subq.correctAnswer)}
+                                onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'True')}
                                 className="text-teal-500 focus:ring-teal-500 mr-2"
                               />
                               <span className="text-white text-sm">True</span>
@@ -2324,8 +2413,8 @@ const QuestionCard = ({
                               <input
                                 type="radio"
                                 name={`tf-sub-${question.id}-${subIndex}`}
-                                checked={subq.correctAnswer === 'False' || 'false' || false || '0' || 0}
-                                onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'false')}
+                                checked={['False', 'false', false, '0', 0].includes(subq.correctAnswer)}
+                                onChange={() => handleSubquestionChange(subIndex, 'correctAnswer', 'False')}
                                 className="text-teal-500 focus:ring-teal-500 mr-2"
                               />
                               <span className="text-white text-sm">False</span>
@@ -2489,10 +2578,11 @@ const QuestionCard = ({
                                       value={subSubq.points || 1}
                                       onChange={(e) => {
                                         const newSubSubquestions = [...(subq.subquestions || [])];
-                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], points: parseInt(e.target.value) || 1 };
+                                        newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], points: parseFloat(e.target.value) || 1 };
                                         handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                       }}
-                                      min="1"
+                                      min="0.5"
+                                      step="0.5"
                                       className="w-12 px-1 py-1 bg-gray-500 border border-gray-400 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                     <span className="text-gray-300 text-xs">pts</span>
@@ -2640,10 +2730,10 @@ const QuestionCard = ({
                                         <input
                                           type="radio"
                                           name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={subSubq.correctAnswer === 'True' || 'true' || true || '1' || 1}
+                                          checked={['True', 'true', true, '1', 1].includes(subSubq.correctAnswer)}
                                           onChange={() => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
-                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'true' };
+                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'True' };
                                             handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                           }}
                                           className="text-teal-500 focus:ring-teal-500 mr-1"
@@ -2654,10 +2744,10 @@ const QuestionCard = ({
                                         <input
                                           type="radio"
                                           name={`tf-subsub-${question.id}-${subIndex}-${subSubIndex}`}
-                                          checked={subSubq.correctAnswer === 'False' || 'false' || false || '0' || 0}
+                                          checked={['False', 'false', false, '0', 0].includes(subSubq.correctAnswer)}
                                           onChange={() => {
                                             const newSubSubquestions = [...(subq.subquestions || [])];
-                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'false' };
+                                            newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], correctAnswer: 'False' };
                                             handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                           }}
                                           className="text-teal-500 focus:ring-teal-500 mr-1"
@@ -2776,8 +2866,9 @@ const QuestionCard = ({
                 : question.points
               }
               onChange={(e) => handlePointsChange(e.target.value)}
-              min="1"
+              min="0.5"
               max="100"
+              step="0.5"
               disabled={question.type === 'multi-part'}
               className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />

@@ -1,5 +1,5 @@
 // src/components/Assignments/AIAssignmentGeneratorWizard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -15,40 +15,68 @@ import {
   Target,
   Loader2,
   Video,
-  Link
+  Link,
+  Image
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { assignmentApi } from './assignmentApi';
+import { courseApi } from '../Courses/courseApi';
 import { fileToBase64 } from './ImportFromDocumentModal';
+import DisplayTextWithEquations from './DisplayTextWithEquations';
 
-const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder }) => {
+const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder, inCourseContext = false, courseId = null }) => {
   const { currentUser } = useAuth();
   
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAssignment, setGeneratedAssignment] = useState(null);
+  const [progressLogs, setProgressLogs] = useState([]);
+  const [generationError, setGenerationError] = useState(null);
+  const logContainerRef = useRef(null);
   
   // Step 1: Upload & Describe
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [assignmentDescription, setAssignmentDescription] = useState('');
   
-  // Video selection from gallery
+  // Video selection from gallery / course
   const [availableVideos, setAvailableVideos] = useState([]);
   const [selectedVideos, setSelectedVideos] = useState([]);
   const [isLoadingVideos, setIsLoadingVideos] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  // Course lecture notes selection
+  const [availableLectureNotes, setAvailableLectureNotes] = useState([]);
+  const [selectedLectureNotes, setSelectedLectureNotes] = useState([]);
+  const [isLoadingLectureNotes, setIsLoadingLectureNotes] = useState(false);
+  const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
 
   // Fetch available videos on mount
   useEffect(() => {
     const fetchAvailableVideos = async () => {
       setIsLoadingVideos(true);
       try {
-        const response = await assignmentApi.getAvailableVideos();
-        setAvailableVideos(response.videos || []);
+        if (inCourseContext && courseId) {
+          // Use course materials directly — transcript_text & transcript_status are resolved by backend
+          const materials = await courseApi.listVideos(courseId);
+          setAvailableVideos(
+            (materials || [])
+              .filter(m => m.transcript_status === 'completed' && m.transcript_text)
+              .map(m => ({
+                id: m.id,
+                title: m.title,
+                source_type: m.video_id ? 'gallery' : 'uploaded',
+                transcript_text: m.transcript_text,
+                created_at: m.created_at,
+              }))
+          );
+        } else {
+          const response = await assignmentApi.getAvailableVideos();
+          setAvailableVideos(response.videos || []);
+        }
       } catch (error) {
         console.error('Error fetching available videos:', error);
       } finally {
@@ -56,7 +84,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       }
     };
     fetchAvailableVideos();
-  }, []);
+  }, [inCourseContext, courseId]);
 
   // Toggle video selection
   const toggleVideoSelection = (video) => {
@@ -75,6 +103,36 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     setSelectedVideos(prev => prev.filter(v => v.id !== videoId));
   };
 
+  // Fetch course lecture notes when in course context
+  useEffect(() => {
+    if (!inCourseContext || !courseId) return;
+    const fetchLectureNotes = async () => {
+      setIsLoadingLectureNotes(true);
+      try {
+        const notes = await courseApi.listLectureNotes(courseId);
+        setAvailableLectureNotes(notes || []);
+      } catch (error) {
+        console.error('Error fetching course lecture notes:', error);
+      } finally {
+        setIsLoadingLectureNotes(false);
+      }
+    };
+    fetchLectureNotes();
+  }, [inCourseContext, courseId]);
+
+  // Toggle course lecture note selection
+  const toggleLectureSelection = (note) => {
+    setSelectedLectureNotes(prev => {
+      const isSelected = prev.some(n => n.id === note.id);
+      return isSelected ? prev.filter(n => n.id !== note.id) : [...prev, note];
+    });
+  };
+
+  // Remove a selected lecture note
+  const removeSelectedLecture = (noteId) => {
+    setSelectedLectureNotes(prev => prev.filter(n => n.id !== noteId));
+  };
+
   // Step 2: Assignment Settings
   const [numQuestions, setNumQuestions] = useState(10);
   const [totalPoints, setTotalPoints] = useState(50);
@@ -91,6 +149,9 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     'diagram-analysis': false,
     'multi-part': false
   });
+
+  // Diagram generation model
+  const [diagramModel, setDiagramModel] = useState('nonai');
 
   // Navigation helpers
   const goNext = () => setCurrentStep(prev => Math.min(prev + 1, 4));
@@ -163,12 +224,13 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     }));
   };
 
-  // Validation - at least one content source required (description, videos, or files)
+  // Validation - at least one content source required (description, videos, files, or course lectures)
   const canProceedFromStep1 = () => {
     const hasDescription = assignmentDescription.trim().length > 0;
     const hasVideos = selectedVideos.length > 0;
     const hasFiles = uploadedFiles.length > 0;
-    return hasDescription || hasVideos || hasFiles;
+    const hasLectureNotes = selectedLectureNotes.length > 0;
+    return hasDescription || hasVideos || hasFiles || hasLectureNotes;
   };
 
   const hasSelectedQuestionTypes = () => {
@@ -199,7 +261,9 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         engineeringDiscipline,
         includeCode: questionTypes['code-writing'],
         includeDiagrams: questionTypes['diagram-analysis'],
-        includeCalculations: questionTypes['numerical']
+        includeCalculations: questionTypes['numerical'],
+        diagramEngine: diagramModel === 'nonai' ? 'nonai' : 'ai',
+        diagramModel: diagramModel === 'nonai' ? 'flash' : diagramModel,
       };
 
       // Build linked_videos array from selected videos
@@ -212,24 +276,60 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         transcript_text: v.transcript_text
       }));
 
+      // Merge manually uploaded files with downloaded course lecture notes
+      let allUploadedFiles = uploadedFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        content: f.content
+      }));
+
+      // Download selected course lecture notes and append
+      if (inCourseContext && courseId && selectedLectureNotes.length > 0) {
+        const downloadedNotes = await Promise.all(
+          selectedLectureNotes.map(async (note) => {
+            try {
+              const { download_url } = await courseApi.downloadMaterial(courseId, note.id);
+              const resp = await fetch(download_url);
+              const blob = await resp.blob();
+              const content = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              return {
+                name: note.file_name || note.title,
+                type: note.mime_type || 'application/octet-stream',
+                content,
+              };
+            } catch (e) {
+              console.error('Failed to download course lecture note:', note.title, e);
+              return null;
+            }
+          })
+        );
+        allUploadedFiles = [...allUploadedFiles, ...downloadedNotes.filter(Boolean)];
+      }
+
       const generateData = {
-        generation_prompt: assignmentDescription || '',  // Fixed: was 'prompt', should be 'generation_prompt'
+        generation_prompt: assignmentDescription || '',
         title: assignmentTitle || '',
         generation_options: generationOptions,
-        uploaded_files: uploadedFiles.map(f => ({
-          name: f.name,
-          type: f.type,
-          content: f.content
-        })),
+        uploaded_files: allUploadedFiles,
         linked_videos: linkedVideos
       };
 
-      const result = await assignmentApi.generateAssignment(generateData);
+      setProgressLogs([]);
+      setGenerationError(null);
+      setCurrentStep(4); // Move to generating screen immediately
+
+      const result = await assignmentApi.generateAssignmentStream(generateData, (event) => {
+        setProgressLogs(prev => [...prev, { ...event, id: Date.now() + Math.random(), ts: new Date() }]);
+      });
       setGeneratedAssignment(result);
-      setCurrentStep(4); // Move to final screen
     } catch (error) {
       console.error('Error generating assignment:', error);
-      // You might want to show an error message here
+      setGenerationError(error.message || 'An unexpected error occurred');
     } finally {
       setIsGenerating(false);
     }
@@ -275,7 +375,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       <div className="text-center mb-8">
         <Sparkles size={48} className="text-teal-400 mx-auto mb-4" />
         <h2 className="text-3xl font-bold text-white mb-2">Content Sources</h2>
-        <p className="text-gray-400">Provide at least one content source: description, video from gallery, or lecture notes</p>
+        <p className="text-gray-400">Provide at least one content source: description, {inCourseContext ? 'course video, or course lecture' : 'video from gallery, or lecture notes'}</p>
       </div>
 
       {/* Requirement indicator */}
@@ -283,7 +383,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 flex items-center space-x-3">
           <AlertCircle size={20} className="text-orange-400 flex-shrink-0" />
           <p className="text-orange-300 text-sm">
-            Please provide at least one of: Assignment Focus Description, Video from Gallery, or Lecture Notes
+            Please provide at least one of: Assignment Focus Description, {inCourseContext ? 'Course Video, or Course Lecture' : 'Video from Gallery, or Lecture Notes'}
           </p>
         </div>
       )}
@@ -316,7 +416,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           <div className="flex items-center space-x-2 mb-4">
             <Video size={20} className="text-blue-400" />
             <label className="block text-white font-medium">
-              Videos from Gallery
+              {inCourseContext ? 'Course Videos' : 'Videos from Gallery'}
             </label>
             <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 2</span>
           </div>
@@ -334,11 +434,11 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 {availableVideos.length === 0 ? (
                   <>
                     <p className="text-gray-400 text-sm">No videos available</p>
-                    <p className="text-gray-500 text-xs">Upload videos in Gallery first</p>
+                    <p className="text-gray-500 text-xs">{inCourseContext ? 'No course videos available' : 'Upload videos in Gallery first'}</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-gray-400 text-sm mb-2">Select videos from your gallery</p>
+                    <p className="text-gray-400 text-sm mb-2">{inCourseContext ? 'Select from course videos' : 'Select videos from your gallery'}</p>
                     <button
                       onClick={() => setIsVideoModalOpen(true)}
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -385,56 +485,83 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           </p>
         </div>
 
-        {/* File Upload */}
+        {/* File Upload / Course Lecture Selector */}
         <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex flex-col">
           <div className="flex items-center space-x-2 mb-4">
             <Upload size={20} className="text-purple-400" />
             <label className="block text-white font-medium">
-              Upload Lecture Notes
+              {inCourseContext ? 'Course Lectures' : 'Upload Lecture Notes'}
             </label>
             <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">Option 3</span>
           </div>
           
           <div className="flex-1">
-            {uploadedFiles.length === 0 ? (
-              <label className="cursor-pointer block">
-                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
-                  <Upload size={28} className="text-gray-500 mb-2" />
-                  <p className="text-gray-400 text-sm">
-                    <span className="text-teal-400 font-medium">Choose files</span> or drag and drop
-                  </p>
-                  <p className="text-gray-500 text-xs mt-1">PDF, Word, PPT, Excel, Markdown</p>
+            {inCourseContext ? (
+              /* Course lecture note selector */
+              isLoadingLectureNotes ? (
+                <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg">
+                  <Loader2 size={24} className="text-teal-400 animate-spin" />
+                  <span className="ml-2 text-gray-400">Loading lectures...</span>
                 </div>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
-                />
-              </label>
-            ) : (
-              // Files uploaded - show file list
-              <div className="min-h-[8rem]">
-                <div className="space-y-2 mb-3">
-                  {uploadedFiles.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between bg-gray-800 rounded-lg p-2">
-                      <div className="flex items-center space-x-2 min-w-0 flex-1">
-                        {getFileIcon(file.type)}
-                        <p className="text-white text-sm font-medium truncate">{file.name}</p>
-                      </div>
+              ) : selectedLectureNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg">
+                  <FileText size={28} className="text-gray-500 mb-2" />
+                  {availableLectureNotes.length === 0 ? (
+                    <>
+                      <p className="text-gray-400 text-sm">No course lectures available</p>
+                      <p className="text-gray-500 text-xs">Upload lecture notes to this course first</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-400 text-sm mb-2">Select from course lectures</p>
                       <button
-                        onClick={() => removeFile(file.id)}
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                        onClick={() => setIsLectureModalOpen(true)}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
                       >
-                        <X size={16} />
+                        Browse Lectures ({availableLectureNotes.length})
                       </button>
-                    </div>
-                  ))}
+                    </>
+                  )}
                 </div>
+              ) : (
+                <div className="min-h-[8rem]">
+                  <div className="space-y-2 mb-3">
+                    {selectedLectureNotes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex items-center justify-between p-2 bg-purple-500/20 border border-purple-500 rounded-lg"
+                      >
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                          <FileText size={16} className="text-purple-400 flex-shrink-0" />
+                          <p className="text-white text-sm font-medium truncate">{note.title}</p>
+                        </div>
+                        <button
+                          onClick={() => removeSelectedLecture(note.id)}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setIsLectureModalOpen(true)}
+                    className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors"
+                  >
+                    + Add More Lectures
+                  </button>
+                </div>
+              )
+            ) : (
+              /* Regular file upload */
+              uploadedFiles.length === 0 ? (
                 <label className="cursor-pointer block">
-                  <div className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors text-center">
-                    + Add More Files
+                  <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
+                    <Upload size={28} className="text-gray-500 mb-2" />
+                    <p className="text-gray-400 text-sm">
+                      <span className="text-teal-400 font-medium">Choose files</span> or drag and drop
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">PDF, Word, PPT, Excel, Markdown</p>
                   </div>
                   <input
                     type="file"
@@ -444,12 +571,43 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
                   />
                 </label>
-              </div>
+              ) : (
+                <div className="min-h-[8rem]">
+                  <div className="space-y-2 mb-3">
+                    {uploadedFiles.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between bg-gray-800 rounded-lg p-2">
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                          {getFileIcon(file.type)}
+                          <p className="text-white text-sm font-medium truncate">{file.name}</p>
+                        </div>
+                        <button
+                          onClick={() => removeFile(file.id)}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="cursor-pointer block">
+                    <div className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-teal-400 text-sm font-medium rounded-lg border border-gray-700 transition-colors text-center">
+                      + Add More Files
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.md,.json,.xml,.csv"
+                    />
+                  </label>
+                </div>
+              )
             )}
           </div>
           
           <p className="text-gray-500 text-sm mt-3">
-            Questions will be generated from uploaded content
+            {inCourseContext ? 'Questions will be generated from selected course materials' : 'Questions will be generated from uploaded content'}
           </p>
         </div>
       </div>
@@ -561,12 +719,14 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">None</option>
-              <option value="general">General Engineering</option>
               <option value="electrical">Electrical Engineering</option>
               <option value="mechanical">Mechanical Engineering</option>
               <option value="civil">Civil Engineering</option>
-              <option value="computer">Computer Engineering</option>
-              <option value="chemical">Chemical Engineering</option>
+              <option value="computer_eng">Computer Engineering</option>
+              <option value="cs">Computer Science</option>
+              <option value="math">Mathematics</option>
+              <option value="physics">Physics</option>
+              <option value="chemistry">Chemistry</option>
             </select>
           </div>
         </div>
@@ -653,20 +813,76 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-          <h4 className="text-white font-medium mb-2">Selected Types Summary</h4>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(questionTypes)
-              .filter(([type, selected]) => selected)
-              .map(([type, _]) => (
-                <span key={type} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
-                  {type.replace('-', ' ')}
-                </span>
-              ))}
+        <div className="mt-6 flex flex-col md:flex-row gap-4">
+          {/* Selected Types Summary */}
+          <div className="flex-1 p-4 bg-gray-800 rounded-lg">
+            <h4 className="text-white font-medium mb-2">Selected Types Summary</h4>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(questionTypes)
+                .filter(([type, selected]) => selected)
+                .map(([type, _]) => (
+                  <span key={type} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
+                    {type.replace('-', ' ')}
+                  </span>
+                ))}
+            </div>
+            {Object.values(questionTypes).every(selected => !selected) && (
+              <p className="text-gray-400 text-sm">No question types selected yet</p>
+            )}
           </div>
-          {Object.values(questionTypes).every(selected => !selected) && (
-            <p className="text-gray-400 text-sm">No question types selected yet</p>
-          )}
+
+          {/* Diagram Generation Model */}
+          <div className="md:w-72 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Image size={18} className="text-teal-400" />
+              <h4 className="text-white font-medium">Image Generation</h4>
+            </div>
+            <p className="text-gray-400 text-xs mb-3">Model used for diagram-analysis questions</p>
+            <div className="space-y-2">
+              {[
+                { value: 'nonai', label: 'Non AI', desc: 'Code-based (matplotlib, SVG)', color: 'gray' },
+                { value: 'flash', label: 'Gemini Flash', desc: 'Fast AI image generation', color: 'blue' },
+                { value: 'pro', label: 'Gemini Pro', desc: 'Highest quality AI images', color: 'purple' },
+              ].map((option) => (
+                <div
+                  key={option.value}
+                  onClick={() => setDiagramModel(option.value)}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all duration-150 ${
+                    diagramModel === option.value
+                      ? option.color === 'gray'
+                        ? 'bg-gray-600/30 border border-gray-500 ring-1 ring-gray-500/50'
+                        : option.color === 'blue'
+                          ? 'bg-blue-500/15 border border-blue-500/60 ring-1 ring-blue-500/30'
+                          : 'bg-purple-500/15 border border-purple-500/60 ring-1 ring-purple-500/30'
+                      : 'bg-gray-900/50 border border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                    diagramModel === option.value
+                      ? option.color === 'gray'
+                        ? 'border-gray-400'
+                        : option.color === 'blue'
+                          ? 'border-blue-400'
+                          : 'border-purple-400'
+                      : 'border-gray-500'
+                  }`}>
+                    {diagramModel === option.value && (
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        option.color === 'gray' ? 'bg-gray-400' :
+                        option.color === 'blue' ? 'bg-blue-400' : 'bg-purple-400'
+                      }`} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-medium ${
+                      diagramModel === option.value ? 'text-white' : 'text-gray-300'
+                    }`}>{option.label}</p>
+                    <p className="text-gray-500 text-xs truncate">{option.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -763,24 +979,31 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
       );
     }
 
-    if (isGenerating) {
+    if (isGenerating || (progressLogs.length > 0 && !generatedAssignment && !generationError)) {
+      return <GeneratingProgressView
+        numQuestions={numQuestions}
+        progressLogs={progressLogs}
+        logContainerRef={logContainerRef}
+        engineeringDiscipline={engineeringDiscipline}
+        diagramModel={diagramModel}
+      />;
+    }
+
+    if (generationError && !generatedAssignment) {
       return (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full mb-6">
-              <Loader2 size={32} className="text-white animate-spin" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-full mb-6">
+              <AlertCircle size={32} className="text-red-400" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Generating Assignment</h2>
-            <p className="text-gray-400">AI is creating questions based on your content and preferences...</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Generation Failed</h2>
+            <p className="text-gray-400 max-w-lg mx-auto">{generationError}</p>
           </div>
-
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800">
-            <div className="flex items-center justify-center">
-              <div className="animate-pulse text-center">
-                <p className="text-white text-lg">Creating {numQuestions} questions...</p>
-                <p className="text-gray-400 text-sm mt-2">This may take a few moments</p>
-              </div>
-            </div>
+          <div className="text-center">
+            <button
+              onClick={() => { setGenerationError(null); setProgressLogs([]); setCurrentStep(3); }}
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >Go Back & Retry</button>
           </div>
         </div>
       );
@@ -834,7 +1057,12 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     <span className="text-teal-400 text-sm">{question.points} pts</span>
                   </div>
                 </div>
-                <p className="text-gray-300 text-sm">{question.question}</p>
+                <p className="text-gray-300 text-sm">
+                  <DisplayTextWithEquations
+                    text={question.question}
+                    equations={question.equations || []}
+                  />
+                </p>
                 <span className="text-gray-500 text-xs">
                   {question.type.replace('-', ' ')} question
                 </span>
@@ -859,13 +1087,6 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             >
               <FileText size={18} className="mr-2" />
               Google Docs (Coming Soon)
-            </button>
-            <button
-              disabled
-              className="inline-flex items-center px-6 py-3 bg-gray-700 text-gray-400 font-medium rounded-lg cursor-not-allowed"
-            >
-              <FileText size={18} className="mr-2" />
-              Google Forms (Coming Soon)
             </button>
           </div>
         </div>
@@ -994,7 +1215,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <div>
-                <h3 className="text-xl font-bold text-white">Select Videos from Gallery</h3>
+                <h3 className="text-xl font-bold text-white">{inCourseContext ? 'Select Course Videos' : 'Select Videos from Gallery'}</h3>
                 <p className="text-gray-400 text-sm mt-1">
                   Choose videos to generate questions from their transcripts
                 </p>
@@ -1013,7 +1234,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 <div className="text-center py-12">
                   <Video size={48} className="text-gray-500 mx-auto mb-4" />
                   <p className="text-gray-400 mb-2">No videos with transcripts available</p>
-                  <p className="text-gray-500 text-sm">Upload videos in the Gallery to use them here</p>
+                  <p className="text-gray-500 text-sm">{inCourseContext ? 'Add videos to this course to use them here' : 'Upload videos in the Gallery to use them here'}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1076,6 +1297,309 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         </div>
       )}
 
+      {/* Course Lecture Selection Modal */}
+      {isLectureModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-white">Select Course Lectures</h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  Choose lecture notes to generate questions from their content
+                </p>
+              </div>
+              <button
+                onClick={() => setIsLectureModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body - Lecture List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {availableLectureNotes.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText size={48} className="text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">No lecture notes available</p>
+                  <p className="text-gray-500 text-sm">Upload lecture notes to this course to use them here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availableLectureNotes.map((note) => {
+                    const isSelected = selectedLectureNotes.some(n => n.id === note.id);
+                    return (
+                      <div
+                        key={note.id}
+                        onClick={() => toggleLectureSelection(note)}
+                        className={`flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-purple-500/20 border-2 border-purple-500'
+                            : 'bg-gray-800 border-2 border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-400'
+                          }`}>
+                            {isSelected && <CheckCircle size={16} className="text-white" />}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{note.title}</p>
+                            <p className="text-gray-400 text-sm">
+                              {note.file_name || 'Lecture document'} • {note.created_at ? new Date(note.created_at).toLocaleDateString() : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <FileText size={16} className="text-gray-400 flex-shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-700 bg-gray-800/50">
+              <p className="text-gray-400 text-sm">
+                {selectedLectureNotes.length} lecture(s) selected
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsLectureModalOpen(false)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setIsLectureModalOpen(false)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+// ─── Animated Generating Progress View ────────────────────────────────
+const ICON_MAP = {
+  classify: '🔍',
+  generate: '🎨',
+  review: '🔎',
+  regen: '🔄',
+  upload: '☁️',
+  rephrase: '✏️',
+  success: '✅',
+  fail: '❌',
+  warn: '⚠️',
+  info: 'ℹ️',
+  question: '📝',
+};
+
+function classifyLog(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('domainrouter classified') || m.includes('classified:')) return { icon: ICON_MAP.classify, color: 'text-blue-400', phase: 'Classifying' };
+  if (m.includes('agent decided')) return { icon: '🤖', color: 'text-purple-400', phase: 'Routing' };
+  if (m.includes('executing') && m.includes('tool')) return { icon: ICON_MAP.generate, color: 'text-teal-400', phase: 'Generating Diagram' };
+  if (m.includes('generating matplotlib') || m.includes('generating svg')) return { icon: '📊', color: 'text-cyan-400', phase: 'Rendering' };
+  if (m.includes('claude code generation successful') || m.includes('claude generated')) return { icon: '🧠', color: 'text-indigo-400', phase: 'AI Code Gen' };
+  if (m.includes('rendered successfully') || m.includes('svg→png conversion')) return { icon: '🖼️', color: 'text-green-400', phase: 'Rendered' };
+  if (m.includes('uploading diagram') || m.includes('uploaded successfully')) return { icon: ICON_MAP.upload, color: 'text-sky-400', phase: 'Uploading' };
+  if (m.includes('diagram review:') && m.includes('failed')) return { icon: ICON_MAP.fail, color: 'text-red-400', phase: 'Review Failed' };
+  if (m.includes('diagram review:') && m.includes('pass')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Review Passed' };
+  if (m.includes('regenerat')) return { icon: ICON_MAP.regen, color: 'text-amber-400', phase: 'Regenerating' };
+  if (m.includes('rephrased') || m.includes('rephrase')) return { icon: ICON_MAP.rephrase, color: 'text-violet-400', phase: 'Rephrasing' };
+  if (m.includes('successfully added diagram') || m.includes('successfully generated')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Complete' };
+  if (m.includes('analyzing question')) return { icon: ICON_MAP.question, color: 'text-yellow-400', phase: 'Analyzing' };
+  if (m.includes('generated') && m.includes('questions')) return { icon: '✨', color: 'text-yellow-400', phase: 'Questions Ready' };
+  if (m.includes('starting multi-agent')) return { icon: '🚀', color: 'text-orange-400', phase: 'Diagram Pipeline' };
+  if (m.includes('starting assignment generation') || m.includes('content sources extracted')) return { icon: '📦', color: 'text-gray-400', phase: 'Preparing' };
+  if (m.includes('engine:') && m.includes('subject:')) return { icon: '⚙️', color: 'text-gray-300', phase: 'Configuration' };
+  if (m.includes('diagram analysis complete') || m.includes('cleanup complete')) return { icon: '🏁', color: 'text-green-400', phase: 'Finalizing' };
+  if (m.includes('question review')) return { icon: '📋', color: 'text-blue-300', phase: 'Reviewing' };
+  if (m.includes('warning') || m.includes('skipping')) return { icon: ICON_MAP.warn, color: 'text-yellow-500', phase: 'Warning' };
+  return { icon: ICON_MAP.info, color: 'text-gray-400', phase: 'Processing' };
+}
+
+function truncateLogMessage(msg, maxLen = 120) {
+  // Remove verbose prefixes
+  let cleaned = msg
+    .replace(/^(Starting|DEBUG -|INFO -)\s*/i, '')
+    .replace(/^(controllers\.config - INFO - )/i, '');
+  if (cleaned.length > maxLen) cleaned = cleaned.slice(0, maxLen) + '…';
+  return cleaned;
+}
+
+function extractQuestionNum(msg) {
+  const m = msg.match(/(?:question|Q)\s*(\d+)/i);
+  return m ? parseInt(m[1]) : null;
+}
+
+const GeneratingProgressView = ({ numQuestions, progressLogs, logContainerRef, engineeringDiscipline, diagramModel }) => {
+  const [elapsedSec, setElapsedSec] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setElapsedSec(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Auto-scroll
+  useEffect(() => {
+    if (logContainerRef?.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [progressLogs]);
+
+  // Derive active question being processed
+  const latestQuestionNum = (() => {
+    for (let i = progressLogs.length - 1; i >= 0; i--) {
+      const n = extractQuestionNum(progressLogs[i].message);
+      if (n !== null) return n;
+    }
+    return null;
+  })();
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  // Phase summary: count completed questions
+  const completedQuestions = new Set();
+  progressLogs.forEach(l => {
+    if (l.message.toLowerCase().includes('successfully added diagram') || l.message.toLowerCase().includes('successfully generated')) {
+      const n = extractQuestionNum(l.message);
+      if (n !== null) completedQuestions.add(n);
+    }
+  });
+
+  // Current status message
+  const latestMeaningfulLog = progressLogs.length > 0
+    ? progressLogs[progressLogs.length - 1]
+    : null;
+  const latestClassified = latestMeaningfulLog ? classifyLog(latestMeaningfulLog.message) : null;
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full mb-4 relative">
+          <Sparkles size={28} className="text-white animate-pulse" />
+          <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center">
+            <Loader2 size={12} className="text-white animate-spin" />
+          </span>
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-1">Generating Assignment</h2>
+        <p className="text-gray-400 text-sm">
+          {latestClassified
+            ? <span className={latestClassified.color}>{latestClassified.icon} {latestClassified.phase}</span>
+            : 'Initializing…'}
+          <span className="text-gray-600 mx-2">•</span>
+          <span className="text-gray-500 font-mono text-xs">{formatTime(elapsedSec)}</span>
+        </p>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
+          <p className="text-lg font-bold text-yellow-400">{numQuestions}</p>
+          <p className="text-gray-500 text-xs">Questions</p>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
+          <p className="text-lg font-bold text-teal-400">{latestQuestionNum !== null ? latestQuestionNum + 1 : 0}<span className="text-gray-600 text-sm">/{numQuestions}</span></p>
+          <p className="text-gray-500 text-xs">Processing</p>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
+          <p className="text-lg font-bold text-green-400">{completedQuestions.size}</p>
+          <p className="text-gray-500 text-xs">Diagrams Done</p>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${Math.max(5, ((latestQuestionNum !== null ? latestQuestionNum + 1 : 0) / Math.max(numQuestions, 1)) * 100)}%` }}
+        />
+      </div>
+
+      {/* Live log feed */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900/80">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Live Progress</span>
+          </div>
+          <span className="text-gray-600 text-xs font-mono">{progressLogs.length} events</span>
+        </div>
+
+        <div
+          ref={logContainerRef}
+          className="max-h-80 overflow-y-auto px-2 py-2 space-y-0.5 scroll-smooth"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
+        >
+          {progressLogs.length === 0 && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="text-gray-600 animate-spin mr-2" />
+              <span className="text-gray-500 text-sm">Waiting for backend…</span>
+            </div>
+          )}
+          {progressLogs.map((log, idx) => {
+            const classified = classifyLog(log.message);
+            const isLatest = idx === progressLogs.length - 1;
+            const qNum = extractQuestionNum(log.message);
+
+            // Skip noisy HTTP/httpx lines
+            if (log.message.includes('HTTP Request:') || log.message.includes('httpx')) return null;
+            // Skip overly verbose lines
+            if (log.message.startsWith('Starting assignment generation with options:')) return null;
+            if (log.message.startsWith('Generation prompt:')) return null;
+            if (log.message.startsWith('Linked videos:') || log.message.startsWith('Uploaded files:')) return null;
+            if (log.message.includes('Dynamically loaded schemdraw')) return null;
+
+            return (
+              <div
+                key={log.id}
+                className={`flex items-start gap-2 px-2 py-1.5 rounded-md transition-all duration-300 ${
+                  isLatest ? 'bg-gray-800/80' : 'hover:bg-gray-800/40'
+                } ${log.level === 'warning' ? 'border-l-2 border-amber-500/50' : ''}`}
+                style={{ animation: isLatest ? 'fadeSlideIn 0.3s ease-out' : 'none' }}
+              >
+                <span className="text-sm flex-shrink-0 mt-0.5 w-5 text-center">{classified.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs leading-relaxed ${isLatest ? 'text-gray-200' : 'text-gray-400'}`}>
+                    {qNum !== null && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 text-[10px] font-mono mr-1.5">
+                        Q{qNum}
+                      </span>
+                    )}
+                    {truncateLogMessage(log.message)}
+                  </p>
+                </div>
+                <span className={`text-[10px] font-medium flex-shrink-0 mt-0.5 ${classified.color}`}>
+                  {classified.phase}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CSS for animation */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

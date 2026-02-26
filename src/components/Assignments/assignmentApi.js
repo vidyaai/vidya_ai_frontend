@@ -133,6 +133,67 @@ export const assignmentApi = {
     return response.data;
   },
 
+  // Generate assignment with real-time SSE log streaming
+  async generateAssignmentStream(generateData, onLogEvent) {
+    const { auth } = await import('../../firebase/config');
+    const { API_URL } = await import('../generic/utils.jsx');
+    
+    let token = '';
+    try {
+      const user = auth?.currentUser;
+      if (user) token = await user.getIdToken();
+    } catch (_) { /* continue */ }
+
+    const response = await fetch(`${API_URL}/api/assignments/generate-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: JSON.stringify(generateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Generation failed: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') break;
+        try {
+          const event = JSON.parse(payload);
+          if (event.type === 'result') {
+            result = event.data;
+          } else if (event.type === 'error') {
+            throw new Error(event.message);
+          } else if (event.type === 'log' && onLogEvent) {
+            onLogEvent(event);
+          }
+        } catch (e) {
+          if (e.message && !e.message.startsWith('Unexpected')) throw e;
+        }
+      }
+    }
+
+    if (!result) throw new Error('No assignment result received from stream');
+    return result;
+  },
+
   // Get submissions for an assignment (assignment owner only)
   async getAssignmentSubmissions(assignmentId) {
     const response = await api.get(`/api/assignments/${assignmentId}/submissions`, {
@@ -181,11 +242,20 @@ export const assignmentApi = {
     return response.data;
   },
 
-  // Download assignment as PDF
+  // Download assignment as PDF (question paper — no answers)
   async downloadAssignmentPDF(assignmentId) {
     const response = await api.get(`/api/assignments/${assignmentId}/download-pdf`, {
       headers: { 'ngrok-skip-browser-warning': 'true' },
-      responseType: 'blob'  // Important: specify blob response type for binary data
+      responseType: 'blob'
+    });
+    return response;
+  },
+
+  // Download solution/answer-key PDF (professor only)
+  async downloadSolutionPDF(assignmentId) {
+    const response = await api.get(`/api/assignments/${assignmentId}/download-solution-pdf`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      responseType: 'blob'
     });
     return response;
   },
@@ -477,68 +547,9 @@ export const assignmentApi = {
     return `${baseUrl}/api/assignments/${assignmentId}/download-pdf`;
   },
 
-  // Generate Google Form for assignment
-  async generateGoogleForm(assignmentId) {
-    // Use the dedicated Google Form generation endpoint
-    const response = await api.post(`/api/assignments/${assignmentId}/generate-google-form`, {}, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    });
-    return response.data;
-  },
-
-  // Get Google Form URL for an assignment (if it exists)
-  async getGoogleFormURL(assignmentId) {
-    try {
-      // First try to get existing Google Form URL
-      const response = await api.get(`/api/assignments/${assignmentId}/google-form-url`, {
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      });
-      return response.data?.google_resource_url || null;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        // No Google Form exists yet, try to generate one
-        try {
-          const googleFormResponse = await this.generateGoogleForm(assignmentId);
-          return googleFormResponse?.google_resource_url || null;
-        } catch (generateErr) {
-          console.error('Error generating Google Form:', generateErr);
-          return null;
-        }
-      }
-      console.error('Error getting Google Form URL:', error);
-      return null;
-    }
-  },
-
-  // Generate all formats (PDF + Google Forms) for an assignment
-  async generateAllFormats(assignmentId) {
-    try {
-      const results = {
-        pdf: { success: false, url: null, error: null },
-        googleForm: { success: false, url: null, error: null }
-      };
-
-      // Generate PDF
-      try {
-        results.pdf.url = this.getPDFDownloadURL(assignmentId);
-        results.pdf.success = true;
-      } catch (err) {
-        results.pdf.error = err.message;
-      }
-
-      // Generate Google Form
-      try {
-        const googleFormResponse = await this.generateGoogleForm(assignmentId);
-        results.googleForm.url = googleFormResponse.google_resource_url;
-        results.googleForm.success = true;
-      } catch (err) {
-        results.googleForm.error = err.message;
-      }
-
-      return results;
-    } catch (err) {
-      throw new Error(`Failed to generate formats: ${err.message}`);
-    }
+  // Generate and get PDF download URL for an assignment (alias kept for compatibility)
+  getPDFURL(assignmentId) {
+    return this.getPDFDownloadURL(assignmentId);
   },
 
   // Bulk upload multiple PDFs as on-behalf submissions

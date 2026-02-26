@@ -1,4 +1,4 @@
-// src/components/Assignments/DoAssignmentModal.jsx
+﻿// src/components/Assignments/DoAssignmentModal.jsx
 import { useState, useEffect, memo, useCallback } from 'react';
 import { 
   Brain,
@@ -14,7 +14,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
-import { TextWithEquations, EquationList } from './EquationRenderer';
+import DisplayTextWithEquations from './DisplayTextWithEquations';
 import { useIntegrityTracker } from '../../hooks/useIntegrityTracker';
 
 // Component for handling diagram images with URL fetching
@@ -84,7 +84,7 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
     <img 
       src={imageUrl} 
       alt={displayName}
-      className="w-full max-h-64 object-contain bg-gray-900"
+      className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-gray-900 mx-auto block"
       onError={() => setError(true)}
     />
   );
@@ -650,14 +650,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
             {/* Show code if available */}
@@ -706,14 +702,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                     />
                     <span className="text-white">
-                      {optionEquations.length > 0 ? (
-                        <TextWithEquations 
-                          text={option} 
-                          equations={optionEquations} 
-                        />
-                      ) : (
-                        option
-                      )}
+                      <DisplayTextWithEquations text={option} equations={optionEquations} />
                     </span>
                   </label>
                 );
@@ -733,14 +722,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
             {/* Show code if available */}
@@ -779,14 +764,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
             {/* Show code if available */}
@@ -841,14 +822,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
 
             {/* Show code if available */}
@@ -931,14 +908,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
             {/* Show code if available */}
@@ -977,14 +950,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
             {/* Show code if available */}
@@ -1068,21 +1037,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
-            {/* Show code if available */}
-            {question.code && (
+            {/* Show starter code template only (NOT the code field which may contain the solution) */}
+            {question.starterCode && (
               <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
                 <pre className="text-sm text-green-400">
-                    {question.code}
+                    {question.starterCode}
                 </pre>
               </div>
             )}
@@ -1215,14 +1180,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Render question text with equations */}
             <div className="text-gray-300 text-lg">
-              {question.equations && question.equations.length > 0 ? (
-                <TextWithEquations 
-                  text={question.question} 
-                  equations={question.equations.filter(eq => eq.position.context === 'question_text')} 
-                />
-              ) : (
-                <p>{question.question}</p>
-              )}
+              <DisplayTextWithEquations
+                text={question.question}
+                equations={question.equations || []}
+              />
             </div>
             
             {/* Show code if available */}
@@ -1295,12 +1256,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 </pre>
               </div>
             )}
-            
-            {/* Main Question Diagram */}
-            {((question.hasMainDiagram && question.mainDiagram) || question.diagram) && 
-              renderDiagram(question.mainDiagram || question.diagram, "Main Diagram")
-            }
-            
+                        
             <div className="space-y-4">
               {(question.subquestions || []).map((subq, subIndex) => {
                 // For optional parts, only render selected subquestions
@@ -1323,14 +1279,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 <div key={subq.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/30">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex-1 text-blue-300 font-medium">
-                      {subq.equations && subq.equations.length > 0 ? (
-                        <TextWithEquations 
-                          text={subq.question} 
-                          equations={subq.equations.filter(eq => eq.position.context === 'question_text' || eq.position.context === 'subquestion')} 
-                        />
-                      ) : (
-                        <h4>{subq.question}</h4>
-                      )}
+                      <DisplayTextWithEquations
+                        text={subq.question}
+                        equations={subq.equations || []}
+                      />
                     </div>
                     <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
                       <span className={`px-2 py-1 rounded text-xs ${
@@ -1408,14 +1360,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               className={`text-teal-500 focus:ring-teal-500 ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
                             <span className="text-white text-sm">
-                              {optionEquations.length > 0 ? (
-                                <TextWithEquations 
-                                  text={option} 
-                                  equations={optionEquations} 
-                                />
-                              ) : (
-                                option
-                              )}
+                              <DisplayTextWithEquations text={option} equations={optionEquations} />
                             </span>
                           </label>
                         );

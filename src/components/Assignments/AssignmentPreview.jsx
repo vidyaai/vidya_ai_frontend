@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
-import { TextWithEquations } from './EquationRenderer';
+import DisplayTextWithEquations from './DisplayTextWithEquations';
 
-const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus }) => {
+const AssignmentPreview = ({ title, description, questions, onSave, saving = false, validationStatus, isPublished = false }) => {
   const calculateQuestionPoints = (question) => {
     if (question.type === 'multi-part') {
       const subquestions = question.subquestions || [];
@@ -114,22 +114,14 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
   };
 
   // Helper function to render question text with equations
-  const renderQuestionText = (question) => {
-    if (question.equations && question.equations.length > 0) {
-      const textEquations = question.equations.filter(eq => eq.position.context === 'question_text');
-      if (textEquations.length > 0) {
-        return (
-          <div className="text-gray-300 mb-3">
-            <TextWithEquations 
-              text={question.question || 'Question text...'} 
-              equations={textEquations} 
-            />
-          </div>
-        );
-      }
-    }
-    return <p className="text-gray-300 mb-3">{question.question || 'Question text...'}</p>;
-  };
+  const renderQuestionText = (question) => (
+    <p className="text-gray-300 mb-3">
+      <DisplayTextWithEquations
+        text={question.question || 'Question text...'}
+        equations={question.equations || []}
+      />
+    </p>
+  );
 
   const renderQuestionPreview = (question, index) => {
     switch (question.type) {
@@ -146,28 +138,20 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
             {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
             
             <div className="space-y-2">
-              {question.options?.map((option, optionIndex) => {
-                const optionEquations = question.equations?.filter(
-                  eq => eq.position.context === 'options' && 
-                       eq.position.option_index === optionIndex
-                ) || [];
-                
-                return (
-                  <div key={optionIndex} className="flex items-center space-x-2">
-                    <input type="radio" disabled className="text-teal-500" />
-                    <span className="text-gray-400 text-sm">
-                      {optionEquations.length > 0 ? (
-                        <TextWithEquations 
-                          text={option || `Option ${optionIndex + 1}`} 
-                          equations={optionEquations} 
-                        />
-                      ) : (
-                        option || `Option ${optionIndex + 1}`
+              {question.options?.map((option, optionIndex) => (
+                <div key={optionIndex} className="flex items-center space-x-2">
+                  <input type="radio" disabled className="text-teal-500" />
+                  <span className="text-gray-400 text-sm">
+                    <DisplayTextWithEquations
+                      text={option || `Option ${optionIndex + 1}`}
+                      equations={(question.equations || []).filter(
+                        eq => eq?.position?.context === 'options' &&
+                             eq?.position?.option_index === optionIndex
                       )}
-                    </span>
-                  </div>
-                );
-              })}
+                    />
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -393,7 +377,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                       </span>
                     </div>
                   </div>
-                  <p className="text-gray-300 text-sm">{subq.question || `Part ${subIndex + 1} question...`}</p>
+                  <p className="text-gray-300 text-sm">
+                    <DisplayTextWithEquations
+                      text={subq.question || `Part ${subIndex + 1} question...`}
+                      equations={subq.equations || []}
+                    />
+                  </p>
                   
                   {/* Sub-question Diagram */}
                   {(subq?.subDiagram?.s3_url || subq?.diagram?.s3_url) && (
@@ -436,7 +425,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                               <span className="text-blue-400 text-xs">{nestedSubq.points || 1} pts</span>
                             </div>
                           </div>
-                          <p className="text-gray-400 text-xs mt-1">{nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}</p>
+                          <p className="text-gray-400 text-xs mt-1">
+                            <DisplayTextWithEquations
+                              text={nestedSubq.question || `Part ${subIndex + 1}.${nestedIndex + 1} question...`}
+                              equations={nestedSubq.equations || []}
+                            />
+                          </p>
                           
                           {/* Nested sub-question diagram */}
                           {(nestedSubq?.subDiagram?.s3_url || nestedSubq?.diagram?.s3_url) && (
@@ -545,7 +539,8 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
         <div className="mt-6 pt-4 border-t border-gray-700 space-y-2">
           <button 
             onClick={() => onSave('draft')}
-            disabled={saving}
+            disabled={saving || isPublished}
+            title={isPublished ? 'Already published — cannot revert to draft' : 'Save as draft'}
             className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : 'Save as Draft'}

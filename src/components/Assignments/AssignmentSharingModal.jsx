@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Search, Users, Lock, Copy, Check, Loader2, FileText, Link as LinkIcon, Globe, Upload, AlertTriangle, UserPlus, Share2, Trash2 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
+import { courseApi } from '../Courses/courseApi';
 
 // Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,12 +23,10 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
-  const [isGeneratingGoogleForm, setIsGeneratingGoogleForm] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formatUrls, setFormatUrls] = useState({
-    pdf: null,
-    googleForm: null
+    pdf: null
   });
   
   // CSV upload states
@@ -35,9 +34,30 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
   const [isProcessingCsv, setIsProcessingCsv] = useState(false);
   const csvInputRef = useRef(null);
 
+  // Course sharing state
+  const [courseEnrollments, setCourseEnrollments] = useState([]);
+  const [shareWithCourse, setShareWithCourse] = useState(false);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+
   useEffect(() => {
     loadSharedAssignmentData();
+    // If the assignment belongs to a course, load course enrollments
+    if (assignment.course_id) {
+      loadCourseEnrollments();
+    }
   }, [assignment.id]);
+
+  const loadCourseEnrollments = async () => {
+    try {
+      setLoadingEnrollments(true);
+      const data = await courseApi.listEnrollments(assignment.course_id);
+      setCourseEnrollments(data);
+    } catch (err) {
+      console.error('Failed to load course enrollments:', err);
+    } finally {
+      setLoadingEnrollments(false);
+    }
+  };
 
   const loadSharedAssignmentData = async () => {
     try {
@@ -45,7 +65,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
       
       const sharedData = await assignmentApi.getSharedAssignmentLink(assignment.id);
       const pdfUrl = assignmentApi.getPDFDownloadURL(assignment.id);
-      let googleFormUrl = assignment.google_form_url || assignment.google_form_response_url || null;
       
       if (sharedData && sharedData.id) {
         // Existing share link found - show success view
@@ -102,36 +121,17 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
         setExistingUsers([...users, ...pendingUsers]);
       }
       
-      setFormatUrls({ pdf: pdfUrl, googleForm: googleFormUrl });
-      
-      if (!googleFormUrl) {
-        generateGoogleFormInBackground();
-      }
+      setFormatUrls({ pdf: pdfUrl });
     } catch (err) {
       console.error('Error loading shared assignment data:', err);
       setFormatUrls({
-        pdf: assignmentApi.getPDFDownloadURL(assignment.id),
-        googleForm: null
+        pdf: assignmentApi.getPDFDownloadURL(assignment.id)
       });
     } finally {
       setLoading(false);
     }
   };
   
-  const generateGoogleFormInBackground = async () => {
-    try {
-      setIsGeneratingGoogleForm(true);
-      const result = await assignmentApi.generateGoogleForm(assignment.id);
-      if (result && result.google_resource_url) {
-        setFormatUrls(prev => ({ ...prev, googleForm: result.google_resource_url }));
-      }
-    } catch (err) {
-      console.error('Error generating Google Form:', err);
-    } finally {
-      setIsGeneratingGoogleForm(false);
-    }
-  };
-
   const handleDownloadPDF = async () => {
     try {
       setIsDownloadingPDF(true);
@@ -422,20 +422,6 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
                     <span>{isDownloadingPDF ? 'Downloading...' : 'Download'}</span>
                   </button>
                 </div>
-                {/* Google Form */}
-                <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-500/10 rounded-lg"><Globe className="text-green-400" size={18} /></div>
-                    <div><div className="font-medium text-white">Google Form</div><div className="text-sm text-gray-400">Interactive online form</div></div>
-                  </div>
-                  {isGeneratingGoogleForm ? (
-                    <div className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg flex items-center space-x-2 text-sm"><Loader2 size={16} className="animate-spin" /><span>Generating...</span></div>
-                  ) : formatUrls.googleForm ? (
-                    <a href={formatUrls.googleForm} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"><LinkIcon size={16} /><span>Open</span></a>
-                  ) : (
-                    <button onClick={generateGoogleFormInBackground} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"><Globe size={16} /><span>Generate</span></button>
-                  )}
-                </div>
               </div>
             </div>
 
@@ -457,6 +443,47 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
             {/* User Invitation - Only for private */}
             {!isPublic && (
               <div>
+                {/* Share with Course option */}
+                {assignment.course_id && courseEnrollments.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      onClick={() => {
+                        if (!shareWithCourse) {
+                          // Add all course students who are not already in selectedUsers or existingUsers
+                          const existingEmails = new Set([
+                            ...selectedUsers.map(u => u.email?.toLowerCase()),
+                            ...existingUsers.map(u => u.email?.toLowerCase())
+                          ].filter(Boolean));
+                          const newUsers = courseEnrollments
+                            .filter(e => !existingEmails.has(e.email?.toLowerCase()))
+                            .map(e => ({
+                              uid: e.user_id || `pending_${e.email}`,
+                              email: e.email,
+                              displayName: null,
+                              isPending: e.user_id?.startsWith('pending_') ?? true
+                            }));
+                          setSelectedUsers(prev => [...prev, ...newUsers]);
+                        } else {
+                          // Remove course-enrolled users from selected list
+                          const courseEmails = new Set(courseEnrollments.map(e => e.email?.toLowerCase()));
+                          setSelectedUsers(prev => prev.filter(u => !courseEmails.has(u.email?.toLowerCase())));
+                        }
+                        setShareWithCourse(!shareWithCourse);
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-colors ${
+                        shareWithCourse
+                          ? 'bg-teal-600/20 border-teal-500/40 text-teal-400'
+                          : 'bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-600'
+                      }`}
+                    >
+                      <span className="flex items-center space-x-2">
+                        <Users size={16} />
+                        <span>Share with entire course ({courseEnrollments.length} students)</span>
+                      </span>
+                      {shareWithCourse && <Check size={16} />}
+                    </button>
+                  </div>
+                )}
                 <label className="block text-sm font-medium text-gray-300 mb-3">Invite Students</label>
                 
                 {existingUsers.length > 0 && (

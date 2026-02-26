@@ -11,13 +11,16 @@ import {
   Eye,
   Loader2,
   Download,
-  ExternalLink
+  BookOpen
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import DoAssignmentModal from './DoAssignmentModal';
 import { assignmentApi } from './assignmentApi';
+import CourseCard from '../Courses/CourseCard';
+import StudentCourseView from '../Courses/StudentCourseView';
+import { courseApi } from '../Courses/courseApi';
 
-const AssignedToMe = ({ onBack, onNavigateToHome }) => {
+const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSection }) => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [doAssignmentModalOpen, setDoAssignmentModalOpen] = useState(false);
   const [assignedAssignments, setAssignedAssignments] = useState([]);
@@ -26,10 +29,29 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
   const [error, setError] = useState(null);
   const [downloadingPdfId, setDownloadingPdfId] = useState(null);
 
+  // Course state
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [courseDetailId, setCourseDetailId] = useState(initialCourseId || null);
+  const [showOpenAssignments, setShowOpenAssignments] = useState(false);
+
   // Load assigned assignments from API
   useEffect(() => {
     loadAssignedAssignments();
+    loadEnrolledCourses();
   }, []);
+
+  const loadEnrolledCourses = async () => {
+    try {
+      setLoadingCourses(true);
+      const data = await courseApi.listCourses('student');
+      setEnrolledCourses(data);
+    } catch (err) {
+      console.error('Failed to load enrolled courses:', err);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
 
   const loadAssignedAssignments = async () => {
     try {
@@ -206,6 +228,31 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
     }
   };
 
+  // If viewing a course detail
+  if (courseDetailId) {
+    return (
+      <>
+        <StudentCourseView
+          courseId={courseDetailId}
+          onBack={() => setCourseDetailId(null)}
+          onNavigateToHome={onNavigateToHome}
+          onOpenAssignment={(a) => {
+            setSelectedAssignment(a);
+            setDoAssignmentModalOpen(true);
+          }}
+          initialSection={courseDetailId === initialCourseId ? initialSection : null}
+        />
+        {doAssignmentModalOpen && selectedAssignment && (
+          <DoAssignmentModal
+            assignment={selectedAssignment}
+            onClose={() => setDoAssignmentModalOpen(false)}
+            onAssignmentUpdate={handleAssignmentUpdate}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Top Navigation */}
@@ -232,8 +279,53 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistics Cards */}
+      {/* ─── COURSES + OPEN ASSIGNMENTS GRID (default view) ─── */}
+      {!showOpenAssignments && (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {loadingCourses ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 size={32} className="text-teal-500 animate-spin" />
+              <span className="ml-3 text-gray-300">Loading courses...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {/* "Open Assignments" thumbnail card */}
+              <CourseCard
+                thumbnail={true}
+                course={{
+                  id: null,
+                  title: 'Shared Assignments',
+                  course_code: 'Open Assignments',
+                  assignment_count: assignedAssignments.length,
+                }}
+                onClick={() => setShowOpenAssignments(true)}
+              />
+
+              {/* Enrolled course cards */}
+              {enrolledCourses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  thumbnail={true}
+                  course={course}
+                  onClick={() => setCourseDetailId(course.id)}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      )}
+
+      {/* ─── OPEN ASSIGNMENTS LIST (when card is clicked) ─── */}
+      {showOpenAssignments && (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Back button to return to grid */}
+          <button
+            onClick={() => setShowOpenAssignments(false)}
+            className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6 transition-colors"
+          >
+            <ArrowLeft size={18} />
+            <span className="text-sm font-medium">Back to Courses</span>
+          </button>
         {!loading && !error && assignedAssignments.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
@@ -423,7 +515,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                     ))}
                   </div>
 
-                  {/* Export Options - PDF and Google Form */}
+                  {/* Export Options - PDF */}
                   <div className="flex items-center gap-2 mb-4">
                     <button
                       onClick={async () => {
@@ -455,18 +547,6 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
                       )}
                       <span>{downloadingPdfId === assignment.id ? 'Downloading...' : 'PDF'}</span>
                     </button>
-                    {(assignment.google_form_response_url) && (
-                      <a
-                        href={assignment.google_form_response_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-xs transition-colors"
-                        title="Open Google Form"
-                      >
-                        <ExternalLink size={14} />
-                        <span>Google Form</span>
-                      </a>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-700">
@@ -500,7 +580,8 @@ const AssignedToMe = ({ onBack, onNavigateToHome }) => {
             })}
           </div>
         )}
-      </main>
+        </main>
+      )}
 
       {/* Do Assignment Modal */}
       {doAssignmentModalOpen && selectedAssignment && (

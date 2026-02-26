@@ -5,7 +5,11 @@ import {
   UserCheck, 
   ArrowRight,
   Plus,
-  Sparkles
+  Sparkles,
+  GraduationCap,
+  BookOpen,
+  PenTool,
+  Send
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import MyAssignments from './MyAssignments';
@@ -13,19 +17,25 @@ import AssignedToMe from './AssignedToMe';
 
 const AssignmentManager = ({ onNavigateToHome }) => {
   const [currentView, setCurrentView] = useState('main');
+  const [initialCourseId, setInitialCourseId] = useState(null);
+  const [initialSection, setInitialSection] = useState(null);
 
   // Handle URL query parameter for direct navigation
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const view = urlParams.get('view');
+      const courseId = urlParams.get('courseId');
+      const section = urlParams.get('section');
       if (view === 'assigned-to-me') {
         setCurrentView('assigned-to-me');
-        // Clean up URL
+        if (courseId) setInitialCourseId(courseId);
+        if (section) setInitialSection(section);
         window.history.replaceState({}, '', window.location.pathname);
       } else if (view === 'my-assignments') {
         setCurrentView('my-assignments');
-        // Clean up URL
+        if (courseId) setInitialCourseId(courseId);
+        if (section) setInitialSection(section);
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
@@ -44,11 +54,11 @@ const AssignmentManager = ({ onNavigateToHome }) => {
   };
 
   if (currentView === 'my-assignments') {
-    return <MyAssignments onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+    return <MyAssignments onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} initialCourseId={initialCourseId} initialSection={initialSection} />;
   }
 
   if (currentView === 'assigned-to-me') {
-    return <AssignedToMe onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} />;
+    return <AssignedToMe onBack={handleBackToMain} onNavigateToHome={onNavigateToHome} initialCourseId={initialCourseId} initialSection={initialSection} />;
   }
 
   return (
@@ -58,89 +68,86 @@ const AssignmentManager = ({ onNavigateToHome }) => {
       
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white">AI Assignment Manager</h1>
-            <p className="text-gray-400 mt-2">Create, manage, and share assignments with AI-powered generation</p>
+            <h1 className="text-4xl font-bold text-white">AI Assignment Manager</h1>
+            <p className="text-gray-400 mt-3 text-lg">Choose how you'd like to use assignments</p>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Assignment Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* My Assignments */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Role Selection Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          {/* Instructor Card */}
           <div
             onClick={handleNavigateToMyAssignments}
-            className="group bg-gray-900 rounded-2xl p-8 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/10 cursor-pointer"
+            className="group relative bg-gray-900 rounded-2xl border border-gray-800 hover:border-teal-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/10 cursor-pointer overflow-hidden"
           >
-            <div className="flex-1">
-              <div className="w-16 h-16 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Plus size={32} className="text-white" />
+            {/* Gradient accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-cyan-500 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <div className="p-8 pt-9">
+              {/* Role badge */}
+              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 mb-6">
+                <GraduationCap size={14} className="text-teal-400 mr-1.5" />
+                <span className="text-xs font-semibold text-teal-400 uppercase tracking-wide">For Instructors</span>
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-4">
-                My Assignments
+              <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/20">
+                <PenTool size={26} className="text-white" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-3">
+                Create & Manage Assignments
               </h3>
               
-              <p className="text-gray-400 leading-relaxed mb-6">
-                Create and manage your assignments. Use the Assignment Builder for manual creation 
-                or AI Assignment Generator for automated content creation from videos, PDFs, or prompts.
+              <p className="text-gray-400 leading-relaxed mb-6 text-[15px]">
+                Build assignments manually or generate them with AI from videos, PDFs, or custom prompts. 
+                Share with students, review submissions, and grade — all in one place.
               </p>
               
-              <div className="flex items-center text-teal-400 font-medium">
-                <span>Manage Assignments</span>
-                <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+              <div className="flex items-center text-teal-400 font-medium group-hover:translate-x-1 transition-transform duration-300">
+                <span>Get Started</span>
+                <ArrowRight size={18} className="ml-2" />
               </div>
             </div>
           </div>
 
-          {/* Assigned to Me */}
+          {/* Student Card */}
           <div
             onClick={handleNavigateToAssignedToMe}
-            className="group bg-gray-900 rounded-2xl p-8 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer"
+            className="group relative bg-gray-900 rounded-2xl border border-gray-800 hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer overflow-hidden"
           >
-            <div className="flex-1">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <UserCheck size={32} className="text-white" />
+            {/* Gradient accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <div className="p-8 pt-9">
+              {/* Role badge */}
+              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
+                <BookOpen size={14} className="text-blue-400 mr-1.5" />
+                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">For Students</span>
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Assigned to Me
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/20">
+                <Send size={26} className="text-white" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-3">
+                Submit & View Assignments
               </h3>
               
-              <p className="text-gray-400 leading-relaxed mb-6">
-                View and complete assignments shared with you. See due dates, draft status, 
-                and completed assignments. Answer questions in-app or upload PDF responses.
+              <p className="text-gray-400 leading-relaxed mb-6 text-[15px]">
+                Access assignments shared with you, complete them in-app or upload your work. 
+                Track due dates, check your submission status, and view grades and feedback.
               </p>
               
-              <div className="flex items-center text-blue-400 font-medium">
+              <div className="flex items-center text-blue-400 font-medium group-hover:translate-x-1 transition-transform duration-300">
                 <span>View Assignments</span>
-                <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                <ArrowRight size={18} className="ml-2" />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-16 text-center">
-          <h3 className="text-2xl font-bold text-white mb-8">Quick Actions</h3>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={handleNavigateToMyAssignments}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
-            >
-              <Plus size={20} className="mr-2" />
-              Create New Assignment
-            </button>
-            <button
-              onClick={handleNavigateToAssignedToMe}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-105 shadow-lg"
-            >
-              <UserCheck size={20} className="mr-2" />
-              View My Assignments
-            </button>
           </div>
         </div>
       </main>

@@ -1,21 +1,24 @@
 import { useState } from 'react';
-import { 
-  ArrowRight, 
-  Play, 
-  Clock, 
-  Users, 
-  AlertTriangle, 
+import {
+  ArrowRight,
+  Play,
+  Clock,
+  Users,
+  AlertTriangle,
   GraduationCap,
-  Sparkles, 
-  BookOpen, 
-  BarChart3, 
+  Sparkles,
+  BookOpen,
+  BarChart3,
   Bot,
   CheckCircle,
   Menu,
   X,
   Mail,
   User,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Download,
+  Eye
 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
@@ -348,6 +351,9 @@ const VidyaLandingPageNew = ({ onLogin, onNavigateToLoginWithTarget }) => {
                 <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Blog
                 </a>
+                <a href="/sample-papers" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                  Sample Papers
+                </a>
                 <button onClick={() => scrollToSection('contact')} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Contact
                 </button>
@@ -381,6 +387,9 @@ const VidyaLandingPageNew = ({ onLogin, onNavigateToLoginWithTarget }) => {
                   </a>
                   <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 text-left">
                     Blog
+                  </a>
+                  <a href="/sample-papers" className="text-sm text-gray-600 hover:text-gray-900 text-left">
+                    Sample Papers
                   </a>
                   <button onClick={() => scrollToSection('contact')} className="text-sm text-gray-600 hover:text-gray-900 text-left">
                     Contact
@@ -862,6 +871,9 @@ const VidyaLandingPageNew = ({ onLogin, onNavigateToLoginWithTarget }) => {
                 <button onClick={() => scrollToSection('solution')} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Solution
                 </button>
+                <a href="/sample-papers" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                  Sample Papers
+                </a>
                 <button onClick={() => scrollToSection('contact')} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Contact
                 </button>

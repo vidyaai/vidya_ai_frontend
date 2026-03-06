@@ -8,6 +8,13 @@ export const metadata: Metadata = {
 
 const blogPosts = [
   {
+    slug: 'ai-question-paper-generation',
+    title: 'How AI Saves 9+ Hours Per Week on Question Paper Generation',
+    description: 'Discover how AI-powered question paper generation is saving educators up to 73% of assessment creation time while maintaining quality and academic rigor.',
+    date: 'March 2026',
+    readTime: '6 min read',
+  },
+  {
     slug: 'professors-grading-assistant',
     title: 'How Vidya AI Saves Professors 20+ Hours Per Week on Grading',
     description: 'Discover how educators are reclaiming their time for what matters most—mentoring students and advancing research—while AI handles the grading workload.',
@@ -26,8 +33,8 @@ const blogPosts = [
 export default function BlogPage() {
   return (
     <div>
-      <h1 className="text-4xl font-bold text-white mb-4">Vidya AI Blog</h1>
-      <p className="text-gray-400 text-lg mb-12">
+      <h1 className="text-4xl font-bold text-gray-900 mb-4">Vidya AI Blog</h1>
+      <p className="text-gray-600 text-lg mb-12">
         Insights on AI-powered education for professors and students
       </p>
 
@@ -36,17 +43,17 @@ export default function BlogPage() {
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="block p-6 bg-gray-900 rounded-xl border border-gray-800 hover:border-cyan-500/50 transition-all hover:shadow-lg hover:shadow-cyan-500/10"
+            className="block p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-indigo-500 transition-all hover:shadow-xl hover:shadow-indigo-500/10"
           >
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
               <span>{post.date}</span>
               <span>•</span>
               <span>{post.readTime}</span>
             </div>
-            <h2 className="text-2xl font-semibold text-white mb-3 group-hover:text-cyan-400">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3 hover:text-indigo-600 transition-colors">
               {post.title}
             </h2>
-            <p className="text-gray-400">{post.description}</p>
+            <p className="text-gray-600">{post.description}</p>
           </Link>
         ))}
       </div>

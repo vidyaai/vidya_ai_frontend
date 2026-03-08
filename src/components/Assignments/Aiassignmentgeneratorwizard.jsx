@@ -961,7 +961,13 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             </div>
           </div>
 
-          <div className="text-center">
+          <div className="flex items-center justify-center space-x-4">
+            <button
+              onClick={goBack}
+              className="inline-flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Back
+            </button>
             <button
               onClick={handleGenerateAssignment}
               disabled={!canGenerate()}
@@ -1178,7 +1184,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             </button>
 
             <div className="flex space-x-3">
-              {currentStep < 3 && (
+              {currentStep === 2 && (
                 <button
                   onClick={() => setCurrentStep(currentStep + 1)}
                   className="px-6 py-3 text-gray-400 hover:text-white transition-colors"

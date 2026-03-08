@@ -964,6 +964,21 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
     }
   };
 
+  const handleDeleteAssignment = async (assignmentId) => {
+    if (!window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await assignmentApi.deleteAssignment(assignmentId);
+      // Remove from local state
+      setAssignments(assignments.filter(a => a.id !== assignmentId));
+    } catch (err) {
+      console.error('Failed to delete assignment:', err);
+      alert('Failed to delete assignment. Please try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1041,6 +1056,13 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
                   title="Download solutions PDF"
                 >
                   {downloadingSolutionPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
+                </button>
+                <button
+                  onClick={() => handleDeleteAssignment(a.id)}
+                  className="p-2 text-gray-400 hover:text-red-400 transition-colors ml-auto"
+                  title="Delete Assignment"
+                >
+                    <Trash2 size={16} />
                 </button>
                 </>}
               </div>

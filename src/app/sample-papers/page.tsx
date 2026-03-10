@@ -59,9 +59,31 @@ const samplePapers = [
     color: 'amber',
     difficulty: 'Beginner',
   },
+  {
+    id: 'gears',
+    title: 'Gears and Gear Trains',
+    subject: 'Mechanical Engineering',
+    topics: ['Gear Terminology', 'Gear Ratios', 'Spur Gears', 'Helical Gears', 'Gear Trains', 'Power Transmission', 'Torque Analysis'],
+    description: 'Assignment covering gear types, gear train configurations, velocity ratios, and power transmission analysis in mechanical systems.',
+    assignmentFile: '/sample_papers/Gears_and_Gear_Trains_Assignment.pdf',
+    solutionFile: '/sample_papers/Gears_and_Gear_Trains_Solutions.pdf',
+    color: 'orange',
+    difficulty: 'Intermediate',
+  },
+  {
+    id: 'virtual-work-fem',
+    title: 'Virtual Work & Finite Element Formulation',
+    subject: 'Structural Engineering',
+    topics: ['Principle of Virtual Work', 'Finite Element Method', 'Stiffness Matrix', 'Weak Formulation', 'Boundary Conditions', 'Numerical Methods'],
+    description: 'Advanced assignment on the principle of virtual work and its application to finite element formulation for structural analysis.',
+    assignmentFile: '/sample_papers/The_Principle_of_Virtual_Work_and_The_Finite_Element_Formulation_Assignment.pdf',
+    solutionFile: '/sample_papers/The_Principle_of_Virtual_Work_and_The_Finite_Element_Formulation_Solutions.pdf',
+    color: 'teal',
+    difficulty: 'Advanced',
+  },
 ]
 
-const subjects = ['All Subjects', 'Digital Electronics', 'Computer Architecture', 'Electronics', 'Embedded Systems', 'Physics']
+const subjects = ['All Subjects', 'Digital Electronics', 'Computer Architecture', 'Electronics', 'Embedded Systems', 'Physics', 'Mechanical Engineering', 'Structural Engineering']
 const difficulties = ['All Levels', 'Beginner', 'Intermediate', 'Advanced']
 
 export default function SamplePapersPage() {

@@ -752,7 +752,7 @@ const ChatBoxComponent = ({
         }
       `}</style>
       
-      {!showHistory && (
+      {!showHistory && currentVideo?.sourceType !== 'youtube' && (
       <div className="p-4 border-t border-gray-700 bg-gray-800 bg-opacity-50">
         <div className="flex space-x-4 mb-3">
           <label className="flex items-center">

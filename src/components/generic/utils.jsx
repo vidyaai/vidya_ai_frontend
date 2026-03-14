@@ -112,10 +112,35 @@ export const formatTime = (seconds) => {
 export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // Remove standalone heading markers without text (e.g., lines with just "#" or "##")
+  text = text.replace(/^\s*#{1,6}\s*$/gm, '');
+
+  // Remove newlines after heading markers (e.g., "## \nText" -> "## Text")
+  text = text.replace(/(#{1,6})\s*\n+\s*/g, '$1 ');
+
+  // Remove newlines immediately after numbered list markers (e.g., "1. \n" -> "1. ")
+  // This joins "1. \nText" into "1. Text"
+  text = text.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+
   // Normalize: ensure headings and numbered list items start on new lines
-  // Must happen BEFORE LaTeX conversion to avoid breaking KaTeX HTML
-  text = text.replace(/([^\n])(#{1,6}\s)/g, '$1\n$2');
-  text = text.replace(/([^\n])(\d+\.\s)/g, '$1\n$2');
+  // Must happen AFTER joining markers with their content
+  // Don't match inside a sequence of # characters (e.g., don't break ### into # and ##)
+  text = text.replace(/([^\n#])(#{1,6}\s)/g, '$1\n$2');
+
+  // Add newline before numbered lists, but not if preceded by a digit (to preserve 10., 20., etc.)
+  // Also don't add newline if part of a heading (e.g., "### 1. Title")
+  text = text.replace(/(?<!#{1,6})([^\n])(\d+)\.\s/g, (match, before, digits) => {
+    if (/\d/.test(before)) {
+      // Previous character is a digit, don't add newline (e.g., "10.", "20.")
+      return match;
+    }
+    // Previous character is not a digit, add newline
+    return before + '\n' + digits + '. ';
+  });
+  // Add newline before bold text that looks like a sub-heading (bold text followed by colon)
+  // But only if it's preceded by a period and space (end of sentence)
+  text = text.replace(/(\.\s+)(\*\*[^*]+\*\*:)/g, '$1\n$2');
+  text = text.replace(/(\.\s+)(__[^_]+__:)/g, '$1\n$2');
 
   // First convert LaTeX to HTML
   let processed = convertLatexToMathHTML(text);
@@ -361,9 +386,31 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 export const parseMarkdown = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // Remove standalone heading markers without text (e.g., lines with just "#" or "##")
+  text = text.replace(/^\s*#{1,6}\s*$/gm, '');
+
+  // Remove newlines after heading markers (e.g., "## \nText" -> "## Text")
+  text = text.replace(/(#{1,6})\s*\n+\s*/g, '$1 ');
+
+  // Remove newlines immediately after numbered list markers (e.g., "1. \n" -> "1. ")
+  // This joins "1. \nText" into "1. Text"
+  text = text.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+
   // Normalize: ensure headings and numbered list items start on new lines
-  text = text.replace(/([^\n])(#{1,6}\s)/g, '$1\n$2');
-  text = text.replace(/([^\n])(\d+\.\s)/g, '$1\n$2');
+  // Must happen AFTER joining markers with their content
+  // Don't match inside a sequence of # characters (e.g., don't break ### into # and ##)
+  text = text.replace(/([^\n#])(#{1,6}\s)/g, '$1\n$2');
+
+  // Add newline before numbered lists, but not if preceded by a digit (to preserve 10., 20., etc.)
+  // Also don't add newline if part of a heading (e.g., "### 1. Title")
+  text = text.replace(/(?<!#{1,6})([^\n])(\d+)\.\s/g, (match, before, digits) => {
+    if (/\d/.test(before)) {
+      // Previous character is a digit, don't add newline (e.g., "10.", "20.")
+      return match;
+    }
+    // Previous character is not a digit, add newline
+    return before + '\n' + digits + '. ';
+  });
 
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
@@ -615,8 +662,8 @@ const cleanMathMarkup = (text) => {
   cleaned = cleaned.replace(/<\s*\w+[^>]*>/g, '');
   cleaned = cleaned.replace(/<\s*\/\s*\w+\s*>/g, '');
 
-  // Clean up multiple spaces created by tag removal
-  cleaned = cleaned.replace(/\s{2,}/g, ' ');
+  // Clean up multiple spaces created by tag removal (but preserve newlines)
+  cleaned = cleaned.replace(/[ \t]{2,}/g, ' ');
 
   // Trim leading/trailing whitespace
   cleaned = cleaned.trim();

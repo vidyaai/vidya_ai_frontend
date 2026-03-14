@@ -4,8 +4,8 @@ import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X, Share2 } from
 import { formatTime, parseMarkdown, parseMarkdownWithMath, SimpleSpinner, api, convertLatexToMathHTML } from '../generic/utils.jsx';
 import SharingModal from '../Sharing/SharingModal.jsx';
 
-const ChatBoxComponent = ({ 
-  currentVideo, 
+const ChatBoxComponent = ({
+  currentVideo,
   currentTime,
   chatMessages,
   setChatMessages,
@@ -15,7 +15,8 @@ const ChatBoxComponent = ({
   historyList,
   activeSessionId,
   onSelectHistory,
-  showHistory
+  showHistory,
+  isEmbedded = false
 }) => {
   const [userQuestion, setUserQuestion] = useState('');
   const [isProcessingQuery, setIsProcessingQuery] = useState(false);
@@ -333,16 +334,16 @@ const ChatBoxComponent = ({
   };
 
   return (
-    <div className="w-full bg-gray-900 rounded-xl shadow-xl overflow-hidden flex flex-col h-[750px]">
-      <div className="p-4 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-lg text-white">AI Video Assistant</h3>
-          <p className="text-xs text-gray-400">Current time: {formatTime(currentTime || 0)}</p>
-        </div>
-        <div className="flex items-center space-x-2">
+    <div className={`w-full bg-zinc-900 overflow-hidden flex flex-col ${
+      isEmbedded ? 'h-[650px]' : 'h-[750px] rounded-lg border border-zinc-800'
+    }`}>
+      <div className={`px-4 py-3 flex items-center justify-between ${
+        !isEmbedded ? 'border-b border-zinc-800' : ''
+      }`}>
+        <div className="flex items-center gap-2">
           <button
             onClick={onAddSession}
-            className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg flex items-center justify-center"
+            className="p-2 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="New chat"
             disabled={!currentVideo.videoId}
           >
@@ -351,41 +352,41 @@ const ChatBoxComponent = ({
           <button
             onClick={() => {
               onToggleHistory();
-              setShowSharedHistory(false); // Turn off shared history
+              setShowSharedHistory(false);
             }}
-            className={`w-8 h-8 rounded-lg text-white text-lg flex items-center justify-center ${
-              showHistory ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-700 hover:bg-gray-600'
+            className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              showHistory ? 'bg-emerald-600 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
             }`}
             title="History"
             disabled={!currentVideo.videoId}
           >
             <Clock size={18} />
           </button>
-          <button
-            onClick={handleSharedHistoryClick}
-            className={`w-8 h-8 rounded-lg text-white text-lg flex items-center justify-center ${
-              currentVideo.isShared && currentVideo.shareToken 
-                ? (showSharedHistory ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-700 hover:bg-gray-600')
-                : 'bg-gray-500 cursor-not-allowed'
-            }`}
-            title="Chats Shared with Me"
-            disabled={!currentVideo.isShared || !currentVideo.shareToken}
-          >
-            <Share2 size={18} />
-          </button>
+          {currentVideo.isShared && currentVideo.shareToken && (
+            <button
+              onClick={handleSharedHistoryClick}
+              className={`p-2 rounded-lg transition-colors ${
+                showSharedHistory ? 'bg-emerald-600 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
+              }`}
+              title="Shared chats"
+            >
+              <Share2 size={18} />
+            </button>
+          )}
         </div>
+        <span className="text-xs text-zinc-600">{formatTime(currentTime || 0)}</span>
       </div>
       
       <div className="flex-grow overflow-hidden">
         {showHistory ? (
-          <div className="h-full overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+          <div className="h-full overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
             {(!historyList || historyList.length === 0) ? (
-              <div className="text-gray-500 text-sm p-4 text-center">No history yet</div>
+              <div className="text-zinc-500 text-sm p-8 text-center">No history</div>
             ) : (
               historyList.map((s) => (
                 <div
                   key={s.id}
-                  className={`w-full px-3 py-3 rounded-lg mb-2 text-sm border border-gray-700 ${s.id === activeSessionId ? 'bg-gray-800 text-white' : 'bg-gray-900 hover:bg-gray-800 text-gray-200'}`}
+                  className={`w-full px-3 py-2.5 rounded-lg mb-2 text-sm transition-colors ${s.id === activeSessionId ? 'bg-emerald-950 border border-emerald-900 text-white' : 'bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-700'}`}
                 >
                   {editingSessionId === s.id ? (
                     <form
@@ -398,22 +399,22 @@ const ChatBoxComponent = ({
                         setEditingSessionId(null);
                         setEditingTitle('');
                       }}
-                      className="flex items-center"
+                      className="flex items-center gap-2"
                     >
                       <input
                         autoFocus
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
-                        className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 bg-gray-900/60 text-white px-3 py-2 rounded-lg border border-gray-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
                         placeholder="Conversation name"
                       />
-                      <button type="submit" className="ml-2 text-green-400 hover:text-green-300" title="Save">
+                      <button type="submit" className="text-green-400 hover:text-green-300 transition-colors p-1 hover:bg-green-400/10 rounded-lg" title="Save">
                         <Check size={16} />
                       </button>
                       <button
                         type="button"
                         onClick={() => { setEditingSessionId(null); setEditingTitle(''); }}
-                        className="ml-2 text-gray-400 hover:text-white"
+                        className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-gray-700/50 rounded-lg"
                         title="Cancel"
                       >
                         <X size={16} />
@@ -424,64 +425,68 @@ const ChatBoxComponent = ({
                       <button onClick={() => onSelectHistory?.(s.id)} className="flex-1 text-left truncate">
                         <span className="font-medium">{s.title || 'Session'}</span>
                       </button>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => openChatSharing(s.id)}
-                          className="text-gray-300 hover:text-white"
+                          className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-gray-700/50 rounded-lg"
                           title="Share chat"
                         >
-                          <Share2 size={16} />
+                          <Share2 size={15} />
                         </button>
                         <button
                           onClick={() => { setEditingSessionId(s.id); setEditingTitle(s.title || ''); }}
-                          className="text-gray-300 hover:text-white"
+                          className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-gray-700/50 rounded-lg"
                           title="Rename"
                         >
-                          <Pencil size={16} />
+                          <Pencil size={15} />
                         </button>
                       </div>
                     </div>
                   )}
-                  <div className="text-xs text-gray-400 mt-1">{new Date(s.updatedAt || Date.now()).toLocaleString()}</div>
+                  <div className="text-xs text-gray-500 mt-1.5">{new Date(s.updatedAt || Date.now()).toLocaleString()}</div>
                 </div>
               ))
             )}
           </div>
         ) : showSharedHistory ? (
-          <div className="h-full overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-                <Share2 size={16} className="text-indigo-400" />
+          <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700/50 scrollbar-track-transparent">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold text-base flex items-center gap-2">
+                <Share2 size={18} className="text-indigo-400" />
                 Chats Shared with Me
               </h3>
-              <button 
-                onClick={() => setShowSharedHistory(false)} 
-                className="text-gray-400 hover:text-gray-200 text-sm"
+              <button
+                onClick={() => setShowSharedHistory(false)}
+                className="w-7 h-7 rounded-full bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-gray-200 text-sm flex items-center justify-center transition-all duration-200"
               >
                 ✕
               </button>
             </div>
-            <div className="text-xs text-gray-400 mb-3 text-center">
+            <div className="text-xs text-gray-500 mb-4 text-center py-2 px-3 bg-gray-800/30 rounded-lg border border-gray-800/50">
               💡 Click on any chat card to load it into the chatbox
             </div>
             {sharedHistoryLoading ? (
-              <div className="text-center text-gray-500 my-8 flex flex-col items-center">
-                <SimpleSpinner size={32} className="mb-3 text-gray-700" />
-                <p className="text-sm">Loading shared chats...</p>
+              <div className="text-center text-gray-500 my-12 flex flex-col items-center">
+                <div className="w-14 h-14 rounded-2xl bg-gray-800/50 flex items-center justify-center mb-4">
+                  <SimpleSpinner size={28} className="text-gray-600" />
+                </div>
+                <p className="text-sm text-gray-400">Loading shared chats...</p>
               </div>
             ) : sharedHistoryError ? (
-              <div className="text-center text-red-500 my-8 flex flex-col items-center">
-                <X size={32} className="mb-3 text-red-700" />
-                <p className="text-sm">{sharedHistoryError}</p>
+              <div className="text-center my-12 flex flex-col items-center">
+                <div className="w-14 h-14 rounded-2xl bg-red-900/30 flex items-center justify-center mb-4">
+                  <X size={28} className="text-red-500" />
+                </div>
+                <p className="text-sm text-red-400">{sharedHistoryError}</p>
               </div>
             ) : sharedSessions.length === 0 ? (
-              <div className="text-gray-500 text-sm p-4 text-center">No shared chats found for this video.</div>
+              <div className="text-gray-500 text-sm p-8 text-center">No shared chats found for this video.</div>
             ) : (
               sharedSessions.map((session) => (
                 <div
                   key={session.session_id}
                   onClick={() => !isLoadingSharedChat && handleSharedChatClick(session)}
-                  className={`w-full px-3 py-3 rounded-lg mb-2 text-sm border border-gray-700 bg-gray-900 hover:bg-gray-800 hover:border-indigo-500 text-gray-200 transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] ${
+                  className={`w-full px-4 py-4 rounded-xl mb-2.5 text-sm bg-gray-800/40 hover:bg-gray-800/70 border border-gray-700/50 hover:border-indigo-500/50 text-gray-200 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:scale-[1.01] active:scale-[0.99] ${
                     isLoadingSharedChat ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
                   }`}
                 >
@@ -528,43 +533,41 @@ const ChatBoxComponent = ({
             )}
           </div>
         ) : (
-        <div 
+        <div
           ref={chatContainerRef}
-          className="h-full overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+          className="h-full overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
         >
         {chatMessages.length === 0 ? (
-          <div className="text-center text-gray-500 my-12 flex flex-col items-center">
-            <MessageSquare size={40} className="mb-4 text-gray-700" />
-            <p>No messages yet</p>
-            <p className="text-sm mt-2">Ask me anything about this video!</p>
+          <div className="text-center text-zinc-500 my-20">
+            <p className="text-sm">No messages yet</p>
           </div>
         ) : (
           chatMessages.map(message => (
-            <div 
-              key={message.id} 
+            <div
+              key={message.id}
               className={`${
-                message.sender === 'user' 
-                  ? 'ml-8 bg-indigo-900 bg-opacity-50' 
+                message.sender === 'user'
+                  ? 'ml-12 bg-emerald-950 border border-emerald-900'
                   : message.sender === 'system'
-                    ? message.isSuccess ? 'bg-green-700 bg-opacity-70' : 'bg-gray-700 bg-opacity-70'
-                    : 'mr-8 bg-gray-800'
-              } rounded-xl p-4 ${message.isError ? 'border border-red-500' : ''} ${message.isSuccess ? 'border border-green-500' : ''} shadow-md`}
+                    ? message.isSuccess ? 'bg-green-950 border border-green-900' : 'bg-zinc-800 border border-zinc-700'
+                    : 'mr-12 bg-zinc-800 border border-zinc-700'
+              } rounded-lg p-3 ${message.isError ? 'border-red-900' : ''}`}
             >
               <div className="flex items-center mb-2">
-                <span className={`font-medium text-sm ${
-                  message.sender === 'user' ? 'text-indigo-300' : 
-                  message.sender === 'system' ? 'text-yellow-300' : 'text-cyan-300'
+                <span className={`text-xs font-medium ${
+                  message.sender === 'user' ? 'text-emerald-400' :
+                  message.sender === 'system' ? 'text-yellow-400' : 'text-zinc-400'
                 }`}>
-                  {message.sender === 'user' ? 'You' : 
-                   message.sender === 'system' ? 'System' : 'AI Assistant'}
+                  {message.sender === 'user' ? 'You' :
+                   message.sender === 'system' ? 'System' : 'AI'}
                 </span>
                 {message.timestamp !== null && (
-                  <span className="text-gray-500 text-xs ml-2">
-                    at {formatTime(message.timestamp)}
+                  <span className="text-zinc-600 text-xs ml-2">
+                    {formatTime(message.timestamp)}
                   </span>
                 )}
               </div>
-              <div className="text-white break-words overflow-wrap-anywhere">
+              <div className="text-zinc-200 break-words overflow-wrap-anywhere leading-relaxed text-sm">
                 {message.sender === 'ai' ? (
                   parseMarkdownWithMath(message.text, onSeekToTime)
                 ) : (
@@ -575,13 +578,10 @@ const ChatBoxComponent = ({
           ))
         )}
         {isProcessingQuery && (
-          <div className="mr-8 bg-gray-800 rounded-xl p-4 shadow-md">
-            <div className="flex items-center mb-2">
-              <span className="font-medium text-sm text-cyan-300">AI Assistant</span>
-            </div>
-            <div className="flex items-center text-white">
-              <SimpleSpinner size={16} className="mr-3" />
-              Thinking...
+          <div className="mr-12 bg-zinc-800 border border-zinc-700 rounded-lg p-3">
+            <div className="flex items-center">
+              <SimpleSpinner size={16} className="mr-2" />
+              <span className="text-sm text-zinc-400">Thinking...</span>
             </div>
           </div>
         )}
@@ -591,7 +591,7 @@ const ChatBoxComponent = ({
       
       {/* Download Progress Bar */}
       {downloadProgress && (downloadProgress.status === 'preparing' || downloadProgress.status === 'buffering' || downloadProgress.status === 'downloading') && (
-        <div className="px-4 py-4 border-t border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 bg-opacity-90">
+        <div className="px-5 py-4 border-t border-gray-800/50 bg-gray-900/60 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -665,7 +665,7 @@ const ChatBoxComponent = ({
           
           {/* Progress bar with percentage markers */}
           <div className="relative">
-            <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
+            <div className="w-full bg-gray-800/80 rounded-full h-2.5 overflow-hidden shadow-inner border border-gray-700/50">
               {downloadProgress.status === 'preparing' ? (
                 // Indeterminate progress bar for preparing
                 <div className="h-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full relative overflow-hidden">
@@ -760,49 +760,48 @@ const ChatBoxComponent = ({
       `}</style>
       
       {!showHistory && (
-      <div className="p-4 border-t border-gray-700 bg-gray-800 bg-opacity-50">
-        <div className="flex space-x-4 mb-3">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="queryType"
-              value="video"
-              checked={queryType === 'video'}
-              onChange={() => setQueryType('video')}
-              className="mr-2 accent-indigo-500"
-            />
-            <span className="text-sm text-white">Ask about video</span>
-          </label>
-          {/* Hide "Ask about current frame" for YouTube videos - frame extraction not supported */}
-          {currentVideo?.sourceType !== 'youtube' && (
-            <label className="flex items-center">
+      <div className="px-4 py-3 border-t border-zinc-800">
+        {currentVideo?.sourceType !== 'youtube' && (
+          <div className="flex gap-4 mb-3">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="queryType"
+                value="video"
+                checked={queryType === 'video'}
+                onChange={() => setQueryType('video')}
+                className="mr-2 accent-emerald-500"
+              />
+              <span className="text-xs text-zinc-400">Video</span>
+            </label>
+            <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 name="queryType"
                 value="frame"
                 checked={queryType === 'frame'}
                 onChange={() => setQueryType('frame')}
-                className="mr-2 accent-indigo-500"
+                className="mr-2 accent-emerald-500"
               />
-              <span className="text-sm text-white">Ask about current frame</span>
+              <span className="text-xs text-zinc-400">Frame</span>
             </label>
-          )}
-        </div>
-        <form onSubmit={handleQuerySubmit} className="flex space-x-2">
+          </div>
+        )}
+        <form onSubmit={handleQuerySubmit} className="flex gap-2">
           <input
             type="text"
             value={userQuestion}
             onChange={(e) => setUserQuestion(e.target.value)}
-            placeholder="Ask a question about the video..."
-            className="flex-grow px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-gray-400 shadow-inner"
+            placeholder="Ask a question..."
+            className="flex-grow px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500 text-white placeholder-zinc-500 text-sm transition-colors"
             disabled={!currentVideo.videoId || isProcessingQuery}
           />
           <button
             type="submit"
-            className="p-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors text-white disabled:opacity-50 disabled:hover:bg-indigo-600"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             disabled={!userQuestion.trim() || !currentVideo.videoId || isProcessingQuery}
           >
-            <Send size={20} />
+            <Send size={16} />
           </button>
         </form>
       </div>

@@ -1,6 +1,8 @@
 // utils.js - Shared utilities and helpers
 import { auth } from '../../firebase/config';
 import axios from 'axios';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 // Next.js environment variables
 const NODE_ENV = process.env.NEXT_PUBLIC_NODE_ENV || process.env.NODE_ENV;
@@ -110,8 +112,17 @@ export const formatTime = (seconds) => {
 export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // Normalize: ensure headings and numbered list items start on new lines
+  // Must happen BEFORE LaTeX conversion to avoid breaking KaTeX HTML
+  text = text.replace(/([^\n])(#{1,6}\s)/g, '$1\n$2');
+  text = text.replace(/([^\n])(\d+\.\s)/g, '$1\n$2');
+
   // First convert LaTeX to HTML
   let processed = convertLatexToMathHTML(text);
+
+  console.log('📝 Original text sample:', text.substring(0, 300));
+  console.log('📝 Processed text sample:', processed.substring(0, 300));
+  console.log('📝 Number of newlines in processed:', (processed.match(/\n/g) || []).length);
 
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
@@ -146,7 +157,10 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     }
   };
 
-  const lines = processed.split('\n');
+  // Split lines at sentence boundaries followed by emojis (e.g., "text! 😊" -> "text!\n😊")
+  const preprocessed = processed.replace(/([.!?])\s+([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}])/gu, '$1\n$2');
+
+  const lines = preprocessed.split('\n');
   const elements = [];
 
   lines.forEach((line, index) => {
@@ -156,24 +170,78 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     }
 
     // Check if this line is a heading (###, ##, #)
+    // Only treat as heading if it's reasonably short (< 80 chars) - headings shouldn't be paragraphs
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
     if (headingMatch) {
       const [, hashes, headingText] = headingMatch;
-      const level = hashes.length;
-      const HeadingTag = `h${level}`;
-      const headingClasses = {
-        1: 'text-2xl font-bold text-white mb-3 mt-4',
-        2: 'text-xl font-bold text-white mb-2 mt-3',
-        3: 'text-lg font-semibold text-white mb-2 mt-2',
-        4: 'text-base font-semibold text-white mb-1 mt-2',
-        5: 'text-sm font-semibold text-white mb-1 mt-1',
-        6: 'text-xs font-semibold text-white mb-1 mt-1'
-      };
+
+      // If heading text is too long, strip the # markers and process as regular paragraph
+      if (headingText.length >= 80) {
+        line = headingText; // Remove the # prefix, continue processing as paragraph
+      } else {
+        // Process as heading
+        const level = hashes.length;
+        const HeadingTag = `h${level}`;
+        const headingClasses = {
+          1: 'text-2xl font-bold text-white mb-3 mt-4',
+          2: 'text-xl font-bold text-white mb-2 mt-3',
+          3: 'text-lg font-semibold text-white mb-2 mt-2',
+          4: 'text-base font-semibold text-white mb-1 mt-2',
+          5: 'text-sm font-semibold text-white mb-1 mt-1',
+          6: 'text-xs font-semibold text-white mb-1 mt-1'
+        };
+
+        // Process markdown in heading text (bold, links, timestamps)
+        let processedHeading = headingText
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+          .replace(/__(.*?)__/g, '<strong class="font-bold">$1</strong>')
+          .replace(/\[([\s\S]*?)\]\s*\(([\s\S]*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>')
+          .replace(/\$?(\d{1,2}:\d{2})\$?/g, '<span class="text-cyan-400">$1</span>'); // Timestamps (styled but not clickable in headings)
+
+        // Use dangerouslySetInnerHTML if contains HTML (KaTeX or processed markdown)
+        if (processedHeading.includes('<')) {
+          elements.push(
+            <HeadingTag key={`heading-${index}`} className={headingClasses[level]} dangerouslySetInnerHTML={{ __html: processedHeading }} />
+          );
+        } else {
+          elements.push(
+            <HeadingTag key={`heading-${index}`} className={headingClasses[level]}>
+              {processedHeading}
+            </HeadingTag>
+          );
+        }
+        return;
+      }
+    }
+
+    // Check if this line is a numbered list item (e.g., "1. Item text")
+    const listMatch = line.match(/^(\d+)\.\s+(.+)$/s);
+    if (listMatch) {
+      const [, number, itemText] = listMatch;
+      // Process inline formatting in list item text (bold, math, links)
+      let processedItem = itemText
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+        .replace(/__(.*?)__/g, '<strong class="font-bold text-white">$1</strong>')
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+      elements.push(
+        <div key={`list-${index}`} className="mb-1 leading-relaxed flex">
+          <span className="font-semibold text-white mr-2 flex-shrink-0">{number}.</span>
+          <span dangerouslySetInnerHTML={{ __html: processedItem }} />
+        </div>
+      );
+      return;
+    }
+
+    // If line contains KaTeX HTML, process markdown and render entire line with dangerouslySetInnerHTML
+    if (line.includes('<span class="katex">')) {
+      // Convert markdown syntax to HTML
+      let processedLine = line
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+        .replace(/__(.*?)__/g, '<strong class="font-bold text-white">$1</strong>')
+        .replace(/\[(.*?)\]\s*\((.*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
 
       elements.push(
-        <HeadingTag key={`heading-${index}`} className={headingClasses[level]}>
-          {headingText}
-        </HeadingTag>
+        <div key={`math-line-${index}`} className="mb-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
       );
       return;
     }
@@ -182,7 +250,7 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     let currentIndex = 0;
 
     // Combine all regexes to process in order (markdown links first, then plain URLs, timestamps, bold)
-    const combinedRegex = /(\[([^\]]+)\]\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+    const combinedRegex = /(\[([^\]]+)\]\s*\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
     let match;
 
     while ((match = combinedRegex.exec(line)) !== null) {
@@ -198,7 +266,7 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
       // Check if this is a markdown link [text](url)
       if (match[0].startsWith('[') && match[0].includes('](')) {
-        const linkMatch = match[0].match(/\[([^\]]+)\]\(([^)]+)\)/);
+        const linkMatch = match[0].match(/\[([^\]]+)\]\s*\(([^)]+)\)/);
         if (linkMatch) {
           const [, linkText, linkUrl] = linkMatch;
           parts.push(
@@ -293,6 +361,10 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 export const parseMarkdown = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // Normalize: ensure headings and numbered list items start on new lines
+  text = text.replace(/([^\n])(#{1,6}\s)/g, '$1\n$2');
+  text = text.replace(/([^\n])(\d+\.\s)/g, '$1\n$2');
+
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
     const parts = timeStr.split(':');
@@ -326,7 +398,10 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
     }
   };
 
-  const lines = text.split('\n');
+  // Split lines at sentence boundaries followed by emojis (e.g., "text! 😊" -> "text!\n😊")
+  const preprocessed = text.replace(/([.!?])\s+([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}])/gu, '$1\n$2');
+
+  const lines = preprocessed.split('\n');
   const elements = [];
 
   lines.forEach((line, index) => {
@@ -336,24 +411,59 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
     }
 
     // Check if this line is a heading (###, ##, #)
+    // Only treat as heading if it's reasonably short (< 80 chars) - headings shouldn't be paragraphs
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
     if (headingMatch) {
       const [, hashes, headingText] = headingMatch;
-      const level = hashes.length;
-      const HeadingTag = `h${level}`;
-      const headingClasses = {
-        1: 'text-2xl font-bold text-white mb-3 mt-4',
-        2: 'text-xl font-bold text-white mb-2 mt-3',
-        3: 'text-lg font-semibold text-white mb-2 mt-2',
-        4: 'text-base font-semibold text-white mb-1 mt-2',
-        5: 'text-sm font-semibold text-white mb-1 mt-1',
-        6: 'text-xs font-semibold text-white mb-1 mt-1'
-      };
 
+      // If heading text is too long, strip the # markers and process as regular paragraph
+      if (headingText.length >= 80) {
+        line = headingText; // Remove the # prefix, continue processing as paragraph
+      } else {
+        // Process as heading
+        const level = hashes.length;
+        const HeadingTag = `h${level}`;
+        const headingClasses = {
+          1: 'text-2xl font-bold text-white mb-3 mt-4',
+          2: 'text-xl font-bold text-white mb-2 mt-3',
+          3: 'text-lg font-semibold text-white mb-2 mt-2',
+          4: 'text-base font-semibold text-white mb-1 mt-2',
+          5: 'text-sm font-semibold text-white mb-1 mt-1',
+          6: 'text-xs font-semibold text-white mb-1 mt-1'
+        };
+
+        // Process markdown in heading text (bold, links, timestamps)
+        let processedHeading = headingText
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+          .replace(/__(.*?)__/g, '<strong class="font-bold">$1</strong>')
+          .replace(/\[([\s\S]*?)\]\s*\(([\s\S]*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>')
+          .replace(/\$?(\d{1,2}:\d{2})\$?/g, '<span class="text-cyan-400">$1</span>'); // Timestamps (styled but not clickable in headings)
+
+        // Use dangerouslySetInnerHTML if contains HTML (KaTeX or processed markdown)
+        if (processedHeading.includes('<')) {
+          elements.push(
+            <HeadingTag key={`heading-${index}`} className={headingClasses[level]} dangerouslySetInnerHTML={{ __html: processedHeading }} />
+          );
+        } else {
+          elements.push(
+            <HeadingTag key={`heading-${index}`} className={headingClasses[level]}>
+              {processedHeading}
+            </HeadingTag>
+          );
+        }
+        return;
+      }
+    }
+
+    // Check if this line is a numbered list item (e.g., "1. Item text")
+    const listMatch2 = line.match(/^(\d+)\.\s+(.+)$/);
+    if (listMatch2) {
+      const [, number, itemText] = listMatch2;
       elements.push(
-        <HeadingTag key={`heading-${index}`} className={headingClasses[level]}>
-          {headingText}
-        </HeadingTag>
+        <div key={`list-${index}`} className="mb-1 leading-relaxed flex">
+          <span className="font-semibold text-white mr-2 flex-shrink-0">{number}.</span>
+          <span>{itemText}</span>
+        </div>
       );
       return;
     }
@@ -362,7 +472,7 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
     let currentIndex = 0;
 
     // Combine all regexes to process in order (markdown links first, then plain URLs, timestamps, bold)
-    const combinedRegex = /(\[([^\]]+)\]\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+    const combinedRegex = /(\[([^\]]+)\]\s*\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
     let match;
 
     while ((match = combinedRegex.exec(line)) !== null) {
@@ -372,7 +482,7 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
 
       // Check if this is a markdown link [text](url)
       if (match[0].startsWith('[') && match[0].includes('](')) {
-        const linkMatch = match[0].match(/\[([^\]]+)\]\(([^)]+)\)/);
+        const linkMatch = match[0].match(/\[([^\]]+)\]\s*\(([^)]+)\)/);
         if (linkMatch) {
           const [, linkText, linkUrl] = linkMatch;
           parts.push(
@@ -466,31 +576,108 @@ export const SimpleSpinner = ({ size = 24, className = "" }) => {
   );
 };
 
-// Convert LaTeX math expressions to proper HTML mathematical formatting
+// Clean up broken MathML/HTML tags from AI responses
+const cleanMathMarkup = (text) => {
+  if (!text || typeof text !== 'string') return text;
+
+  let cleaned = text;
+
+  console.log('🧹 Cleaning math markup, original length:', text.length);
+
+  // Remove markdown links with "MathML" text: [MathML](url) -> empty
+  cleaned = cleaned.replace(/\[MathML\]\([^)]*\)/g, '');
+
+  // Remove ALL instances of 'MathML"' followed by anything until '>' (greedy to catch everything)
+  // This handles: MathML" display="block"> or MathML" > or MathML">
+  cleaned = cleaned.replace(/MathML"[^>]*>/g, '');
+
+  // Also remove patterns like: ">MathML" or >MathML
+  cleaned = cleaned.replace(/>\s*MathML\s*"/g, '');
+  cleaned = cleaned.replace(/>\s*MathML\s*</g, '><');
+
+  // Also remove standalone "MathML" text that might appear
+  cleaned = cleaned.replace(/\bMathML\b/g, '');
+
+  // Remove display attribute patterns (anywhere in text, not just at end of tags)
+  cleaned = cleaned.replace(/display\s*=\s*"[^"]*"/g, '');
+  cleaned = cleaned.replace(/display\s*=\s*'[^']*'/g, '');
+
+  // Remove common HTML/MathML tags (both opening and closing)
+  const tagsToRemove = ['span', 'math', 'mrow', 'mfrac', 'mn', 'mi', 'mo', 'msub', 'msup', 'mfenced', 'mtable', 'mtr', 'mtd'];
+  tagsToRemove.forEach(tag => {
+    // Remove opening tags with any attributes
+    cleaned = cleaned.replace(new RegExp(`<\\s*${tag}[^>]*>`, 'gi'), '');
+    // Remove closing tags
+    cleaned = cleaned.replace(new RegExp(`<\\s*\\/\\s*${tag}\\s*>`, 'gi'), '');
+  });
+
+  // Remove any remaining HTML-like tags with attributes
+  cleaned = cleaned.replace(/<\s*\w+[^>]*>/g, '');
+  cleaned = cleaned.replace(/<\s*\/\s*\w+\s*>/g, '');
+
+  // Clean up multiple spaces created by tag removal
+  cleaned = cleaned.replace(/\s{2,}/g, ' ');
+
+  // Trim leading/trailing whitespace
+  cleaned = cleaned.trim();
+
+  console.log('✅ Cleaned math markup, new length:', cleaned.length);
+
+  return cleaned;
+};
+
+// Convert LaTeX math expressions to proper HTML mathematical formatting using KaTeX
 export const convertLatexToMathHTML = (text) => {
   if (!text || typeof text !== 'string') return text;
-  
-  console.log('🔄 Converting LaTeX to HTML:', text.substring(0, 100) + '...');
-  
-  let converted = text;
-  
-  // Convert inline math \( ... \) to HTML - use [\s\S] to match newlines
+
+  console.log('🔄 Converting LaTeX to HTML with KaTeX:', text.substring(0, 100) + '...');
+
+  // Clean up any broken MathML/HTML markup first
+  let converted = cleanMathMarkup(text);
+
+  // Convert inline math \( ... \) to HTML using KaTeX
   converted = converted.replace(/\\\(([\s\S]+?)\\\)/g, (match, content) => {
-    console.log('📐 Found inline math:', match.substring(0, 50), '→ content:', content.substring(0, 50));
-    return `<span class="math-expression">${convertLatexToHTML(content)}</span>`;
+    console.log('📐 Found inline math:', content.substring(0, 50));
+    try {
+      const html = katex.renderToString(content.trim(), {
+        displayMode: false,
+        throwOnError: false,
+        strict: false,
+        trust: true,
+        output: 'html'  // Force HTML-only output, prevent MathML
+      });
+      // Strip newlines so KaTeX HTML stays on one line when text is split by \n
+      return html.replace(/\n/g, '');
+    } catch (e) {
+      console.error('KaTeX inline error:', e);
+      return `<span class="math-error">${content}</span>`;
+    }
   });
-  
-  // Convert display math \[ ... \] to HTML block - use [\s\S] to match newlines
+
+  // Convert display math \[ ... \] to HTML block using KaTeX
   converted = converted.replace(/\\\[([\s\S]+?)\\\]/g, (match, content) => {
-    console.log('📊 Found display math:', match.substring(0, 50), '→ content:', content.substring(0, 50));
-    return `<div class="math-block">${convertLatexToHTML(content)}</div>`;
+    console.log('📊 Found display math:', content.substring(0, 50));
+    try {
+      const html = katex.renderToString(content.trim(), {
+        displayMode: true,
+        throwOnError: false,
+        strict: false,
+        trust: true,
+        output: 'html'  // Force HTML-only output, prevent MathML
+      });
+      // Strip newlines so KaTeX HTML stays on one line when text is split by \n
+      return html.replace(/\n/g, '');
+    } catch (e) {
+      console.error('KaTeX display error:', e);
+      return `<div class="math-error">${content}</div>`;
+    }
   });
   
   // Convert $ ... $ to HTML - allow any content except single $ (to avoid timestamp conflicts like 5:30)
   // More permissive: match non-digit start or ensure it contains LaTeX commands
   converted = converted.replace(/\$([^$]+?)\$/g, (match, content) => {
-    // Skip if it looks like a timestamp (e.g., $5:30$)
-    if (/^\d{1,2}:\d{2}$/.test(content.trim())) {
+    // Skip if it looks like a timestamp (e.g., $5:30$, $00:07$)
+    if (/^0?\d{1,2}:\d{2}$/.test(content.trim())) {
       return match;
     }
     console.log('💲 Found dollar math:', match.substring(0, 50), '→ content:', content.substring(0, 50));

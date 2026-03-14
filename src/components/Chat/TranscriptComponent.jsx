@@ -3,10 +3,13 @@ import { useState, useEffect } from 'react';
 import { Copy } from 'lucide-react';
 import { SimpleSpinner, api, API_URL } from '../generic/utils.jsx';
 
-const TranscriptComponent = ({ 
-  currentVideo, 
-  transcript, 
-  onSeekToTime 
+const TranscriptComponent = ({
+  currentVideo,
+  transcript,
+  transcriptError,
+  isTranscriptLoading,
+  onRetryTranscript,
+  onSeekToTime
 }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isLoadingTimestampedTranscript, setIsLoadingTimestampedTranscript] = useState(false);
@@ -199,12 +202,43 @@ const TranscriptComponent = ({
     }
   };
 
-  const copyTranscript = () => {
+  const copyTranscript = async () => {
     const textToCopy = showTimestampedVersion && timestampedTranscript ? timestampedTranscript : transcript;
-    if (textToCopy) {
-      navigator.clipboard.writeText(textToCopy);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+    if (!textToCopy) return;
+
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } else {
+        // Fallback for older browsers or insecure contexts
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand('copy');
+          if (successful) {
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+          } else {
+            console.error('Fallback: Could not copy text');
+          }
+        } catch (err) {
+          console.error('Fallback: Oops, unable to copy', err);
+        }
+
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
     }
   };
 
@@ -314,7 +348,7 @@ const TranscriptComponent = ({
         </div>
       )}
       
-      <div 
+      <div
         className="bg-gray-800 rounded-xl p-5 h-56 overflow-y-auto text-gray-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 shadow-inner"
       >
         {showTimestampedVersion ? (
@@ -335,6 +369,34 @@ const TranscriptComponent = ({
               )}
             </div>
           )
+        ) : isTranscriptLoading ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <SimpleSpinner size={32} className="mb-3" />
+            <p className="text-gray-400">Loading transcript...</p>
+            <p className="text-xs text-gray-500 mt-1">This may take a few moments</p>
+          </div>
+        ) : transcriptError ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="text-yellow-500 mb-3">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-gray-400 font-medium mb-2">Transcript Not Available</p>
+            <p className="text-sm text-gray-500 mb-4 max-w-md">
+              {transcriptError.includes('No captions found')
+                ? 'This video does not have captions/subtitles available in any language.'
+                : transcriptError}
+            </p>
+            {onRetryTranscript && (
+              <button
+                onClick={onRetryTranscript}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Retry Loading Transcript
+              </button>
+            )}
+          </div>
         ) : transcript ? (
           transcript.split('\n').map((line, index) => (
             <p key={index} className="mb-2">

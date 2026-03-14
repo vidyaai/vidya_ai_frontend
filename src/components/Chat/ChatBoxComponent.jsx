@@ -166,6 +166,13 @@ const ChatBoxComponent = ({
     };
   }, []);
 
+  // Reset to 'video' queryType for YouTube videos (frame extraction not supported)
+  useEffect(() => {
+    if (currentVideo?.sourceType === 'youtube' && queryType === 'frame') {
+      setQueryType('video');
+    }
+  }, [currentVideo?.sourceType, currentVideo?.videoId]);
+
   const handleQuerySubmit = async (e) => {
     e.preventDefault();
     
@@ -752,7 +759,7 @@ const ChatBoxComponent = ({
         }
       `}</style>
       
-      {!showHistory && currentVideo?.sourceType !== 'youtube' && (
+      {!showHistory && (
       <div className="p-4 border-t border-gray-700 bg-gray-800 bg-opacity-50">
         <div className="flex space-x-4 mb-3">
           <label className="flex items-center">
@@ -766,17 +773,20 @@ const ChatBoxComponent = ({
             />
             <span className="text-sm text-white">Ask about video</span>
           </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="queryType"
-              value="frame"
-              checked={queryType === 'frame'}
-              onChange={() => setQueryType('frame')}
-              className="mr-2 accent-indigo-500"
-            />
-            <span className="text-sm text-white">Ask about current frame</span>
-          </label>
+          {/* Hide "Ask about current frame" for YouTube videos - frame extraction not supported */}
+          {currentVideo?.sourceType !== 'youtube' && (
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="queryType"
+                value="frame"
+                checked={queryType === 'frame'}
+                onChange={() => setQueryType('frame')}
+                className="mr-2 accent-indigo-500"
+              />
+              <span className="text-sm text-white">Ask about current frame</span>
+            </label>
+          )}
         </div>
         <form onSubmit={handleQuerySubmit} className="flex space-x-2">
           <input

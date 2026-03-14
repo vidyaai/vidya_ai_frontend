@@ -1,19 +1,13 @@
 // ImprovedYoutubePlayer.jsx - Main component with Quiz integration (STABLE FIX)
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Youtube, Menu, Home, MessageSquare, Globe, Upload } from 'lucide-react';
-import YoutubeDownloader from './YoutubeDownloader';
+import { Menu, X, MessageSquare, FolderOpen, Home, ArrowLeft } from 'lucide-react';
 import PlayerComponent from './PlayerComponent';
 import TranscriptComponent from './TranscriptComponent';
-import ChatBoxComponent from './ChatBoxComponent';
-import ChatHistory from './ChatHistory.jsx';
-import QuizPanel from './QuizPanel';
-import SummarizeVideoButton from './SummarizeVideoButton';
-import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
-import { useAuth } from '../../context/AuthContext';
+import InteractivePanel from './InteractivePanel';
+import { API_URL, saveToLocalStorage, loadFromLocalStorage, api } from '../generic/utils.jsx';
 import VideoUploader from './VideoUploader.jsx';
 
-const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, selectedVideo }) => {
-  const { currentUser } = useAuth();
+const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGallery, onClearVideo }) => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +15,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [transcript, setTranscript] = useState('');
   const [transcriptError, setTranscriptError] = useState('');
   const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   // Per-video chat sessions
   const [chatSessionsByVideo, setChatSessionsByVideo] = useState(() => {
@@ -30,17 +23,13 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [activeSessionId, setActiveSessionId] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [player, setPlayer] = useState(null);
-  
-  // Quiz state
-  const [isQuizOpen, setIsQuizOpen] = useState(false);
-  const [systemMessages, setSystemMessages] = useState([]);
   const [isUploadCompleting, setIsUploadCompleting] = useState(false);
   const [showVideoUploader, setShowVideoUploader] = useState(true);
-  
-  const menuRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const lastSelectedRef = useRef(null);
   const isLoadingRef = useRef(false); // Prevent multiple concurrent loads
+  const menuRef = useRef(null);
 
   // Ensure we always use an absolute URL for uploaded videos
   const buildAbsoluteVideoUrl = useCallback((maybeUrl) => {
@@ -80,8 +69,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     setTranscriptError('');
     setIsTranscriptLoading(false);
     setChatMessages([]);
-    setIsQuizOpen(false);
-    setSystemMessages([]);
     setErrorMessage('');
     setIsLoading(false);
     // Clear localStorage as well so it doesn't persist
@@ -132,10 +119,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         newUrl.searchParams.set('type', 'youtube');
         window.history.replaceState({}, '', newUrl);
 
-        // Reset chat/quiz state
+        // Reset chat state
         setChatMessages([]);
-        setIsQuizOpen(false);
-        setSystemMessages([]);
 
         // Step 2: Fetch transcript in background
         setIsTranscriptLoading(true);
@@ -212,10 +197,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
         newUrl.searchParams.set('type', 'uploaded');
         window.history.replaceState({}, '', newUrl);
 
-        // Reset chat/quiz state
+        // Reset chat state
         setChatMessages([]);
-        setIsQuizOpen(false);
-        setSystemMessages([]);
       }
 
     } catch (error) {
@@ -393,8 +376,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
         // Reset state
         setChatMessages([]);
-        setIsQuizOpen(false);
-        setSystemMessages([]);
 
         // Update refs to prevent conflicts
         lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
@@ -414,10 +395,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const handleUploadSuccess = useCallback(() => {
     setShowVideoUploader(false);
   }, []);
-
-  const handlePlayerReady = (playerInstance) => {
-    setPlayer(playerInstance);
-  };
 
   const handleTimeUpdate = (time) => {
     setCurrentTime(time);
@@ -626,35 +603,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     return () => window.removeEventListener('rename-session', handler);
   }, [currentVideo.videoId]);
 
-  const handleQuizSystemMessage = (message) => {
-    setSystemMessages(prev => [...prev, message]);
-  };
-
-  const handleStartQuiz = () => {
-    if (!currentVideo.videoId) {
-      handleQuizSystemMessage({
-        id: Date.now(),
-        sender: 'system',
-        text: 'Please load a video first to start the quiz.',
-        isError: true
-      });
-      return;
-    }
-    setIsQuizOpen(true);
-  };
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuRef]);
 
   // Save to localStorage when state changes (but not loadTimestamp)
   useEffect(() => {
@@ -674,137 +622,157 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   useEffect(() => {
     saveToLocalStorage('chatMessages', chatMessages);
   }, [chatMessages]);
-  
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleNewVideo = () => {
+    clearVideoState();
+    if (onClearVideo) {
+      onClearVideo();
+    }
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className="w-full">
-      {selectedVideo && (
-        <div className="mb-4">
-          <p className="text-sm text-indigo-400">
-            Video loaded from gallery: {selectedVideo.title}
-          </p>
-        </div>
-      )}
-      
-      <form onSubmit={handleYoutubeSubmit} className="mb-8">
-        <div className="relative flex flex-col md:flex-row md:items-center gap-2">
-          <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Youtube size={18} className="text-red-500" />
+      {/* Top Navigation Bar */}
+      <div className="flex items-center gap-3 mb-4">
+        {/* Menu Button */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
+              <button
+                onClick={handleNewVideo}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <MessageSquare size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">Interact with a new video</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (onNavigateToGallery) onNavigateToGallery();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <FolderOpen size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">My Gallery</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (onNavigateToHome) onNavigateToHome();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <Home size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">Home</span>
+              </button>
             </div>
+          )}
+        </div>
+
+        {/* Back Arrow - only show when video is loaded */}
+        {currentVideo.videoId && (
+          <button
+            onClick={() => {
+              if (onNavigateToHome) onNavigateToHome();
+            }}
+            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+            title="Back to Home"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+      </div>
+
+      <form onSubmit={handleYoutubeSubmit} className="mb-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-grow">
             <input
               type="text"
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
-              placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-              className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-gray-400 shadow-lg"
+              placeholder="Paste YouTube URL or upload video"
+              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg focus:outline-none focus:border-emerald-500 text-white placeholder-zinc-500 transition-colors"
               disabled={isLoading}
             />
           </div>
-          <button 
+          <button
             type="submit"
-            className="px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || !youtubeUrl.trim()}
           >
-            {isLoading ? (
-              <>
-                <SimpleSpinner size={20} className="mr-2" />
-                <span>Loading...</span>
-              </>
-            ) : (
-              'Load Video'
-            )}
+            {isLoading ? 'Loading...' : 'Load'}
           </button>
-          {showVideoUploader ? (
-            <div className="relative">
-              <VideoUploader 
-                onUploadComplete={handleUploadComplete} 
-                onUploadSuccess={handleUploadSuccess}
-              />
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowVideoUploader(true)}
-              className="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center"
-              title="Upload another video"
-              disabled={isLoading}
-            >
-              <Upload size={20} className="mr-2" />
-              <span>Upload Another Video</span>
-            </button>
+          {showVideoUploader && (
+            <VideoUploader
+              onUploadComplete={handleUploadComplete}
+              onUploadSuccess={handleUploadSuccess}
+            />
           )}
         </div>
         {errorMessage && (
-          <div className="mt-3 text-red-400 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg">
-            ⚠️ {errorMessage}
+          <div className="mt-3 text-red-400 text-sm bg-zinc-900 border border-red-900 p-3 rounded-lg">
+            {errorMessage}
           </div>
         )}
       </form>
-      
-      <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
-        {currentVideo.title || "Enter a YouTube URL to get started"}
-      </h2>
-      
-      {currentVideo.videoId && currentVideo.sourceType === 'youtube' && (
-        <YoutubeDownloader
-          videoId={currentVideo.videoId}
-          videoTitle={currentVideo.title}
-        />
-      )}
-      
-      <div className="flex flex-col xl:flex-row gap-8 mt-6 w-full">
-        <div className="w-full xl:w-3/5">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10 rounded-2xl">
-              <div className="flex flex-col items-center">
-                <SimpleSpinner size={48} className="mb-4" />
-                <p className="text-white text-lg">Loading video...</p>
-              </div>
+
+      <div className="flex flex-col xl:flex-row gap-4 w-full">
+        <div className="w-full xl:w-3/5 space-y-4">
+          {currentVideo.title && (
+            <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-xl px-6 py-4 shadow-lg shadow-black/20">
+              <h1 className="text-white text-xl font-semibold leading-relaxed tracking-tight">{currentVideo.title}</h1>
             </div>
           )}
-          
+
           <PlayerComponent
             currentVideo={currentVideo}
-            onPlayerReady={handlePlayerReady}
             onTimeUpdate={handleTimeUpdate}
             seekToTime={handleSeekToTime}
           />
-          
-          {/* Transcript and Quiz Container */}
-          <div className="mt-6 space-y-4">
-            {/* Quiz Start Button */}
-            {currentVideo.videoId && !isQuizOpen && (
-              <div className="flex justify-center">
-                <button
-                  onClick={handleStartQuiz}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg font-semibold"
-                >
-                  Start Quiz
-                </button>
-              </div>
-            )}
-            
-            {/* Quiz Panel */}
-            <QuizPanel
-              isOpen={isQuizOpen}
-              videoId={currentVideo.videoId}
-              onClose={() => setIsQuizOpen(false)}
-              onSystemMessage={handleQuizSystemMessage}
-            />
-            
-            {/* Transcript Component */}
-            <TranscriptComponent
-              currentVideo={currentVideo}
-              transcript={transcript}
-              transcriptError={transcriptError}
-              isTranscriptLoading={isTranscriptLoading}
-              onRetryTranscript={handleRetryTranscript}
-              onSeekToTime={handleSeekToTime}
-            />
-          </div>
+
+          <TranscriptComponent
+            currentVideo={currentVideo}
+            transcript={transcript}
+            transcriptError={transcriptError}
+            isTranscriptLoading={isTranscriptLoading}
+            onRetryTranscript={handleRetryTranscript}
+            onSeekToTime={handleSeekToTime}
+          />
         </div>
-        
-        <div className="w-full xl:w-2/5 relative space-y-4">
-          <ChatBoxComponent
+
+        <div className="w-full xl:w-2/5">
+          <InteractivePanel
             currentVideo={currentVideo}
             currentTime={currentTime}
             chatMessages={chatMessages}
@@ -816,12 +784,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             activeSessionId={activeSessionId}
             onSelectHistory={handleSelectSession}
             showHistory={showHistory}
-          />
-
-          {/* Summarize Video Button - DEBUG: Showing unconditionally */}
-          <SummarizeVideoButton
-            currentVideo={currentVideo}
             transcript={transcript}
+            onQuizSystemMessage={(msg) => console.log('Quiz message:', msg)}
           />
         </div>
       </div>

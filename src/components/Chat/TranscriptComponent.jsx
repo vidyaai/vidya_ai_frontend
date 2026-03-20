@@ -45,12 +45,11 @@ const TranscriptComponent = ({
           <div key={`timestamp-${index}`} className="mb-2">
             <button
               onClick={() => {
-                console.log("🚀 BUTTON CLICKED! Seeking to:", totalSeconds);
                 if (onSeekToTime) {
                   onSeekToTime(totalSeconds);
                 }
               }}
-              className="text-cyan-400 hover:text-cyan-300 font-mono text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded transition-colors cursor-pointer"
+              className="text-emerald-400 hover:text-emerald-300 font-mono text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               title={`Jump to ${startTime}`}
             >
               {trimmedLine}
@@ -250,106 +249,71 @@ const TranscriptComponent = ({
   }, [currentVideo.videoId]);
 
   return (
-    <div className="mt-8 mb-6">
+    <div>
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <button 
+        <div className="flex items-center gap-2">
+          <button
             onClick={() => setShowTimestampedVersion(false)}
-            className={`text-sm px-3 py-2 rounded-lg transition-colors ${
-              !showTimestampedVersion 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+            className={`text-xs px-3 py-2 rounded-lg transition-colors font-medium ${
+              !showTimestampedVersion
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border border-zinc-700'
             }`}
             disabled={!transcript}
           >
-            Video Transcript
+            Transcript
           </button>
-          
-          <button 
+
+          <button
             onClick={async () => {
-              console.log("🔘 Timestamp button clicked");
-              
-              // If we already have the transcript, just show it
               if (timestampedTranscript) {
-                console.log("✅ Already have timestamped transcript, showing it");
                 setShowTimestampedVersion(true);
                 return;
               }
-              
-              // Otherwise, load the transcript with progress tracking
-              console.log("⏳ Loading timestamped transcript with progress...");
               await loadTimestampedTranscript();
             }}
-            className={`text-sm px-3 py-2 rounded-lg transition-colors flex items-center ${
-              showTimestampedVersion 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+            className={`text-xs px-3 py-2 rounded-lg transition-colors flex items-center font-medium ${
+              showTimestampedVersion
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border border-zinc-700'
             } ${!currentVideo.videoId ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!currentVideo.videoId || isLoadingTimestampedTranscript}
           >
             {isLoadingTimestampedTranscript ? (
-              <>
-                <div className="relative mr-2">
-                  <SimpleSpinner size={14} />
-                  {formattingProgress.progress > 0 && (
-                    <div className="absolute -top-1 -right-1 text-xs font-bold text-cyan-300 bg-gray-800 rounded px-1 min-w-[20px] text-center">
-                      {formattingProgress.progress}%
-                    </div>
-                  )}
-                </div>
-                <span className="flex flex-col">
-                  <span className="text-xs">
-                    {formattingProgress.progress > 0 
-                      ? `AI Processing ${formattingProgress.progress}%`
-                      : 'Starting AI...'
-                    }
-                  </span>
-                  {formattingProgress.total > 0 && (
-                    <span className="text-xs opacity-75">
-                      ({formattingProgress.current}/{formattingProgress.total} chunks)
-                    </span>
-                  )}
-                </span>
-              </>
+              <SimpleSpinner size={12} className="mr-1" />
             ) : (
-              <span>Transcript with Timestamps</span>
+              <span>Timestamps</span>
             )}
           </button>
         </div>
         {(transcript || timestampedTranscript) && (
-          <button 
+          <button
             onClick={copyTranscript}
-            className="text-xs flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
+            className="text-xs flex items-center px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
           >
-            <Copy size={14} className="mr-2" />
-            {isCopied ? "Copied!" : "Copy to clipboard"}
+            <Copy size={12} className="mr-1" />
+            {isCopied ? "Copied" : "Copy"}
           </button>
         )}
       </div>
-      
-      {/* Progress bar for formatting */}
+
       {isLoadingTimestampedTranscript && formattingProgress.progress > 0 && (
-        <div className="mb-3">
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>AI Formatting Progress</span>
+        <div className="mb-3 p-3 bg-zinc-900 rounded-lg border border-zinc-800">
+          <div className="flex justify-between text-xs text-zinc-500 mb-2">
+            <span>Processing</span>
             <span>{formattingProgress.progress}%</span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-indigo-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
+          <div className="w-full bg-zinc-800 rounded-full h-1.5">
+            <div
+              className="bg-emerald-500 h-1.5 rounded-full transition-all"
               style={{ width: `${formattingProgress.progress}%` }}
             ></div>
           </div>
-          {formattingProgress.total > 0 && (
-            <div className="text-xs text-gray-500 mt-1">
-              Processing chunk {formattingProgress.current} of {formattingProgress.total}
-            </div>
-          )}
         </div>
       )}
-      
+
       <div
-        className="bg-gray-800 rounded-xl p-5 h-56 overflow-y-auto text-gray-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 shadow-inner"
+        className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-64 overflow-y-auto text-zinc-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
       >
         {showTimestampedVersion ? (
           timestampedTranscript ? (
@@ -370,42 +334,33 @@ const TranscriptComponent = ({
             </div>
           )
         ) : isTranscriptLoading ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <SimpleSpinner size={32} className="mb-3" />
-            <p className="text-gray-400">Loading transcript...</p>
-            <p className="text-xs text-gray-500 mt-1">This may take a few moments</p>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <SimpleSpinner size={24} className="mb-2 mx-auto" />
+              <p className="text-zinc-500 text-sm">Loading...</p>
+            </div>
           </div>
         ) : transcriptError ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="text-yellow-500 mb-3">
-              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <p className="text-gray-400 font-medium mb-2">Transcript Not Available</p>
-            <p className="text-sm text-gray-500 mb-4 max-w-md">
-              {transcriptError.includes('No captions found')
-                ? 'This video does not have captions/subtitles available in any language.'
-                : transcriptError}
-            </p>
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <p className="text-zinc-400 text-sm mb-4">No transcript available</p>
             {onRetryTranscript && (
               <button
                 onClick={onRetryTranscript}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg transition-colors"
               >
-                Retry Loading Transcript
+                Retry
               </button>
             )}
           </div>
         ) : transcript ? (
           transcript.split('\n').map((line, index) => (
-            <p key={index} className="mb-2">
+            <p key={index} className="mb-2 text-zinc-300 leading-relaxed">
               {line}
             </p>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <p className="text-gray-500 italic">Transcript will appear here after loading a video.</p>
+          <div className="flex items-center justify-center h-full">
+            <p className="text-zinc-600 text-sm">Load a video to view transcript</p>
           </div>
         )}
       </div>

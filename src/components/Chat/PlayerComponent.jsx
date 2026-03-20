@@ -699,13 +699,13 @@ const PlayerComponent = ({
 
   return (
     <div className="w-full">
-      <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl aspect-video">
+      <div className="relative overflow-hidden rounded-lg bg-black aspect-video border border-zinc-800">
         {isHtml5 ? (
-          <video 
+          <video
             key={`uploaded-${currentVideo?.videoId || 'no-video'}`}
-            ref={html5Ref} 
-            className="absolute top-0 left-0 w-full h-full" 
-            controls={false} 
+            ref={html5Ref}
+            className="absolute top-0 left-0 w-full h-full"
+            controls={false}
             crossOrigin="anonymous"
             preload="metadata"
             playsInline
@@ -713,120 +713,93 @@ const PlayerComponent = ({
         ) : currentVideo?.videoId ? (
           <div ref={playerContainerRef} className="absolute top-0 left-0 w-full h-full"></div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <div className="text-center">
-              <p className="text-gray-500">Enter a YouTube URL to load a video</p>
-            </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+            <p className="text-zinc-600 text-sm">Load a video</p>
           </div>
         )}
-        
-        {/* Loading/Error state overlay for uploaded videos - only show when loading, not during playback */}
+
         {isHtml5 && loadingState && !isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80">
-            <div className="text-center text-white p-4 max-w-lg">
-              <p className="text-sm mb-2">{loadingState}</p>
-              {!playerReady && (
-                <div className="text-xs text-gray-400 break-all">
-                  <strong>S3 URL:</strong><br />
-                  {currentVideo?.videoUrl}
-                </div>
-              )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90">
+            <div className="text-center text-white">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-3"></div>
+              <p className="text-sm">{loadingState}</p>
             </div>
           </div>
         )}
-        
-        {/* Pause overlay - show "Paused" when video is paused */}
-        {isHtml5 && !isPlaying && playerReady && !loadingState && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="text-center text-white p-4">
-              <p className="text-lg font-semibold">Paused</p>
-            </div>
-          </div>
-        )}
-        
-        {/* Upload notification popup */}
+
         {showUploadNotification && (
-          <div className="absolute top-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-xl border border-green-500 max-w-sm z-20">
+          <div className="absolute top-4 right-4 bg-emerald-600 text-white p-4 rounded-lg max-w-sm z-20">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center mb-2">
-                  <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                  <p className="font-semibold text-sm">Video Ready!</p>
-                </div>
-                <p className="text-sm mb-2">{uploadedVideoTitle} has been processed and is ready to play.</p>
-                <p className="text-xs text-green-200">You can find it in the gallery.</p>
+                <p className="font-medium text-sm mb-1">Video Ready</p>
+                <p className="text-xs opacity-90">{uploadedVideoTitle}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowUploadNotification(false)}
-                className="ml-2 text-green-200 hover:text-white transition-colors flex-shrink-0"
-                aria-label="Close notification"
+                className="ml-3 hover:opacity-80"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                ×
               </button>
             </div>
           </div>
         )}
       </div>
-      
-      <div className="mt-6 flex items-center space-x-4">
-        <button 
-          onClick={togglePlay} 
-          className="p-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors shadow-lg disabled:opacity-50"
-          disabled={!currentVideo?.videoId}
-        >
-          {isPlaying ? <Pause size={22} /> : <Play size={22} />}
-        </button>
-        
-        <button 
-          onClick={toggleMute} 
-          className="p-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors shadow-lg disabled:opacity-50"
-          disabled={!currentVideo?.videoId}
-        >
-          {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
-        </button>
-        
-        <div className="flex-grow">
-          <input 
-            type="range" 
-            min="0" 
-            max={duration || 100} 
-            value={sliderPosition || 0}
-            onChange={handleSliderChange}
-            onMouseUp={handleSliderRelease}
-            onTouchEnd={handleSliderRelease}
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500" 
+
+      <div className="mt-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="p-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white transition-colors disabled:opacity-50"
             disabled={!currentVideo?.videoId}
-            style={{
-              background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(sliderPosition / (duration || 1)) * 100}%, rgb(55, 65, 81) ${(sliderPosition / (duration || 1)) * 100}%, rgb(55, 65, 81) 100%)`
-            }}
-          />
-          <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>{formatTime(currentTime || 0)}</span>
-            <span>{formatTime(duration || 0)}</span>
+          >
+            {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+          </button>
+
+          <button
+            onClick={toggleMute}
+            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            disabled={!currentVideo?.videoId}
+          >
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+
+          <div className="flex-grow">
+            <input
+              type="range"
+              min="0"
+              max={duration || 100}
+              value={sliderPosition || 0}
+              onChange={handleSliderChange}
+              onMouseUp={handleSliderRelease}
+              onTouchEnd={handleSliderRelease}
+              className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer"
+              disabled={!currentVideo?.videoId}
+              style={{
+                background: `linear-gradient(to right, rgb(5, 150, 105) 0%, rgb(5, 150, 105) ${(sliderPosition / (duration || 1)) * 100}%, rgb(39, 39, 42) ${(sliderPosition / (duration || 1)) * 100}%, rgb(39, 39, 42) 100%)`
+              }}
+            />
+            <div className="flex justify-between text-xs text-zinc-600 mt-1">
+              <span>{formatTime(currentTime || 0)}</span>
+              <span>{formatTime(duration || 0)}</span>
+            </div>
           </div>
+
+          <button
+            onClick={skipBackward}
+            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            disabled={!currentVideo?.videoId}
+          >
+            <Rewind size={16} />
+          </button>
+
+          <button
+            onClick={skipForward}
+            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            disabled={!currentVideo?.videoId}
+          >
+            <FastForward size={16} />
+          </button>
         </div>
-      </div>
-      
-      <div className="mt-2 flex justify-center space-x-4">
-        <button 
-          onClick={skipBackward}
-          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors disabled:opacity-50"
-          disabled={!currentVideo?.videoId}
-        >
-          <Rewind size={16} />
-          <span className="sr-only">Skip backward</span>
-        </button>
-        
-        <button 
-          onClick={skipForward}
-          className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white transition-colors disabled:opacity-50"
-          disabled={!currentVideo?.videoId}
-        >
-          <FastForward size={16} />
-          <span className="sr-only">Skip forward</span>
-        </button>
       </div>
     </div>
   );

@@ -132,34 +132,38 @@ const YoutubeDownloader = ({ videoId, videoTitle }) => {
   };
 
   return (
-    <div className="mt-4">
+    <div>
       <button
         onClick={handleDownloadWithProgress}
         disabled={isDownloading || !videoId}
-        className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-          isDownloading 
-            ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
+        className={`flex items-center px-5 py-3 rounded-2xl transition-all duration-200 font-medium shadow-lg ${
+          isDownloading
+            ? 'bg-gray-700/60 text-gray-400 cursor-not-allowed border border-gray-600/50'
+            : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white hover:scale-105 active:scale-95 hover:shadow-blue-500/30'
         }`}
       >
         <Download size={18} className="mr-2" />
         {isDownloading ? `Downloading ${downloadProgress}%` : 'Download Video'}
       </button>
-      
+
       {isDownloading && (
-        <div className="mt-2">
-          <div className="w-full bg-gray-700 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+        <div className="mt-3 p-3 bg-gray-800/40 rounded-xl border border-gray-700/50">
+          <div className="flex justify-between text-xs text-gray-400 mb-2">
+            <span className="font-medium">Download Progress</span>
+            <span className="font-bold text-blue-400">{downloadProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden border border-gray-700/50">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full transition-all duration-300"
               style={{ width: `${downloadProgress}%` }}
             ></div>
           </div>
         </div>
       )}
-      
+
       {downloadError && (
-        <div className="mt-2 flex items-center text-red-500">
-          <AlertCircle size={16} className="mr-1" />
+        <div className="mt-3 flex items-center text-red-400 bg-red-900/20 border border-red-500/30 p-3 rounded-xl">
+          <AlertCircle size={16} className="mr-2 flex-shrink-0" />
           <span className="text-sm">{downloadError}</span>
         </div>
       )}

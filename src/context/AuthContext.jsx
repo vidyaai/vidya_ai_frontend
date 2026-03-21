@@ -171,7 +171,12 @@ export const AuthProvider = ({ children }) => {
       // Check for demo user in localStorage
       const demoUser = localStorage.getItem('demoUser');
       if (demoUser) {
-        setCurrentUser(JSON.parse(demoUser));
+        try {
+          setCurrentUser(JSON.parse(demoUser));
+        } catch (error) {
+          console.error('Failed to parse demo user from localStorage:', error);
+          localStorage.removeItem('demoUser');
+        }
       }
       setLoading(false);
       return;

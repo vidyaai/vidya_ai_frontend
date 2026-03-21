@@ -1,25 +1,20 @@
 // ImprovedYoutubePlayer.jsx - Main component with Quiz integration (STABLE FIX)
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Youtube, Menu, Home, MessageSquare, Globe, Upload } from 'lucide-react';
-import YoutubeDownloader from './YoutubeDownloader';
+import { Menu, X, MessageSquare, FolderOpen, Home, ArrowLeft } from 'lucide-react';
 import PlayerComponent from './PlayerComponent';
 import TranscriptComponent from './TranscriptComponent';
-import ChatBoxComponent from './ChatBoxComponent';
-import ChatHistory from './ChatHistory.jsx';
-import QuizPanel from './QuizPanel';
-import SummarizeVideoButton from './SummarizeVideoButton';
-import { API_URL, saveToLocalStorage, loadFromLocalStorage, SimpleSpinner, api } from '../generic/utils.jsx';
-import { useAuth } from '../../context/AuthContext';
+import InteractivePanel from './InteractivePanel';
+import { API_URL, saveToLocalStorage, loadFromLocalStorage, api } from '../generic/utils.jsx';
 import VideoUploader from './VideoUploader.jsx';
 
-const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, selectedVideo }) => {
-  const { currentUser } = useAuth();
+const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGallery, onClearVideo }) => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentVideo, setCurrentVideo] = useState({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
   const [transcript, setTranscript] = useState('');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [transcriptError, setTranscriptError] = useState('');
+  const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   // Per-video chat sessions
   const [chatSessionsByVideo, setChatSessionsByVideo] = useState(() => {
@@ -28,17 +23,13 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const [activeSessionId, setActiveSessionId] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [player, setPlayer] = useState(null);
-  
-  // Quiz state
-  const [isQuizOpen, setIsQuizOpen] = useState(false);
-  const [systemMessages, setSystemMessages] = useState([]);
   const [isUploadCompleting, setIsUploadCompleting] = useState(false);
   const [showVideoUploader, setShowVideoUploader] = useState(true);
-  
-  const menuRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const lastSelectedRef = useRef(null);
   const isLoadingRef = useRef(false); // Prevent multiple concurrent loads
+  const menuRef = useRef(null);
 
   // Ensure we always use an absolute URL for uploaded videos
   const buildAbsoluteVideoUrl = useCallback((maybeUrl) => {
@@ -75,9 +66,9 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const clearVideoState = () => {
     setCurrentVideo({ title: '', source: '', videoId: '', sourceType: 'youtube', videoUrl: '' });
     setTranscript('');
+    setTranscriptError('');
+    setIsTranscriptLoading(false);
     setChatMessages([]);
-    setIsQuizOpen(false);
-    setSystemMessages([]);
     setErrorMessage('');
     setIsLoading(false);
     // Clear localStorage as well so it doesn't persist
@@ -101,10 +92,40 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     isLoadingRef.current = true;
     setIsLoading(true);
     setErrorMessage('');
+    setTranscriptError('');
     setShowVideoUploader(true);
 
     try {
       if (videoData.sourceType === 'youtube') {
+        // Step 1: Load player immediately
+        setCurrentVideo({
+          title: videoData.title || "Loading...",
+          source: videoData.source || `https://www.youtube.com/embed/${videoData.videoId}?enablejsapi=1&origin=https://vidyaai.co&controls=0`,
+          videoId: videoData.videoId,
+          sourceType: 'youtube',
+          videoUrl: '',
+          isShared: videoData.isShared || false,
+          shareToken: videoData.shareToken || null,
+          shareId: videoData.shareId || null,
+          loadTimestamp: Date.now()
+        });
+
+        setIsLoading(false);
+        isLoadingRef.current = false;
+
+        // Update URL immediately
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('v', videoData.videoId);
+        newUrl.searchParams.set('type', 'youtube');
+        window.history.replaceState({}, '', newUrl);
+
+        // Reset chat state
+        setChatMessages([]);
+
+        // Step 2: Fetch transcript in background
+        setIsTranscriptLoading(true);
+        setTranscript('');
+
         const response = await api.post(`/api/youtube/info`, {
           url: `https://www.youtube.com/watch?v=${videoData.videoId}`
         }, {
@@ -114,22 +135,29 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           }
         });
 
-        setTranscript(response.data.transcript || "No transcript available for this video.");
-        setCurrentVideo({
-          title: response.data.title || videoData.title || "YouTube Video",
-          source: videoData.source,
-          videoId: videoData.videoId,
-          sourceType: 'youtube',
-          videoUrl: '',
-          isShared: videoData.isShared || false,
-          shareToken: videoData.shareToken || null,
-          shareId: videoData.shareId || null,
-          loadTimestamp: Date.now()
-        });
+        // Update title if available
+        if (response.data.title) {
+          setCurrentVideo(prev => ({
+            ...prev,
+            title: response.data.title
+          }));
+        }
+
+        // Handle transcript
+        if (response.data.transcript_available && response.data.transcript) {
+          setTranscript(response.data.transcript);
+          setTranscriptError('');
+        } else {
+          setTranscript('');
+          setTranscriptError(response.data.transcript_error || "Transcript not available for this video.");
+        }
+
+        setIsTranscriptLoading(false);
+
       } else {
         // For uploaded videos
         const response = await api.get(`/api/user-videos/info`, {
-          params: { 
+          params: {
             video_id: videoData.videoId,
             ...(videoData.shareToken && { share_token: videoData.shareToken })
           },
@@ -162,22 +190,27 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             loadTimestamp: Date.now()
           });
         }
+
+        // Update URL
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('v', videoData.videoId);
+        newUrl.searchParams.set('type', 'uploaded');
+        window.history.replaceState({}, '', newUrl);
+
+        // Reset chat state
+        setChatMessages([]);
       }
-
-      // Update URL
-      const newUrl = new URL(window.location);
-      newUrl.searchParams.set('v', videoData.videoId);
-      newUrl.searchParams.set('type', videoData.sourceType || 'youtube');
-      window.history.replaceState({}, '', newUrl);
-
-      // Reset chat/quiz state
-      setChatMessages([]);
-      setIsQuizOpen(false);
-      setSystemMessages([]);
 
     } catch (error) {
       console.error("Error loading selected video:", error);
-      setErrorMessage(error.response?.data?.detail || error.message || "Failed to load video");
+
+      // If we already loaded the player, just show transcript error
+      if (currentVideo.videoId && videoData.sourceType === 'youtube') {
+        setTranscriptError(error.response?.data?.detail || error.message || "Failed to load transcript");
+        setIsTranscriptLoading(false);
+      } else {
+        setErrorMessage(error.response?.data?.detail || error.message || "Failed to load video");
+      }
     } finally {
       setIsLoading(false);
       isLoadingRef.current = false;
@@ -186,17 +219,18 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
   const handleYoutubeSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!youtubeUrl.trim() || isLoadingRef.current) return;
-    
+
     isLoadingRef.current = true;
     setIsLoading(true);
     setErrorMessage('');
+    setTranscriptError('');
     setShowVideoUploader(true);
-    
+
     try {
       let videoId = '';
-      
+
       if (youtubeUrl.includes('youtube.com/watch?v=')) {
         const urlParams = new URLSearchParams(new URL(youtubeUrl).search);
         videoId = urlParams.get('v');
@@ -205,16 +239,47 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
       } else {
         throw new Error("Invalid YouTube URL format");
       }
-      
+
       if (!videoId) {
         throw new Error("Could not extract video ID from URL");
       }
-      
+
       if (currentVideo.videoId === videoId && currentVideo.sourceType === 'youtube') {
         console.log("Same YouTube video already loaded");
         return;
       }
-      
+
+      // Step 1: Load the video player immediately (don't wait for transcript)
+      setCurrentVideo({
+        title: "Loading...",
+        source: `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://vidyaai.co&controls=0`,
+        videoId: videoId,
+        sourceType: 'youtube',
+        videoUrl: '',
+        isShared: false,
+        shareToken: null,
+        shareId: null,
+        loadTimestamp: Date.now()
+      });
+
+      setIsLoading(false);
+      isLoadingRef.current = false;
+
+      // Update URL immediately
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('v', videoId);
+      newUrl.searchParams.set('type', 'youtube');
+      window.history.replaceState({}, '', newUrl);
+
+      // Reset chat/quiz state
+      setChatMessages([]);
+      setIsQuizOpen(false);
+      setSystemMessages([]);
+
+      // Step 2: Fetch video info and transcript in the background
+      setIsTranscriptLoading(true);
+      setTranscript('');
+
       const response = await api.post(`/api/youtube/info`, {
         url: youtubeUrl
       }, {
@@ -224,36 +289,37 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
           'ngrok-skip-browser-warning': 'true'
         }
       });
-      
-      setTranscript(response.data.transcript || "No transcript available for this video.");
-      
-      setCurrentVideo({
-        title: response.data.title || "YouTube Video", 
-        source: `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://vidyaai.co&controls=0`,
-        videoId: videoId,
-        sourceType: 'youtube',
-        videoUrl: '',
-        isShared: false, // YouTube videos are not shared
-        shareToken: null,
-        shareId: null,
-        loadTimestamp: Date.now()
-      });
 
-      const newUrl = new URL(window.location);
-      newUrl.searchParams.set('v', videoId);
-      newUrl.searchParams.set('type', 'youtube');
-      window.history.replaceState({}, '', newUrl);
-      
-      setChatMessages([]);
-      setIsQuizOpen(false);
-      setSystemMessages([]);
-      
+      // Update title
+      setCurrentVideo(prev => ({
+        ...prev,
+        title: response.data.title || "YouTube Video"
+      }));
+
+      // Handle transcript
+      if (response.data.transcript_available && response.data.transcript) {
+        setTranscript(response.data.transcript);
+        setTranscriptError('');
+      } else {
+        setTranscript('');
+        setTranscriptError(response.data.transcript_error || "Transcript not available for this video.");
+      }
+
+      setIsTranscriptLoading(false);
+
     } catch (error) {
       console.error("Error loading video:", error);
-      setErrorMessage(error.message || "Failed to load video");
-    } finally {
-      setIsLoading(false);
-      isLoadingRef.current = false;
+
+      // If we already loaded the player, just show transcript error
+      if (currentVideo.videoId) {
+        setTranscriptError(error.response?.data?.detail || error.message || "Failed to load transcript");
+        setIsTranscriptLoading(false);
+      } else {
+        // If player didn't load, show general error
+        setErrorMessage(error.message || "Failed to load video");
+        setIsLoading(false);
+        isLoadingRef.current = false;
+      }
     }
   };
 
@@ -310,8 +376,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
 
         // Reset state
         setChatMessages([]);
-        setIsQuizOpen(false);
-        setSystemMessages([]);
 
         // Update refs to prevent conflicts
         lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
@@ -332,10 +396,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     setShowVideoUploader(false);
   }, []);
 
-  const handlePlayerReady = (playerInstance) => {
-    setPlayer(playerInstance);
-  };
-
   const handleTimeUpdate = (time) => {
     setCurrentTime(time);
   };
@@ -343,6 +403,39 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   const handleSeekToTime = (timeInSeconds) => {
     if (window.playerSeekTo) {
       window.playerSeekTo(timeInSeconds);
+    }
+  };
+
+  const handleRetryTranscript = async () => {
+    if (!currentVideo.videoId || currentVideo.sourceType !== 'youtube') return;
+
+    setIsTranscriptLoading(true);
+    setTranscriptError('');
+    setTranscript('');
+
+    try {
+      const response = await api.post(`/api/youtube/info`, {
+        url: `https://www.youtube.com/watch?v=${currentVideo.videoId}`
+      }, {
+        timeout: 60000,
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (response.data.transcript_available && response.data.transcript) {
+        setTranscript(response.data.transcript);
+        setTranscriptError('');
+      } else {
+        setTranscript('');
+        setTranscriptError(response.data.transcript_error || "Transcript not available for this video.");
+      }
+    } catch (error) {
+      console.error("Error retrying transcript:", error);
+      setTranscriptError(error.response?.data?.detail || error.message || "Failed to load transcript");
+    } finally {
+      setIsTranscriptLoading(false);
     }
   };
 
@@ -510,35 +603,6 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
     return () => window.removeEventListener('rename-session', handler);
   }, [currentVideo.videoId]);
 
-  const handleQuizSystemMessage = (message) => {
-    setSystemMessages(prev => [...prev, message]);
-  };
-
-  const handleStartQuiz = () => {
-    if (!currentVideo.videoId) {
-      handleQuizSystemMessage({
-        id: Date.now(),
-        sender: 'system',
-        text: 'Please load a video first to start the quiz.',
-        isError: true
-      });
-      return;
-    }
-    setIsQuizOpen(true);
-  };
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuRef]);
 
   // Save to localStorage when state changes (but not loadTimestamp)
   useEffect(() => {
@@ -558,134 +622,157 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
   useEffect(() => {
     saveToLocalStorage('chatMessages', chatMessages);
   }, [chatMessages]);
-  
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleNewVideo = () => {
+    clearVideoState();
+    if (onClearVideo) {
+      onClearVideo();
+    }
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className="w-full">
-      {selectedVideo && (
-        <div className="mb-4">
-          <p className="text-sm text-indigo-400">
-            Video loaded from gallery: {selectedVideo.title}
-          </p>
-        </div>
-      )}
-      
-      <form onSubmit={handleYoutubeSubmit} className="mb-8">
-        <div className="relative flex flex-col md:flex-row md:items-center gap-2">
-          <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Youtube size={18} className="text-red-500" />
+      {/* Top Navigation Bar */}
+      <div className="flex items-center gap-3 mb-4">
+        {/* Menu Button */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
+              <button
+                onClick={handleNewVideo}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <MessageSquare size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">Interact with a new video</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (onNavigateToGallery) onNavigateToGallery();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <FolderOpen size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">My Gallery</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (onNavigateToHome) onNavigateToHome();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <Home size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">Home</span>
+              </button>
             </div>
+          )}
+        </div>
+
+        {/* Back Arrow - only show when video is loaded */}
+        {currentVideo.videoId && (
+          <button
+            onClick={() => {
+              if (onNavigateToHome) onNavigateToHome();
+            }}
+            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+            title="Back to Home"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+      </div>
+
+      <form onSubmit={handleYoutubeSubmit} className="mb-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-grow">
             <input
               type="text"
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
-              placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-              className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-gray-400 shadow-lg"
+              placeholder="Paste YouTube URL or upload video"
+              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg focus:outline-none focus:border-emerald-500 text-white placeholder-zinc-500 transition-colors"
               disabled={isLoading}
             />
           </div>
-          <button 
+          <button
             type="submit"
-            className="px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || !youtubeUrl.trim()}
           >
-            {isLoading ? (
-              <>
-                <SimpleSpinner size={20} className="mr-2" />
-                <span>Loading...</span>
-              </>
-            ) : (
-              'Load Video'
-            )}
+            {isLoading ? 'Loading...' : 'Load'}
           </button>
-          {showVideoUploader ? (
-            <div className="relative">
-              <VideoUploader 
-                onUploadComplete={handleUploadComplete} 
-                onUploadSuccess={handleUploadSuccess}
-              />
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowVideoUploader(true)}
-              className="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center"
-              title="Upload another video"
-              disabled={isLoading}
-            >
-              <Upload size={20} className="mr-2" />
-              <span>Upload Another Video</span>
-            </button>
+          {showVideoUploader && (
+            <VideoUploader
+              onUploadComplete={handleUploadComplete}
+              onUploadSuccess={handleUploadSuccess}
+            />
           )}
         </div>
         {errorMessage && (
-          <div className="mt-3 text-red-400 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg">
-            ⚠️ {errorMessage}
+          <div className="mt-3 text-red-400 text-sm bg-zinc-900 border border-red-900 p-3 rounded-lg">
+            {errorMessage}
           </div>
         )}
       </form>
-      
-      <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
-        {currentVideo.title || "Enter a YouTube URL to get started"}
-      </h2>
-      
-      {currentVideo.videoId && currentVideo.sourceType === 'youtube' && (
-        <YoutubeDownloader
-          videoId={currentVideo.videoId}
-          videoTitle={currentVideo.title}
-        />
-      )}
-      
-      <div className="flex flex-col xl:flex-row gap-8 mt-6 w-full">
-        <div className="w-full xl:w-3/5">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10 rounded-2xl">
-              <div className="flex flex-col items-center">
-                <SimpleSpinner size={48} className="mb-4" />
-                <p className="text-white text-lg">Loading video...</p>
-              </div>
+
+      <div className="flex flex-col xl:flex-row gap-4 w-full">
+        <div className="w-full xl:w-3/5 space-y-4">
+          {currentVideo.title && (
+            <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-xl px-6 py-4 shadow-lg shadow-black/20">
+              <h1 className="text-white text-xl font-semibold leading-relaxed tracking-tight">{currentVideo.title}</h1>
             </div>
           )}
-          
+
           <PlayerComponent
             currentVideo={currentVideo}
-            onPlayerReady={handlePlayerReady}
             onTimeUpdate={handleTimeUpdate}
             seekToTime={handleSeekToTime}
           />
-          
-          {/* Transcript and Quiz Container */}
-          <div className="mt-6 space-y-4">
-            {/* Quiz Start Button */}
-            {currentVideo.videoId && !isQuizOpen && (
-              <div className="flex justify-center">
-                <button
-                  onClick={handleStartQuiz}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg font-semibold"
-                >
-                  Start Quiz
-                </button>
-              </div>
-            )}
-            
-            {/* Quiz Panel */}
-            <QuizPanel
-              isOpen={isQuizOpen}
-              videoId={currentVideo.videoId}
-              onClose={() => setIsQuizOpen(false)}
-              onSystemMessage={handleQuizSystemMessage}
-            />
-            
-            {/* Transcript Component */}
-            <TranscriptComponent
-              currentVideo={currentVideo}
-              transcript={transcript}
-              onSeekToTime={handleSeekToTime}
-            />
-          </div>
+
+          <TranscriptComponent
+            currentVideo={currentVideo}
+            transcript={transcript}
+            transcriptError={transcriptError}
+            isTranscriptLoading={isTranscriptLoading}
+            onRetryTranscript={handleRetryTranscript}
+            onSeekToTime={handleSeekToTime}
+          />
         </div>
-        
-        <div className="w-full xl:w-2/5 relative space-y-4">
-          <ChatBoxComponent
+
+        <div className="w-full xl:w-2/5">
+          <InteractivePanel
             currentVideo={currentVideo}
             currentTime={currentTime}
             chatMessages={chatMessages}
@@ -697,12 +784,8 @@ const ImprovedYoutubePlayer = ({ onNavigateToTranslate, onNavigateToHome, select
             activeSessionId={activeSessionId}
             onSelectHistory={handleSelectSession}
             showHistory={showHistory}
-          />
-
-          {/* Summarize Video Button - DEBUG: Showing unconditionally */}
-          <SummarizeVideoButton
-            currentVideo={currentVideo}
             transcript={transcript}
+            onQuizSystemMessage={(msg) => console.log('Quiz message:', msg)}
           />
         </div>
       </div>

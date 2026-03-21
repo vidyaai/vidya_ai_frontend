@@ -191,23 +191,11 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
   };
 
   return (
-    <div ref={quizContainerRef} className="mt-4 bg-gray-900 rounded-xl border border-gray-800 p-4 shadow-lg">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold text-lg flex items-center">
-          <span className="text-2xl mr-2">🧠</span>
-          Quiz
-        </h3>
-        <button
-          onClick={onClose}
-          className="px-3 py-1 text-sm bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
-        >
-          Close
-        </button>
-      </div>
+    <div ref={quizContainerRef} className="w-full"  style={{ maxHeight: '650px', overflowY: 'auto' }}>
 
       {isFetchingQuiz ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mr-3"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mr-3"></div>
           <span className="text-gray-300">Loading quiz questions...</span>
         </div>
       ) : quizData.length === 0 ? (
@@ -220,9 +208,9 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
       ) : !quizComplete ? (
         <div className="space-y-4">
           {/* Progress bar */}
-          <div className="w-full bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-zinc-700 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentQuestionIndex + 1) / quizData.length) * 100}%` }}
             ></div>
           </div>
@@ -232,7 +220,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
               Question {currentQuestionIndex + 1} of {quizData.length}
             </h4>
             {currentQuestion?.difficulty && (
-              <span className="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-300 capitalize">
+              <span className="text-xs px-2 py-1 rounded-full bg-zinc-700 text-gray-300 capitalize">
                 {currentQuestion.difficulty}
               </span>
             )}
@@ -250,14 +238,14 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
                   key={i} 
                   className={`flex items-start p-4 rounded-lg cursor-pointer border transition-all duration-200 ${
                     checked 
-                      ? 'border-indigo-500 bg-indigo-900 bg-opacity-40 shadow-lg' 
-                      : 'border-gray-700 hover:bg-gray-800 hover:border-gray-600'
+                      ? 'border-emerald-500 bg-emerald-900 bg-opacity-40 shadow-lg' 
+                      : 'border-gray-700 hover:bg-zinc-800 hover:border-gray-600'
                   }`}
                 >
                   <input
                     type="radio"
                     name={`q-${currentQuestion.id}`}
-                    className="mt-1 mr-3 text-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 mr-3 text-emerald-500 focus:ring-emerald-500"
                     checked={checked}
                     onChange={() => handleSelectAnswer(opt)}
                   />
@@ -270,14 +258,14 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
           <div className="flex justify-between items-center mt-6">
             <button
               onClick={handleRestartQuiz}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+              className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors text-sm"
             >
               Restart Quiz
             </button>
             <button
               onClick={handleNextQuestion}
               disabled={!userAnswers[currentQuestion?.id]}
-              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 font-semibold"
+              className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 font-semibold"
             >
               {currentQuestionIndex === quizData.length - 1 ? 'Submit Quiz' : 'Next Question'}
             </button>
@@ -290,7 +278,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
               {quizScore === quizData.length ? '🎉' : quizScore >= quizData.length * 0.7 ? '👏' : '📚'}
             </div>
             <h4 className="text-white font-bold text-xl mb-2">Quiz Complete!</h4>
-            <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400 mb-4">
+            <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-400 mb-4">
               Score: {quizScore} / {quizData.length}
             </div>
             <div className="text-gray-300">
@@ -305,13 +293,13 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => setShowCorrectAnswers(!showCorrectAnswers)}
-              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
             >
               {showCorrectAnswers ? 'Hide Answers' : 'Show Correct Answers'}
             </button>
             <button
               onClick={handleRestartQuiz}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-lg transition-all duration-200"
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200"
             >
               Retake Quiz
             </button>

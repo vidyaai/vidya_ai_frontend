@@ -8,6 +8,27 @@ export const metadata: Metadata = {
 
 const blogPosts = [
   {
+    slug: '24-7-student-support',
+    title: 'The 24/7 Student Support Crisis: Why 32.9% of Students Drop Out',
+    description: 'Only 28% of learning happens during business hours. Discover why lack of 24/7 support drives dropout rates and how AI-powered assistance achieves 54% better outcomes.',
+    date: 'March 2026',
+    readTime: '7 min read',
+  },
+  {
+    slug: 'course-management-revolution',
+    title: 'Course Management Crisis: Professors Lose 15+ Hours Weekly to Admin Tasks',
+    description: 'Discover why professors spend 15+ hours weekly on course administration and how AI-powered course management saves time while improving student outcomes.',
+    date: 'March 2026',
+    readTime: '6 min read',
+  },
+  {
+    slug: 'assignment-creation-crisis',
+    title: 'The Assignment Creation Crisis: How Educators Are Losing 15+ Hours Weekly',
+    description: 'Explore how manual assignment creation consumes 15+ hours weekly, driving 53% of educators to burnout. Discover how AI saves 35% time while improving quality.',
+    date: 'March 2026',
+    readTime: '6 min read',
+  },
+  {
     slug: 'ai-question-paper-generation',
     title: 'How AI Saves 9+ Hours Per Week on Question Paper Generation',
     description: 'Discover how AI-powered question paper generation is saving educators up to 73% of assessment creation time while maintaining quality and academic rigor.',

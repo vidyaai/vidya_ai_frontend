@@ -574,9 +574,19 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        assignment.engineering_level === 'graduate' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
+                        assignment.engineering_level === 'graduate' ? 'bg-purple-500/20 text-purple-300' :
+                        assignment.engineering_level === 'pre_med' ? 'bg-yellow-500/20 text-yellow-300' :
+                        assignment.engineering_level === 'mbbs_preclinical' ? 'bg-green-500/20 text-green-300' :
+                        assignment.engineering_level === 'mbbs_clinical' ? 'bg-teal-500/20 text-teal-300' :
+                        assignment.engineering_level === 'md' ? 'bg-purple-500/20 text-purple-300' :
+                        'bg-blue-500/20 text-blue-300'
                       }`}>
-                        {assignment.engineering_level === 'graduate' ? 'Graduate' : 'Undergraduate'}
+                        {assignment.engineering_level === 'graduate' ? 'Graduate' :
+                         assignment.engineering_level === 'pre_med' ? 'Pre-Med' :
+                         assignment.engineering_level === 'mbbs_preclinical' ? 'MBBS Pre-Clinical' :
+                         assignment.engineering_level === 'mbbs_clinical' ? 'MBBS Clinical' :
+                         assignment.engineering_level === 'md' ? 'MD / PG' :
+                         'Undergraduate'}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">

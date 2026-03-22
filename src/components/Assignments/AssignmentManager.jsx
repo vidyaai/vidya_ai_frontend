@@ -68,7 +68,7 @@ const AssignmentManager = ({ onNavigateToHome }) => {
       
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-10">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-white">AI Assignment Manager</h1>
             <p className="text-gray-400 mt-3 text-lg">Choose how you'd like to use assignments</p>
@@ -77,7 +77,7 @@ const AssignmentManager = ({ onNavigateToHome }) => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-16">
         {/* Role Selection Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* Instructor Card */}

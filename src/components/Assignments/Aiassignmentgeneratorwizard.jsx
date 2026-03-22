@@ -136,6 +136,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   // Step 2: Assignment Settings
   const [numQuestions, setNumQuestions] = useState(10);
   const [totalPoints, setTotalPoints] = useState(50);
+  const [subjectCategory, setSubjectCategory] = useState('engineering');
   const [engineeringLevel, setEngineeringLevel] = useState('');
   const [engineeringDiscipline, setEngineeringDiscipline] = useState('');
 
@@ -256,6 +257,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         perQuestionDifficulty: false,
         setCustomPoints: false,
         pointsVariation: 'constant',
+        subjectCategory,
         engineeringLevel,
         questionTypes,
         engineeringDiscipline,
@@ -696,7 +698,36 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             <p className="text-gray-500 text-xs mt-1">Between 1 and 1000 points</p>
           </div>
 
-          {/* Engineering Level */}
+          {/* Subject Category */}
+          <div>
+            <label className="block text-white font-medium mb-3">Subject Category</label>
+            <div className="flex gap-2">
+              {[
+                { value: 'engineering', label: '⚙️ Engineering' },
+                { value: 'pcm', label: '🔬 PCM' },
+                { value: 'medical', label: '🩺 Medical' },
+              ].map((cat) => (
+                <button
+                  key={cat.value}
+                  type="button"
+                  onClick={() => {
+                    setSubjectCategory(cat.value);
+                    setEngineeringLevel('');
+                    setEngineeringDiscipline('');
+                  }}
+                  className={`flex-1 px-3 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200 ${
+                    subjectCategory === cat.value
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Academic Level */}
           <div>
             <label className="block text-white font-medium mb-3">Academic Level</label>
             <select
@@ -705,12 +736,23 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">None</option>
-              <option value="undergraduate">Undergraduate Level</option>
-              <option value="graduate">Graduate Level</option>
+              {subjectCategory === 'medical' ? (
+                <>
+                  <option value="pre_med">Pre-Med</option>
+                  <option value="mbbs_preclinical">MBBS Pre-Clinical (Year 1–2)</option>
+                  <option value="mbbs_clinical">MBBS Clinical (Year 3–5)</option>
+                  <option value="md">MD / Postgraduate</option>
+                </>
+              ) : (
+                <>
+                  <option value="undergraduate">Undergraduate Level</option>
+                  <option value="graduate">Graduate Level</option>
+                </>
+              )}
             </select>
           </div>
 
-          {/* Engineering Discipline */}
+          {/* Subject Area (discipline) */}
           <div>
             <label className="block text-white font-medium mb-3">Subject Area</label>
             <select
@@ -719,14 +761,35 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">None</option>
-              <option value="electrical">Electrical Engineering</option>
-              <option value="mechanical">Mechanical Engineering</option>
-              <option value="civil">Civil Engineering</option>
-              <option value="computer_eng">Computer Engineering</option>
-              <option value="cs">Computer Science</option>
-              <option value="math">Mathematics</option>
-              <option value="physics">Physics</option>
-              <option value="chemistry">Chemistry</option>
+              {subjectCategory === 'engineering' && (
+                <>
+                  <option value="electrical">Electrical Engineering</option>
+                  <option value="mechanical">Mechanical Engineering</option>
+                  <option value="civil">Civil Engineering</option>
+                  <option value="computer_eng">Computer Engineering</option>
+                  <option value="cs">Computer Science</option>
+                </>
+              )}
+              {subjectCategory === 'pcm' && (
+                <>
+                  <option value="math">Mathematics</option>
+                  <option value="physics">Physics</option>
+                  <option value="chemistry">Chemistry</option>
+                </>
+              )}
+              {subjectCategory === 'medical' && (
+                <>
+                  <option value="anatomy">Anatomy</option>
+                  <option value="physiology">Physiology</option>
+                  <option value="biochemistry">Biochemistry</option>
+                  <option value="pharmacology">Pharmacology</option>
+                  <option value="pathology">Pathology</option>
+                  <option value="microbiology">Microbiology</option>
+                  <option value="surgery">Surgery (Clinical)</option>
+                  <option value="medicine">Medicine (Clinical)</option>
+                  <option value="obgyn">OB/GYN (Clinical)</option>
+                </>
+              )}
             </select>
           </div>
         </div>

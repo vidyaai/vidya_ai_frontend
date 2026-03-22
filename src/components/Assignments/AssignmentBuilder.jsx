@@ -48,7 +48,9 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     { type: 'true-false', label: 'True/False', icon: 'T/F', category: 'Basic' },
     { type: 'code-writing', label: 'Code Writing', icon: '</>', category: 'Engineering', color: 'purple' },
     { type: 'diagram-analysis', label: 'Diagram Analysis', icon: '⚡', category: 'Engineering', color: 'orange' },
-    { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' }
+    { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' },
+    { type: 'clinical-case-study', label: 'Clinical Case Study', icon: '🏥', category: 'Medical', color: 'green' },
+    { type: 'osce', label: 'OSCE / Clinical Skills', icon: '🩺', category: 'Medical', color: 'teal' }
   ];
 
   // Helper function to normalize question diagrams (for multi-part questions)
@@ -547,6 +549,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         due_date: assignmentDueDate ? new Date(assignmentDueDate).toISOString() : null,
         questions: processedQuestions,
         status: status,
+        subject_category: preloadedData?.subject_category || 'engineering',
         engineering_level: preloadedData?.engineering_level || 'undergraduate',
         engineering_discipline: preloadedData?.engineering_discipline || 'general',
         question_types: [...new Set(questions.map(q => q.type))],
@@ -813,6 +816,58 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                                 {type.type === 'code-writing' && 'Programming problems with syntax highlighting'}
                                 {type.type === 'diagram-analysis' && 'Circuit diagrams and technical drawings'}
                                 {type.type === 'multi-part' && 'Complex problems with multiple sub-questions and code/diagrams'}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+
+                        {/* Medical Question Types */}
+                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
+                          Medical Question Types
+                        </div>
+                        {questionTypes.filter(type => type.category === 'Medical').map((type) => (
+                          <button
+                            key={type.type}
+                            onClick={() => addQuestion(type.type)}
+                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
+                          >
+                            <span className={`text-lg mr-3 ${
+                              type.color === 'green' ? 'group-hover:text-green-400' :
+                              type.color === 'teal' ? 'group-hover:text-teal-400' : ''
+                            }`}>
+                              {type.icon}
+                            </span>
+                            <div>
+                              <div>{type.label}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {type.type === 'clinical-case-study' && 'Patient scenario with diagnosis, investigations, and management'}
+                                {type.type === 'osce' && 'Clinical skill station with structured marking scheme'}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+
+                        {/* Medical Question Types */}
+                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
+                          Medical Question Types
+                        </div>
+                        {questionTypes.filter(type => type.category === 'Medical').map((type) => (
+                          <button
+                            key={type.type}
+                            onClick={() => addQuestion(type.type)}
+                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
+                          >
+                            <span className={`text-lg mr-3 ${
+                              type.color === 'green' ? 'group-hover:text-green-400' :
+                              type.color === 'teal' ? 'group-hover:text-teal-400' : ''
+                            }`}>
+                              {type.icon}
+                            </span>
+                            <div>
+                              <div>{type.label}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {type.type === 'clinical-case-study' && 'Patient scenarios testing diagnosis, investigations & management'}
+                                {type.type === 'osce' && 'Structured clinical skill stations with marking schemes'}
                               </div>
                             </div>
                           </button>

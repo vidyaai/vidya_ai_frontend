@@ -122,14 +122,14 @@ const CourseDetailView = ({
 
       {/* HEADER */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button onClick={onBack} className="p-2 text-gray-400 hover:text-white transition-colors">
                 <ArrowLeft size={24} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-teal-400">
+                <h1 className="text-3xl font-bold text-teal-400">
                   {course.course_code ? `${course.course_code} ` : ''}
                   <span className="text-white">{course.title}</span>
                 </h1>

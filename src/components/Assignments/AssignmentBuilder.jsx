@@ -596,7 +596,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -676,7 +676,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-8">
         <div className={`grid gap-8 ${showPreview ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
           {/* Assignment Builder */}
           <div className={`${showPreview ? 'lg:col-span-2' : 'col-span-1'}`}>

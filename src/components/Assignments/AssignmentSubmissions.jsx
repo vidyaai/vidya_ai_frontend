@@ -1720,7 +1720,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center space-x-4 min-w-0 flex-1">
               <button
@@ -1772,7 +1772,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-8">
         {/* Filters and Search */}
         <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800 mb-6">
           <div className="flex flex-col gap-4">

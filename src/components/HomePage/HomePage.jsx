@@ -48,7 +48,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       <TopBar />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-12">
         {/* Welcome Section */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
@@ -138,11 +138,11 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
               Chat with a Video
             </button>
             <button
-              onClick={onNavigateToTranslate}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-red-700 transition-all duration-300 hover:scale-105 shadow-lg"
+              onClick={onNavigateToAssignments}
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              <Globe size={20} className="mr-2" />
-              Translate Content
+              <ClipboardList size={20} className="mr-2" />
+              Generate Assignment
             </button>
             <button
               onClick={onNavigateToPricing}

@@ -21,8 +21,8 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'production') {
   API_URL = 'https://api.vidyaai.co';
 } else if (NODE_ENV === 'local') {
-  // API_URL = 'http://localhost:8000';
-  API_URL = 'http://54.153.26.252:8000';
+  API_URL = 'http://54.153.26.252:8001';  // EC2 backend on port 8001
+  // API_URL = 'http://localhost:8001';
 }
 
 console.log("Final API_URL", API_URL);
@@ -112,15 +112,42 @@ export const formatTime = (seconds) => {
 export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // Debug logging (can be removed after verification)
+  const debugMode = true; // Set to true to enable debug logs
+  if (debugMode) {
+    console.group('🔍 Markdown Preprocessing Debug');
+    console.log('Original text (first 300 chars):', text.substring(0, 300));
+    console.log('Original text (as JSON):', JSON.stringify(text.substring(0, 200)));
+  }
+
+  // STEP 1: Normalize all line endings to Unix-style \n
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // STEP 2: Remove invisible Unicode characters that might break regex matching
+  text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
   // Remove standalone heading markers without text (e.g., lines with just "#" or "##")
   text = text.replace(/^\s*#{1,6}\s*$/gm, '');
 
   // Remove newlines after heading markers (e.g., "## \nText" -> "## Text")
   text = text.replace(/(#{1,6})\s*\n+\s*/g, '$1 ');
 
-  // Remove newlines immediately after numbered list markers (e.g., "1. \n" -> "1. ")
-  // This joins "1. \nText" into "1. Text"
-  text = text.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+  // ENHANCED: Remove newlines immediately after numbered list markers
+  // This joins "1.\n\nText" into "1. Text"
+  // Uses lookahead to ensure there's actual content after the newlines
+  const beforeListFix = text.substring(0, 300);
+  text = text.replace(/(\d+\.)\s*\n+\s*(?=\S)/g, '$1 ');
+  const afterListFix = text.substring(0, 300);
+
+  if (debugMode) {
+    if (beforeListFix !== afterListFix) {
+      console.log('✅ List fix applied!');
+      console.log('Before:', JSON.stringify(beforeListFix.substring(0, 100)));
+      console.log('After:', JSON.stringify(afterListFix.substring(0, 100)));
+    } else {
+      console.log('⚠️ List fix did NOT match (no changes made)');
+    }
+  }
 
   // Normalize: ensure headings and numbered list items start on new lines
   // Must happen AFTER joining markers with their content
@@ -137,6 +164,11 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     // Previous character is not a digit, add newline
     return before + '\n' + digits + '. ';
   });
+
+  if (debugMode) {
+    console.log('After preprocessing:', text.substring(0, 300));
+    console.groupEnd();
+  }
   // Add newline before bold text that looks like a sub-heading (bold text followed by colon)
   // But only if it's preceded by a period and space (end of sentence)
   text = text.replace(/(\.\s+)(\*\*[^*]+\*\*:)/g, '$1\n$2');
@@ -144,10 +176,6 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
   // First convert LaTeX to HTML
   let processed = convertLatexToMathHTML(text);
-
-  console.log('📝 Original text sample:', text.substring(0, 300));
-  console.log('📝 Processed text sample:', processed.substring(0, 300));
-  console.log('📝 Number of newlines in processed:', (processed.match(/\n/g) || []).length);
 
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
@@ -187,6 +215,15 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
   const lines = preprocessed.split('\n');
   const elements = [];
+
+  if (debugMode) {
+    console.log('📋 Lines after split (total:', lines.length, ')');
+    const numberedLines = lines.filter(l => /^\d+\./.test(l));
+    console.log('🔢 Lines starting with numbers:', numberedLines.length);
+    numberedLines.forEach((l, i) => {
+      console.log(`  Line ${i}:`, JSON.stringify(l.substring(0, 80)));
+    });
+  }
 
   lines.forEach((line, index) => {
     if (!line.trim()) {
@@ -241,13 +278,30 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
     // Check if this line is a numbered list item (e.g., "1. Item text")
     const listMatch = line.match(/^(\d+)\.\s+(.+)$/s);
+    if (debugMode && /^\d+\./.test(line)) {
+      console.log(`🔍 Line ${index} starts with number:`, JSON.stringify(line.substring(0, 80)));
+      console.log(`   Regex match:`, listMatch ? '✅ YES' : '❌ NO');
+      if (listMatch) {
+        console.log(`   Number: "${listMatch[1]}", Text: "${listMatch[2].substring(0, 50)}..."`);
+      }
+    }
     if (listMatch) {
       const [, number, itemText] = listMatch;
       // Process inline formatting in list item text (bold, math, links)
-      let processedItem = itemText
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
-        .replace(/__(.*?)__/g, '<strong class="font-bold text-white">$1</strong>')
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+      // If itemText contains HTML (KaTeX or math-expression), preserve it
+      let processedItem = itemText;
+      if (!itemText.includes('<span class="katex">') && !itemText.includes('<span class="math-expression">')) {
+        // Only apply markdown processing if there's no existing HTML
+        processedItem = itemText
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+          .replace(/__(.*?)__/g, '<strong class="font-bold text-white">$1</strong>')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+      } else {
+        // Contains HTML - only process markdown that won't interfere with HTML
+        processedItem = itemText
+          .replace(/\*\*(?![^<]*>)(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+          .replace(/__(?![^<]*>)(.*?)__/g, '<strong class="font-bold text-white">$1</strong>');
+      }
       elements.push(
         <div key={`list-${index}`} className="mb-1 leading-relaxed flex">
           <span className="font-semibold text-white mr-2 flex-shrink-0">{number}.</span>
@@ -386,15 +440,22 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 export const parseMarkdown = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // STEP 1: Normalize all line endings to Unix-style \n
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // STEP 2: Remove invisible Unicode characters that might break regex matching
+  text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
   // Remove standalone heading markers without text (e.g., lines with just "#" or "##")
   text = text.replace(/^\s*#{1,6}\s*$/gm, '');
 
   // Remove newlines after heading markers (e.g., "## \nText" -> "## Text")
   text = text.replace(/(#{1,6})\s*\n+\s*/g, '$1 ');
 
-  // Remove newlines immediately after numbered list markers (e.g., "1. \n" -> "1. ")
-  // This joins "1. \nText" into "1. Text"
-  text = text.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+  // ENHANCED: Remove newlines immediately after numbered list markers
+  // This joins "1.\n\nText" into "1. Text"
+  // Uses lookahead to ensure there's actual content after the newlines
+  text = text.replace(/(\d+\.)\s*\n+\s*(?=\S)/g, '$1 ');
 
   // Normalize: ensure headings and numbered list items start on new lines
   // Must happen AFTER joining markers with their content
@@ -629,8 +690,6 @@ const cleanMathMarkup = (text) => {
 
   let cleaned = text;
 
-  console.log('🧹 Cleaning math markup, original length:', text.length);
-
   // Remove markdown links with "MathML" text: [MathML](url) -> empty
   cleaned = cleaned.replace(/\[MathML\]\([^)]*\)/g, '');
 
@@ -668,8 +727,6 @@ const cleanMathMarkup = (text) => {
   // Trim leading/trailing whitespace
   cleaned = cleaned.trim();
 
-  console.log('✅ Cleaned math markup, new length:', cleaned.length);
-
   return cleaned;
 };
 
@@ -677,14 +734,11 @@ const cleanMathMarkup = (text) => {
 export const convertLatexToMathHTML = (text) => {
   if (!text || typeof text !== 'string') return text;
 
-  console.log('🔄 Converting LaTeX to HTML with KaTeX:', text.substring(0, 100) + '...');
-
   // Clean up any broken MathML/HTML markup first
   let converted = cleanMathMarkup(text);
 
   // Convert inline math \( ... \) to HTML using KaTeX
   converted = converted.replace(/\\\(([\s\S]+?)\\\)/g, (match, content) => {
-    console.log('📐 Found inline math:', content.substring(0, 50));
     try {
       const html = katex.renderToString(content.trim(), {
         displayMode: false,
@@ -703,7 +757,6 @@ export const convertLatexToMathHTML = (text) => {
 
   // Convert display math \[ ... \] to HTML block using KaTeX
   converted = converted.replace(/\\\[([\s\S]+?)\\\]/g, (match, content) => {
-    console.log('📊 Found display math:', content.substring(0, 50));
     try {
       const html = katex.renderToString(content.trim(), {
         displayMode: true,
@@ -727,11 +780,9 @@ export const convertLatexToMathHTML = (text) => {
     if (/^0?\d{1,2}:\d{2}$/.test(content.trim())) {
       return match;
     }
-    console.log('💲 Found dollar math:', match.substring(0, 50), '→ content:', content.substring(0, 50));
     return `<span class="math-expression">${convertLatexToHTML(content)}</span>`;
   });
-  
-  console.log('✅ Conversion result:', converted.substring(0, 100) + '...');
+
   return converted;
 };
 

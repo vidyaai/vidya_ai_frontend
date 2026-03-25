@@ -29,7 +29,7 @@ const TranscriptComponent = ({
       const trimmedLine = line.trim();
       console.log(`🔍 Line ${index}: "${trimmedLine}"`);
       
-      if (trimmedLine.match(/^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/)) {
+      if (trimmedLine.match(/^\d+:\d{2}\s*-\s*\d+:\d{2}$/)) {
         console.log("🎯 TIMESTAMP DETECTED:", trimmedLine);
         
         const parts = trimmedLine.split('-');

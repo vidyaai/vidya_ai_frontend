@@ -793,7 +793,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                         
                         {/* Engineering Question Types */}
                         <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
-                          Engineering Question Types
+                          Science/Engineering Question Types
                         </div>
                         {questionTypes.filter(type => type.category === 'Engineering').map((type) => (
                           <button
@@ -842,32 +842,6 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                               <div className="text-xs text-gray-400 mt-1">
                                 {type.type === 'clinical-case-study' && 'Patient scenario with diagnosis, investigations, and management'}
                                 {type.type === 'osce' && 'Clinical skill station with structured marking scheme'}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-
-                        {/* Medical Question Types */}
-                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
-                          Medical Question Types
-                        </div>
-                        {questionTypes.filter(type => type.category === 'Medical').map((type) => (
-                          <button
-                            key={type.type}
-                            onClick={() => addQuestion(type.type)}
-                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
-                          >
-                            <span className={`text-lg mr-3 ${
-                              type.color === 'green' ? 'group-hover:text-green-400' :
-                              type.color === 'teal' ? 'group-hover:text-teal-400' : ''
-                            }`}>
-                              {type.icon}
-                            </span>
-                            <div>
-                              <div>{type.label}</div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                {type.type === 'clinical-case-study' && 'Patient scenarios testing diagnosis, investigations & management'}
-                                {type.type === 'osce' && 'Structured clinical skill stations with marking schemes'}
                               </div>
                             </div>
                           </button>

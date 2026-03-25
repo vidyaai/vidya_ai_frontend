@@ -939,6 +939,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'clinical-case':
+      case 'osce':
       case 'long_answer':
       case 'long-answer':
         return (
@@ -2445,6 +2447,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'short-answer':
       case 'long_answer':
       case 'long-answer':
+      case 'clinical-case':
+      case 'osce':
       case 'diagram_analysis':
       case 'diagram-analysis':
         return (

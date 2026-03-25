@@ -148,8 +148,17 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     'numerical': false,
     'code-writing': false,
     'diagram-analysis': false,
-    'multi-part': false
+    'multi-part': false,
+    'clinical-case': false,
+    'osce': false,
   });
+
+  // Reset medical-specific types when subject category changes away from medical
+  useEffect(() => {
+    if (subjectCategory !== 'medical') {
+      setQuestionTypes(prev => ({ ...prev, 'clinical-case': false, 'osce': false }));
+    }
+  }, [subjectCategory]);
 
   // Diagram generation model
   const [diagramModel, setDiagramModel] = useState('nonai');
@@ -827,15 +836,27 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
 
       <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.entries({
-            'multiple-choice': { name: 'Multiple Choice', description: 'Questions with predefined answer options', recommended: true },
-            'short-answer': { name: 'Short Answer', description: 'Brief written responses (1-2 sentences)', recommended: true },
-            'true-false': { name: 'True/False', description: 'Binary choice questions', recommended: false },
-            'numerical': { name: 'Numerical Problems', description: 'Mathematical calculations and solutions', recommended: false },
-            'code-writing': { name: 'Code Writing', description: 'Programming problems and solutions', recommended: false },
-            'diagram-analysis': { name: 'Diagram Analysis', description: 'Visual analysis and interpretation', recommended: false },
-            'multi-part': { name: 'Multi-Part Questions', description: 'Complex questions with multiple sub-parts', recommended: false }
-          }).map(([type, info]) => (
+          {Object.entries(
+            subjectCategory === 'medical'
+              ? {
+                  'multiple-choice': { name: 'Multiple Choice', description: 'Questions with predefined answer options', recommended: true },
+                  'short-answer': { name: 'Short Answer', description: 'Brief written responses (1–2 sentences)', recommended: true },
+                  'true-false': { name: 'True/False', description: 'Binary choice questions', recommended: false },
+                  'clinical-case': { name: 'Clinical Case Study', description: 'Patient scenario with diagnosis, investigations & management', recommended: true, badge: 'Medical' },
+                  'osce': { name: 'OSCE / Clinical Skills', description: 'Structured clinical examination station with marking scheme', recommended: false, badge: 'Medical' },
+                  'diagram-analysis': { name: 'Diagram Analysis', description: 'Visual analysis and interpretation', recommended: false },
+                  'multi-part': { name: 'Multi-Part Questions', description: 'Complex questions with multiple sub-parts', recommended: false },
+                }
+              : {
+                  'multiple-choice': { name: 'Multiple Choice', description: 'Questions with predefined answer options', recommended: true },
+                  'short-answer': { name: 'Short Answer', description: 'Brief written responses (1-2 sentences)', recommended: true },
+                  'true-false': { name: 'True/False', description: 'Binary choice questions', recommended: false },
+                  'numerical': { name: 'Numerical Problems', description: 'Mathematical calculations and solutions', recommended: false },
+                  'code-writing': { name: 'Code Writing', description: 'Programming problems and solutions', recommended: false },
+                  'diagram-analysis': { name: 'Diagram Analysis', description: 'Visual analysis and interpretation', recommended: false },
+                  'multi-part': { name: 'Multi-Part Questions', description: 'Complex questions with multiple sub-parts', recommended: false },
+                }
+          ).map(([type, info]) => (
             <div
               key={type}
               className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
@@ -859,6 +880,11 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     {info.recommended && (
                       <span className="ml-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
                         Recommended
+                      </span>
+                    )}
+                    {info.badge && (
+                      <span className="ml-2 px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
+                        {info.badge}
                       </span>
                     )}
                   </h4>

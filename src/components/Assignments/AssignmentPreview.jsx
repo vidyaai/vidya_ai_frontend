@@ -252,6 +252,42 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
           </div>
         );
 
+      case 'clinical-case':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-teal-500/40">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-base">🏥</span>
+                <h4 className="text-white font-medium">Question {index + 1}</h4>
+                <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs rounded-full">Clinical Case</span>
+              </div>
+              <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            {renderQuestionText(question)}
+            
+            {/* Show diagram if available */}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
+          </div>
+        );
+
+      case 'osce':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/40">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-base">📋</span>
+                <h4 className="text-white font-medium">Question {index + 1}</h4>
+                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">OSCE Station</span>
+              </div>
+              <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            {renderQuestionText(question)}
+            
+            {/* Show diagram if available */}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
+          </div>
+        );
+
       case 'code-writing':
         return (
           <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-purple-500/30">

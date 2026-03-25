@@ -1007,6 +1007,10 @@ const QuestionCard = ({
         return <span className="text-lg">123</span>;
       case 'long-answer':
         return <span className="text-lg">¶</span>;
+      case 'clinical-case':
+        return <span className="text-lg">🏥</span>;
+      case 'osce':
+        return <span className="text-lg">📋</span>;
       case 'true-false':
         return <span className="text-lg">T/F</span>;
       case 'code-writing':
@@ -1625,14 +1629,15 @@ const QuestionCard = ({
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Correct Answer
+                Solution & Derivation
               </label>
               <EditableTextWithEquations 
                 text={question.correctAnswer}
                 equations={question.equations || []}
                 onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
-                placeholder="Enter correct answer..."
-                multiline={false}
+                placeholder={`Step 1: [state given values and formula]\nStep 2: [substitute values and simplify]\n...\nFinal answer: [value with units]`}
+                multiline={true}
+                rows={5}
                 className="text-white"
               />
             </div>
@@ -1642,6 +1647,10 @@ const QuestionCard = ({
       case 'short-answer':
 
       case 'long-answer':
+
+      case 'clinical-case':
+
+      case 'osce':
         return (
           <div className="space-y-3">
             <div>

@@ -1,5 +1,5 @@
 // TranscriptComponent.jsx - Transcript display with timestamps
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Copy } from 'lucide-react';
 import { SimpleSpinner, api, API_URL } from '../generic/utils.jsx';
 
@@ -17,38 +17,33 @@ const TranscriptComponent = ({
   const [showTimestampedVersion, setShowTimestampedVersion] = useState(false);
   const [formattingProgress, setFormattingProgress] = useState({ progress: 0, current: 0, total: 0 });
 
-  const parseTimestampedTranscript = (text) => {
-    if (!text) return null;
-    
-    console.log("🔍 PARSING TRANSCRIPT - First 500 chars:", text.substring(0, 500));
-    
-    const lines = text.split('\n');
+  // Memoized timestamp click handler
+  const handleTimestampClick = useCallback((totalSeconds) => {
+    if (onSeekToTime) {
+      onSeekToTime(totalSeconds);
+    }
+  }, [onSeekToTime]);
+
+  // Memoized parser - only re-parses when transcript text changes
+  const parseTimestampedTranscript = useMemo(() => {
+    if (!timestampedTranscript) return null;
+
+    const lines = timestampedTranscript.split('\n');
     const elements = [];
-    
+
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
-      console.log(`🔍 Line ${index}: "${trimmedLine}"`);
-      
+
       if (trimmedLine.match(/^\d+:\d{2}\s*-\s*\d+:\d{2}$/)) {
-        console.log("🎯 TIMESTAMP DETECTED:", trimmedLine);
-        
         const parts = trimmedLine.split('-');
         const startTime = parts[0].trim();
-        const endTime = parts[1].trim();
-        
         const [minutes, seconds] = startTime.split(':').map(Number);
         const totalSeconds = minutes * 60 + seconds;
-        
-        console.log(`⏰ Start time: ${startTime} = ${totalSeconds} seconds`);
-        
+
         elements.push(
           <div key={`timestamp-${index}`} className="mb-2">
             <button
-              onClick={() => {
-                if (onSeekToTime) {
-                  onSeekToTime(totalSeconds);
-                }
-              }}
+              onClick={() => handleTimestampClick(totalSeconds)}
               className="text-emerald-400 hover:text-emerald-300 font-mono text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               title={`Jump to ${startTime}`}
             >
@@ -82,47 +77,32 @@ const TranscriptComponent = ({
         );
       }
     });
-    
-    console.log("✅ Total elements created:", elements.length);
+
     return <div className="space-y-1">{elements}</div>;
-  };
+  }, [timestampedTranscript, handleTimestampClick]);
   
-  const loadTimestampedTranscript = async () => {
-    console.log("🔍 loadTimestampedTranscript called");
-    console.log("🔍 currentVideo.videoId:", currentVideo.videoId);
-    console.log("🔍 isLoadingTimestampedTranscript:", isLoadingTimestampedTranscript);
-    
+  const loadTimestampedTranscript = useCallback(async () => {
     if (!currentVideo.videoId || isLoadingTimestampedTranscript) {
-      console.log("❌ Early return - no video ID or already loading");
       return;
     }
-    
+
     setIsLoadingTimestampedTranscript(true);
-    setFormattingProgress({ progress: 0, current: 0, total: 0 });
-    
-    // Show immediate feedback that the process has started
     setFormattingProgress({ progress: 1, current: 0, total: 0 });
-    
+
     try {
-      console.log("📡 Making API call to:", `${API_URL}/api/youtube/formatting-status/${currentVideo.videoId}`);
       const statusResponse = await api.get(`/api/youtube/formatting-status/${currentVideo.videoId}`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
-      
-      console.log("📋 API Response:", statusResponse.data);
-      
+
       if (statusResponse.data.status === 'completed') {
-        console.log("✅ Status is completed, setting transcript");
         setTimestampedTranscript(statusResponse.data.formatted_transcript);
         setShowTimestampedVersion(true);
         setFormattingProgress({ progress: 100, current: 0, total: 0 });
         setIsLoadingTimestampedTranscript(false);
-        console.log("✅ Transcript set and loading finished");
         return;
       }
-      
+
       if (statusResponse.data.status === 'formatting' || statusResponse.data.status === 'not_found') {
-        console.log("⏳ Status is formatting or not found, starting polling with progress");
         
         if (statusResponse.data.progress !== undefined) {
           setFormattingProgress({
@@ -135,15 +115,16 @@ const TranscriptComponent = ({
         const pollForCompletionWithProgress = async () => {
           let attempts = 0;
           const maxAttempts = 120;
-          
+
           while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
+            // Adaptive polling: faster initially, slower as time progresses
+            const pollInterval = attempts < 10 ? 1000 : attempts < 30 ? 2000 : 3000;
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+
             try {
               const pollResponse = await api.get(`/api/youtube/formatting-status/${currentVideo.videoId}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
               });
-              console.log(`📊 Poll attempt ${attempts + 1}:`, pollResponse.data);
               
               if (pollResponse.data.progress !== undefined) {
                 setFormattingProgress({
@@ -151,7 +132,6 @@ const TranscriptComponent = ({
                   current: pollResponse.data.current_chunk || 0,
                   total: pollResponse.data.total_chunks || 0
                 });
-                console.log(`📈 Progress updated: ${pollResponse.data.progress}% (${pollResponse.data.current_chunk}/${pollResponse.data.total_chunks})`);
               }
               
               if (pollResponse.data.status === 'completed') {
@@ -159,7 +139,6 @@ const TranscriptComponent = ({
                 setShowTimestampedVersion(true);
                 setFormattingProgress({ progress: 100, current: 0, total: 0 });
                 setIsLoadingTimestampedTranscript(false);
-                console.log("✅ Formatting completed!");
                 return;
               }
               
@@ -179,7 +158,6 @@ const TranscriptComponent = ({
         
         await pollForCompletionWithProgress();
       } else {
-        console.log("🔍 Status not completed or formatting, trying direct fetch");
         const transcriptResponse = await api.get(`/api/youtube/formatted-transcript/${currentVideo.videoId}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -194,12 +172,11 @@ const TranscriptComponent = ({
       }
       
     } catch (error) {
-      console.error('❌ Error loading timestamped transcript:', error);
-      // Handle error appropriately - you might want to pass this to parent component
+      console.error('Error loading timestamped transcript:', error);
     } finally {
       setIsLoadingTimestampedTranscript(false);
     }
-  };
+  }, [currentVideo.videoId, isLoadingTimestampedTranscript]);
 
   const copyTranscript = async () => {
     const textToCopy = showTimestampedVersion && timestampedTranscript ? timestampedTranscript : transcript;
@@ -317,7 +294,7 @@ const TranscriptComponent = ({
       >
         {showTimestampedVersion ? (
           timestampedTranscript ? (
-            parseTimestampedTranscript(timestampedTranscript)
+            parseTimestampedTranscript
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="text-gray-500 italic">Timestamped transcript is being processed...</p>

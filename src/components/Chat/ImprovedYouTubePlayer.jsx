@@ -271,10 +271,8 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
       newUrl.searchParams.set('type', 'youtube');
       window.history.replaceState({}, '', newUrl);
 
-      // Reset chat/quiz state
+      // Reset chat state
       setChatMessages([]);
-      setIsQuizOpen(false);
-      setSystemMessages([]);
 
       // Step 2: Fetch video info and transcript in the background
       setIsTranscriptLoading(true);

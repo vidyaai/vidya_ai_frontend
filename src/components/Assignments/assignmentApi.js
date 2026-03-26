@@ -482,6 +482,11 @@ export const assignmentApi = {
         fileIds.push(question.mainDiagram.file_id);
       }
       
+      // Correct answer diagram
+      if (question.correctAnswerDiagram?.file_id) {
+        fileIds.push(question.correctAnswerDiagram.file_id);
+      }
+      
       // Subquestion diagrams
       if (question.subquestions) {
         question.subquestions.forEach(subq => {
@@ -490,6 +495,9 @@ export const assignmentApi = {
           }
           if (subq.subDiagram?.file_id) {
             fileIds.push(subq.subDiagram.file_id);
+          }
+          if (subq.correctAnswerDiagram?.file_id) {
+            fileIds.push(subq.correctAnswerDiagram.file_id);
           }
         });
       }

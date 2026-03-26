@@ -148,6 +148,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
     'numerical': false,
     'code-writing': false,
     'diagram-analysis': false,
+    'diagram-required-in-answer': false,
     'multi-part': false,
     'clinical-case': false,
     'osce': false,
@@ -271,7 +272,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         questionTypes,
         engineeringDiscipline,
         includeCode: questionTypes['code-writing'],
-        includeDiagrams: questionTypes['diagram-analysis'],
+        includeDiagrams: questionTypes['diagram-analysis'] || questionTypes['diagram-required-in-answer'],
         includeCalculations: questionTypes['numerical'],
         diagramEngine: diagramModel === 'nonai' ? 'nonai' : 'ai',
         diagramModel: diagramModel === 'nonai' ? 'flash' : diagramModel,
@@ -845,6 +846,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                   'clinical-case': { name: 'Clinical Case Study', description: 'Patient scenario with diagnosis, investigations & management', recommended: true, badge: 'Medical' },
                   'osce': { name: 'OSCE / Clinical Skills', description: 'Structured clinical examination station with marking scheme', recommended: false, badge: 'Medical' },
                   'diagram-analysis': { name: 'Diagram Analysis', description: 'Visual analysis and interpretation', recommended: false },
+                  'diagram-required-in-answer': { name: 'Diagram Required in Answer', description: 'Student must draw/sketch a diagram as part of their answer', recommended: false },
                   'multi-part': { name: 'Multi-Part Questions', description: 'Complex questions with multiple sub-parts', recommended: false },
                 }
               : {
@@ -854,6 +856,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                   'numerical': { name: 'Numerical Problems', description: 'Mathematical calculations and solutions', recommended: false },
                   'code-writing': { name: 'Code Writing', description: 'Programming problems and solutions', recommended: false },
                   'diagram-analysis': { name: 'Diagram Analysis', description: 'Visual analysis and interpretation', recommended: false },
+                  'diagram-required-in-answer': { name: 'Diagram Required in Answer', description: 'Student must draw/sketch a diagram as part of their answer', recommended: false },
                   'multi-part': { name: 'Multi-Part Questions', description: 'Complex questions with multiple sub-parts', recommended: false },
                 }
           ).map(([type, info]) => (

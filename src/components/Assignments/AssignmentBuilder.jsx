@@ -48,6 +48,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     { type: 'true-false', label: 'True/False', icon: 'T/F', category: 'Basic' },
     { type: 'code-writing', label: 'Code Writing', icon: '</>', category: 'Engineering', color: 'purple' },
     { type: 'diagram-analysis', label: 'Diagram Analysis', icon: '⚡', category: 'Engineering', color: 'orange' },
+    { type: 'diagram-required-in-answer', label: 'Diagram Required in Answer', icon: '✏️', category: 'Engineering', color: 'green' },
     { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' },
     { type: 'clinical-case-study', label: 'Clinical Case Study', icon: '🏥', category: 'Medical', color: 'green' },
     { type: 'osce', label: 'OSCE / Clinical Skills', icon: '🩺', category: 'Medical', color: 'teal' }
@@ -177,6 +178,10 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       },
       'diagram-analysis': {
         diagram: null
+      },
+      'diagram-required-in-answer': {
+        diagram: null,
+        correctAnswerDiagram: null
       },
       'multi-part': {
         subquestions: [],
@@ -815,6 +820,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                               <div className="text-xs text-gray-400 mt-1">
                                 {type.type === 'code-writing' && 'Programming problems with syntax highlighting'}
                                 {type.type === 'diagram-analysis' && 'Circuit diagrams and technical drawings'}
+                                {type.type === 'diagram-required-in-answer' && 'Student must draw/sketch a diagram as part of their answer'}
                                 {type.type === 'multi-part' && 'Complex problems with multiple sub-questions and code/diagrams'}
                               </div>
                             </div>

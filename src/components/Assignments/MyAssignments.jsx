@@ -231,8 +231,13 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
     setCurrentView('main');
     setParsedAssignmentData(null);
     setCourseDetailId(null);
-    setSelectedCourseId(undefined); // Go back to courses grid
-    loadCourses();
+    if (selectedCourseId === null) {
+      // Coming back to Open Assignments — reload the list
+      loadAssignments(null);
+    } else {
+      setSelectedCourseId(undefined); // Go back to courses grid
+      loadCourses();
+    }
   };
 
   const handleSelectCourse = (courseId) => {

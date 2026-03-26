@@ -939,6 +939,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'clinical-case':
+      case 'osce':
       case 'long_answer':
       case 'long-answer':
         return (
@@ -1161,6 +1163,91 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </div>
         );
 
+      case 'diagram-required-in-answer':
+        return (
+          <div key={question.id} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
+              <span className="text-green-400 text-sm font-medium">{question.points} points</span>
+            </div>
+            <p className="text-gray-300 text-lg">{question.question}</p>
+            
+            {/* Show code if available */}
+            {question.code && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+                <pre className="text-sm text-green-400">
+                    {question.code}
+                </pre>
+              </div>
+            )}
+            
+            {question.diagram && renderDiagram(question.diagram, "Diagram")}
+            
+            <textarea
+              value={typeof currentAnswer === 'string' ? currentAnswer : (currentAnswer?.text || '')}
+              onChange={(e) => !isAlreadySubmitted && handleTextChangeWithDiagram(question.id, e.target.value)}
+              onFocus={() => startQuestionTracking(question.id.toString())}
+              onBlur={() => stopQuestionTracking(question.id.toString())}
+              onPaste={(e) => handlePaste(e, question.id.toString())}
+              onKeyDown={(e) => handleKeyDown(e, question.id.toString())}
+              placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
+              rows={6}
+              readOnly={isAlreadySubmitted}
+              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none ${
+                isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
+              }`}
+            />
+            
+            {/* Diagram upload - Required */}
+            <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+              <p className="text-green-400 text-sm font-medium mb-2">Diagram Required</p>
+              {!isAlreadySubmitted ? (
+                <div className="space-y-2">
+                  {currentAnswer?.diagram ? (
+                    <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-300">Attached Diagram:</span>
+                        <button
+                          onClick={() => handleRemoveDiagram(question.id)}
+                          className="text-red-400 hover:text-red-300 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id={`diagram-upload-${question.id}`}
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleDiagramUpload(question.id, e.target.files[0]);
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`diagram-upload-${question.id}`}
+                        className="inline-flex items-center px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg cursor-pointer transition-colors"
+                      >
+                        <ImageIcon size={16} className="mr-2" />
+                        Upload Your Diagram
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ) : currentAnswer?.diagram ? (
+                <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                  {renderDiagram(currentAnswer.diagram, "Your diagram")}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        );
+
 
       case 'multi-part':
       case 'multi_part':
@@ -1288,6 +1375,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       <span className={`px-2 py-1 rounded text-xs ${
                         subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                         subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
+                        subq.type === 'diagram-required-in-answer' ? 'bg-green-500/20 text-green-300' :
                         subq.type === 'multi-part' ? 'bg-blue-500/20 text-blue-300' :
                         subq.type === 'multiple-choice' ? 'bg-teal-500/20 text-teal-300' :
                         subq.type === 'true-false' ? 'bg-yellow-500/20 text-yellow-300' :
@@ -1296,6 +1384,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       }`}>
                         {subq.type === 'code-writing' ? 'Code' :
                          subq.type === 'diagram-analysis' ? 'Diagram' :
+                         subq.type === 'diagram-required-in-answer' ? 'DRA' :
                          subq.type === 'multi-part' ? 'Multi-Part' :
                          subq.type === 'multiple-choice' ? 'MC' :
                          subq.type === 'true-false' ? 'T/F' :
@@ -1469,7 +1558,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm font-mono"
                       />
                     </div>
-                  ) : subq.type === 'diagram-analysis' || subq.type === 'short-answer' || subq.type === 'long-answer' ? (
+                  ) : subq.type === 'diagram-analysis' || subq.type === 'diagram-required-in-answer' || subq.type === 'short-answer' || subq.type === 'long-answer' ? (
                     <div className="space-y-2">
                       <textarea
                         value={typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? (currentAnswer?.subAnswers || {})[subq.id] : ((currentAnswer?.subAnswers || {})[subq.id]?.text || '')}
@@ -2445,6 +2534,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'short-answer':
       case 'long_answer':
       case 'long-answer':
+      case 'clinical-case':
+      case 'osce':
       case 'diagram_analysis':
       case 'diagram-analysis':
         return (

@@ -148,7 +148,7 @@ const CourseDetailView = ({
       </div>
 
       {/* BODY: sidebar + content */}
-      <div className="flex-1 flex max-w-screen-2xl mx-auto w-full">
+      <div className="flex-1 flex w-max-full w-full">
         {/* LEFT SIDEBAR */}
         <aside className="w-64 flex-shrink-0 border-r border-gray-800 bg-gray-950">
           <nav className="py-4">

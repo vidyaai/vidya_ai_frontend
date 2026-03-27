@@ -1,8 +1,9 @@
 // src/components/HomePage/HomePage.jsx
-import { 
-  MessageSquare, 
-  Globe, 
-  Video, 
+import { useState, useEffect } from 'react';
+import {
+  MessageSquare,
+  Globe,
+  Video,
   Award,
   BookOpen,
   Lightbulb,
@@ -14,6 +15,20 @@ import TopBar from '../generic/TopBar';
 
 const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery, onNavigateToAssignments, onNavigateToPricing }) => {
   const { currentUser } = useAuth();
+  const [navigatingTo, setNavigatingTo] = useState(null);
+
+  // Fire navigation AFTER React has committed the overlay to the DOM.
+  // useEffect always runs after the browser has painted, so the loader
+  // is guaranteed to be visible before the page switch happens.
+  useEffect(() => {
+    if (!navigatingTo) return;
+    if (navigatingTo === 'chat') onNavigateToChat(null);
+    else if (navigatingTo === 'assignments') onNavigateToAssignments();
+    else if (navigatingTo === 'assignments:ai-generator') onNavigateToAssignments('ai-generator');
+    else if (navigatingTo === 'pricing') onNavigateToPricing();
+    else if (navigatingTo === 'gallery') onNavigateToGallery();
+    else if (navigatingTo === 'translate') onNavigateToTranslate();
+  }, [navigatingTo]);
 
   const features = [
     {
@@ -21,7 +36,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       title: "Chat with Videos",
       description: "Upload YouTube videos and have intelligent conversations about the content. Ask questions, get summaries, and understand complex topics better.",
       action: "Start Video Chat",
-      onClick: () => onNavigateToChat(null),
+      onClick: () => setNavigatingTo('chat'),
       gradient: "from-blue-500 to-cyan-500"
     },
     {
@@ -29,7 +44,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       title: "AI Assignment Manager",
       description: "Create, manage, and share assignments with AI-powered generation. Build custom assignments or let AI create them from your content.",
       action: "Manage Assignments",
-      onClick: onNavigateToAssignments,
+      onClick: () => setNavigatingTo('assignments'),
       gradient: "from-teal-500 to-cyan-500"
     },
     // {
@@ -44,6 +59,15 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
 
   return (
     <div className="min-h-screen bg-gray-950">
+      {/* Page transition loader overlay */}
+      {navigatingTo && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-400 text-sm tracking-wide">Loading...</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <TopBar />
 
@@ -131,21 +155,21 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
           <h3 className="text-3xl font-bold text-white mb-8">Ready to Start Learning?</h3>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => onNavigateToChat(null)}
+              onClick={() => setNavigatingTo('chat')}
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg"
             >
               <MessageSquare size={20} className="mr-2" />
               Chat with a Video
             </button>
             <button
-              onClick={onNavigateToAssignments}
+              onClick={() => setNavigatingTo('assignments:ai-generator')}
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
             >
               <ClipboardList size={20} className="mr-2" />
               Generate Assignment
             </button>
             <button
-              onClick={onNavigateToPricing}
+              onClick={() => setNavigatingTo('pricing')}
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all duration-300 hover:scale-105 shadow-lg"
             >
               <Award size={20} className="mr-2" />

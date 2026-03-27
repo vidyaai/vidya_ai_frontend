@@ -1,6 +1,6 @@
 // src/components/Assignments/AssignmentPreview.jsx
 import { useState, useEffect } from 'react';
-import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers } from 'lucide-react';
+import { Eye, Clock, FileText, CheckCircle, Code, Image as ImageIcon, Layers, Edit3 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 import DisplayTextWithEquations from './DisplayTextWithEquations';
 
@@ -252,6 +252,42 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
           </div>
         );
 
+      case 'clinical-case':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-teal-500/40">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-base">🏥</span>
+                <h4 className="text-white font-medium">Question {index + 1}</h4>
+                <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs rounded-full">Clinical Case</span>
+              </div>
+              <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            {renderQuestionText(question)}
+            
+            {/* Show diagram if available */}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
+          </div>
+        );
+
+      case 'osce':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/40">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-base">📋</span>
+                <h4 className="text-white font-medium">Question {index + 1}</h4>
+                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">OSCE Station</span>
+              </div>
+              <span className="text-teal-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            {renderQuestionText(question)}
+            
+            {/* Show diagram if available */}
+            {question?.diagram?.s3_url && renderDiagramPreview(question.diagram)}
+          </div>
+        );
+
       case 'code-writing':
         return (
           <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-purple-500/30">
@@ -307,6 +343,26 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
           </div>
         );
 
+      case 'diagram-required-in-answer':
+        return (
+          <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-green-500/30">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <Edit3 size={16} className="text-green-400" />
+                  <h4 className="text-white font-medium">Question {index + 1}</h4>
+                  <span className="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded">Diagram Required in Answer</span>
+                </div>
+              <span className="text-green-400 text-sm font-medium">{question.points || 1} pts</span>
+            </div>
+            {renderQuestionText(question)}
+            {question?.diagram?.s3_url && (
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                {renderDiagramPreview(question.diagram)}
+              </div>
+            )}
+          </div>
+        );
+
       case 'multi-part':
         return (
           <div key={question.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/30">
@@ -358,11 +414,13 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                       <span className={`px-1 py-0.5 rounded text-xs ${
                         subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                         subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
+                        subq.type === 'diagram-required-in-answer' ? 'bg-green-500/20 text-green-300' :
                         subq.type === 'multi-part' ? 'bg-blue-500/20 text-blue-300' :
                         'bg-gray-500/20 text-gray-300'
                       }`}>
                         {subq.type === 'code-writing' ? 'Code' :
                          subq.type === 'diagram-analysis' ? 'Diagram' :
+                         subq.type === 'diagram-required-in-answer' ? 'DRA' :
                          subq.type === 'multi-part' ? 'Multi-Part' :
                          subq.type?.replace('-', ' ') || 'Text'}
                       </span>
@@ -416,10 +474,12 @@ const AssignmentPreview = ({ title, description, questions, onSave, saving = fal
                               <span className={`px-1 py-0.5 rounded text-xs ${
                                 nestedSubq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                                 nestedSubq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
+                                nestedSubq.type === 'diagram-required-in-answer' ? 'bg-green-500/20 text-green-300' :
                                 'bg-gray-500/20 text-gray-300'
                               }`}>
                                 {nestedSubq.type === 'code-writing' ? 'Code' :
                                  nestedSubq.type === 'diagram-analysis' ? 'Diagram' :
+                                 nestedSubq.type === 'diagram-required-in-answer' ? 'DRA' :
                                  nestedSubq.type?.replace('-', ' ') || 'Text'}
                               </span>
                               <span className="text-blue-400 text-xs">{nestedSubq.points || 1} pts</span>

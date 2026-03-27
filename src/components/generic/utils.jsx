@@ -4,6 +4,8 @@ import axios from 'axios';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
+export { auth };
+
 // Next.js environment variables
 const NODE_ENV = process.env.NEXT_PUBLIC_NODE_ENV || process.env.NODE_ENV;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -21,8 +23,8 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'production') {
   API_URL = 'https://api.vidyaai.co';
 } else if (NODE_ENV === 'local') {
-  // API_URL = 'http://localhost:8000';
   API_URL = 'http://54.153.26.252:8000';
+//API_URL = 'http://localhost:8000';
 }
 
 console.log("Final API_URL", API_URL);
@@ -112,15 +114,46 @@ export const formatTime = (seconds) => {
 export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // Debug logging (can be removed after verification)
+  const debugMode = false; // Set to true to enable debug logs
+  if (debugMode) {
+    console.group('🔍 Markdown Preprocessing Debug');
+    console.log('Original text (first 300 chars):', text.substring(0, 300));
+    console.log('Original text (as JSON):', JSON.stringify(text.substring(0, 200)));
+  }
+
+  // STEP 1: Normalize all line endings to Unix-style \n
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // STEP 2: Remove invisible Unicode characters that might break regex matching
+  text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+  // STEP 2.5: Remove dollar signs around timestamps (before LaTeX processing)
+  // Handle timestamp ranges like ($00:09 - 05:03$) or $00:09$ individually
+  text = text.replace(/\$(\d{1,2}:\d{2}(?:\s*-\s*\d{1,2}:\d{2})?)\$/g, '$1');
+
   // Remove standalone heading markers without text (e.g., lines with just "#" or "##")
   text = text.replace(/^\s*#{1,6}\s*$/gm, '');
 
   // Remove newlines after heading markers (e.g., "## \nText" -> "## Text")
   text = text.replace(/(#{1,6})\s*\n+\s*/g, '$1 ');
 
-  // Remove newlines immediately after numbered list markers (e.g., "1. \n" -> "1. ")
-  // This joins "1. \nText" into "1. Text"
-  text = text.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+  // ENHANCED: Remove newlines immediately after numbered list markers
+  // This joins "1.\n\nText" into "1. Text"
+  // More aggressive: handles multiple newlines and any amount of whitespace
+  const beforeListFix = text.substring(0, 300);
+  text = text.replace(/(\d+\.)\s*[\n\r]+\s*/g, '$1 ');
+  const afterListFix = text.substring(0, 300);
+
+  if (debugMode) {
+    if (beforeListFix !== afterListFix) {
+      console.log('✅ List fix applied!');
+      console.log('Before:', JSON.stringify(beforeListFix.substring(0, 100)));
+      console.log('After:', JSON.stringify(afterListFix.substring(0, 100)));
+    } else {
+      console.log('⚠️ List fix did NOT match (no changes made)');
+    }
+  }
 
   // Normalize: ensure headings and numbered list items start on new lines
   // Must happen AFTER joining markers with their content
@@ -137,6 +170,11 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     // Previous character is not a digit, add newline
     return before + '\n' + digits + '. ';
   });
+
+  if (debugMode) {
+    console.log('After preprocessing:', text.substring(0, 300));
+    console.groupEnd();
+  }
   // Add newline before bold text that looks like a sub-heading (bold text followed by colon)
   // But only if it's preceded by a period and space (end of sentence)
   text = text.replace(/(\.\s+)(\*\*[^*]+\*\*:)/g, '$1\n$2');
@@ -144,10 +182,6 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
   // First convert LaTeX to HTML
   let processed = convertLatexToMathHTML(text);
-
-  console.log('📝 Original text sample:', text.substring(0, 300));
-  console.log('📝 Processed text sample:', processed.substring(0, 300));
-  console.log('📝 Number of newlines in processed:', (processed.match(/\n/g) || []).length);
 
   // Function to convert time string to seconds
   const timeToSeconds = (timeStr) => {
@@ -187,6 +221,15 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
   const lines = preprocessed.split('\n');
   const elements = [];
+
+  if (debugMode) {
+    console.log('📋 Lines after split (total:', lines.length, ')');
+    const numberedLines = lines.filter(l => /^\d+\./.test(l));
+    console.log('🔢 Lines starting with numbers:', numberedLines.length);
+    numberedLines.forEach((l, i) => {
+      console.log(`  Line ${i}:`, JSON.stringify(l.substring(0, 80)));
+    });
+  }
 
   lines.forEach((line, index) => {
     if (!line.trim()) {
@@ -241,17 +284,161 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 
     // Check if this line is a numbered list item (e.g., "1. Item text")
     const listMatch = line.match(/^(\d+)\.\s+(.+)$/s);
+    if (debugMode && /^\d+\./.test(line)) {
+      console.log(`🔍 Line ${index} starts with number:`, JSON.stringify(line.substring(0, 80)));
+      console.log(`   Regex match:`, listMatch ? '✅ YES' : '❌ NO');
+      if (listMatch) {
+        console.log(`   Number: "${listMatch[1]}", Text: "${listMatch[2].substring(0, 50)}..."`);
+      }
+    }
     if (listMatch) {
       const [, number, itemText] = listMatch;
-      // Process inline formatting in list item text (bold, math, links)
-      let processedItem = itemText
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
-        .replace(/__(.*?)__/g, '<strong class="font-bold text-white">$1</strong>')
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+
+      // Parse inline formatting properly (timestamps, links, bold, etc.)
+      const itemParts = [];
+      let itemIndex = 0;
+
+      // Use the same combined regex as paragraphs
+      const combinedRegex = /(\[([^\]]+)\]\s*\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+      let itemMatch;
+
+      while ((itemMatch = combinedRegex.exec(itemText)) !== null) {
+        // Add text before match
+        if (itemMatch.index > itemIndex) {
+          const beforeText = itemText.slice(itemIndex, itemMatch.index);
+          if (beforeText.includes('<') && beforeText.includes('>')) {
+            itemParts.push(<span key={`list-html-${index}-${itemIndex}`} dangerouslySetInnerHTML={{ __html: beforeText }} />);
+          } else {
+            itemParts.push(beforeText);
+          }
+        }
+
+        // Process the match
+        if (itemMatch[0].startsWith('[') && itemMatch[0].includes('](')) {
+          const linkMatch = itemMatch[0].match(/\[([^\]]+)\]\s*\(([^)]+)\)/);
+          if (linkMatch) {
+            const [, linkText, linkUrl] = linkMatch;
+            itemParts.push(
+              <a
+                key={`list-link-${index}-${itemMatch.index}`}
+                href={linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline break-all"
+              >
+                {linkText}
+              </a>
+            );
+          }
+        } else if (itemMatch[0].startsWith('http://') || itemMatch[0].startsWith('https://')) {
+          const url = itemMatch[0];
+          const title = getTitleFromUrl(url);
+          itemParts.push(
+            <a
+              key={`list-url-${index}-${itemMatch.index}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline break-all inline-block"
+              title={url}
+            >
+              {title}
+            </a>
+          );
+        } else if (/\d{1,2}:\d{2}/.test(itemMatch[0])) {
+          // Timestamp
+          const timeStr = itemMatch[0].replace(/\$/g, '');
+          const totalSeconds = timeToSeconds(timeStr);
+
+          if (onSeekToTime && totalSeconds > 0) {
+            itemParts.push(
+              <button
+                key={`list-time-${index}-${itemMatch.index}`}
+                onClick={() => onSeekToTime(totalSeconds)}
+                className="text-cyan-400 hover:text-cyan-300 underline bg-transparent border-none cursor-pointer p-0 m-0 font-inherit"
+                title={`Jump to ${timeStr}`}
+              >
+                {timeStr}
+              </button>
+            );
+          } else {
+            itemParts.push(
+              <span key={`list-time-${index}-${itemMatch.index}`} className="text-cyan-400">
+                {timeStr}
+              </span>
+            );
+          }
+        } else if (itemMatch[0].startsWith('**') || itemMatch[0].startsWith('__')) {
+          // Bold text - recursively parse for timestamps
+          const boldText = itemMatch[0].replace(/(\*\*|__)/g, '');
+          const boldParts = [];
+          let boldIndex = 0;
+
+          const timestampRegex = /\$?(\d{1,2}:\d{2})\$?/g;
+          let timestampMatch;
+
+          while ((timestampMatch = timestampRegex.exec(boldText)) !== null) {
+            if (timestampMatch.index > boldIndex) {
+              boldParts.push(boldText.slice(boldIndex, timestampMatch.index));
+            }
+
+            const timeStr = timestampMatch[1];
+            const totalSeconds = timeToSeconds(timeStr);
+
+            if (onSeekToTime && totalSeconds > 0) {
+              boldParts.push(
+                <button
+                  key={`list-bold-time-${index}-${itemMatch.index}-${timestampMatch.index}`}
+                  onClick={() => onSeekToTime(totalSeconds)}
+                  className="text-cyan-400 hover:text-cyan-300 underline bg-transparent border-none cursor-pointer p-0 m-0 font-inherit font-bold"
+                  title={`Jump to ${timeStr}`}
+                >
+                  {timeStr}
+                </button>
+              );
+            } else {
+              boldParts.push(
+                <span key={`list-bold-time-${index}-${itemMatch.index}-${timestampMatch.index}`} className="text-cyan-400">
+                  {timeStr}
+                </span>
+              );
+            }
+
+            boldIndex = timestampMatch.index + timestampMatch[0].length;
+          }
+
+          if (boldIndex < boldText.length) {
+            boldParts.push(boldText.slice(boldIndex));
+          }
+
+          if (boldParts.length === 0) {
+            boldParts.push(boldText);
+          }
+
+          itemParts.push(
+            <strong key={`list-bold-${index}-${itemMatch.index}`} className="font-bold text-white">
+              {boldParts}
+            </strong>
+          );
+        }
+
+        itemIndex = itemMatch.index + itemMatch[0].length;
+      }
+
+      // Add remaining text
+      if (itemIndex < itemText.length) {
+        const remainingText = itemText.slice(itemIndex);
+        if (remainingText.includes('<') && remainingText.includes('>')) {
+          itemParts.push(<span key={`list-html-end-${index}`} dangerouslySetInnerHTML={{ __html: remainingText }} />);
+        } else {
+          itemParts.push(remainingText);
+        }
+      }
+
       elements.push(
         <div key={`list-${index}`} className="mb-1 leading-relaxed flex">
           <span className="font-semibold text-white mr-2 flex-shrink-0">{number}.</span>
-          <span dangerouslySetInnerHTML={{ __html: processedItem }} />
+          <span>{itemParts}</span>
         </div>
       );
       return;
@@ -347,11 +534,60 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
           );
         }
       } else if (match[0].startsWith('**') || match[0].startsWith('__')) {
-        // Handle bold text
+        // Handle bold text - recursively parse content inside for timestamps and links
         const boldText = match[0].replace(/(\*\*|__)/g, '');
+        const boldParts = [];
+        let boldIndex = 0;
+
+        // Check for timestamps inside bold text
+        const timestampRegex = /\$?(\d{1,2}:\d{2})\$?/g;
+        let timestampMatch;
+
+        while ((timestampMatch = timestampRegex.exec(boldText)) !== null) {
+          // Add text before timestamp
+          if (timestampMatch.index > boldIndex) {
+            boldParts.push(boldText.slice(boldIndex, timestampMatch.index));
+          }
+
+          // Add clickable timestamp
+          const timeStr = timestampMatch[1];
+          const totalSeconds = timeToSeconds(timeStr);
+
+          if (onSeekToTime && totalSeconds > 0) {
+            boldParts.push(
+              <button
+                key={`bold-time-${index}-${match.index}-${timestampMatch.index}`}
+                onClick={() => onSeekToTime(totalSeconds)}
+                className="text-cyan-400 hover:text-cyan-300 underline bg-transparent border-none cursor-pointer p-0 m-0 font-inherit font-bold"
+                title={`Jump to ${timeStr}`}
+              >
+                {timeStr}
+              </button>
+            );
+          } else {
+            boldParts.push(
+              <span key={`bold-time-${index}-${match.index}-${timestampMatch.index}`} className="text-cyan-400">
+                {timeStr}
+              </span>
+            );
+          }
+
+          boldIndex = timestampMatch.index + timestampMatch[0].length;
+        }
+
+        // Add remaining text
+        if (boldIndex < boldText.length) {
+          boldParts.push(boldText.slice(boldIndex));
+        }
+
+        // If no special formatting found inside, just render as plain bold text
+        if (boldParts.length === 0) {
+          boldParts.push(boldText);
+        }
+
         parts.push(
           <strong key={`bold-${index}-${match.index}`} className="font-bold text-white">
-            {boldText}
+            {boldParts}
           </strong>
         );
       }
@@ -386,15 +622,26 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
 export const parseMarkdown = (text, onSeekToTime = null) => {
   if (!text) return text;
 
+  // STEP 1: Normalize all line endings to Unix-style \n
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // STEP 2: Remove invisible Unicode characters that might break regex matching
+  text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+  // STEP 2.5: Remove dollar signs around timestamps (before LaTeX processing)
+  // Handle timestamp ranges like ($00:09 - 05:03$) or $00:09$ individually
+  text = text.replace(/\$(\d{1,2}:\d{2}(?:\s*-\s*\d{1,2}:\d{2})?)\$/g, '$1');
+
   // Remove standalone heading markers without text (e.g., lines with just "#" or "##")
   text = text.replace(/^\s*#{1,6}\s*$/gm, '');
 
   // Remove newlines after heading markers (e.g., "## \nText" -> "## Text")
   text = text.replace(/(#{1,6})\s*\n+\s*/g, '$1 ');
 
-  // Remove newlines immediately after numbered list markers (e.g., "1. \n" -> "1. ")
-  // This joins "1. \nText" into "1. Text"
-  text = text.replace(/(\d+\.)\s*\n+\s*/g, '$1 ');
+  // ENHANCED: Remove newlines immediately after numbered list markers
+  // This joins "1.\n\nText" into "1. Text"
+  // More aggressive: handles multiple newlines and any amount of whitespace
+  text = text.replace(/(\d+\.)\s*[\n\r]+\s*/g, '$1 ');
 
   // Normalize: ensure headings and numbered list items start on new lines
   // Must happen AFTER joining markers with their content
@@ -506,10 +753,136 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
     const listMatch2 = line.match(/^(\d+)\.\s+(.+)$/);
     if (listMatch2) {
       const [, number, itemText] = listMatch2;
+
+      // Parse inline formatting properly (timestamps, links, bold, etc.)
+      const itemParts = [];
+      let itemIndex = 0;
+
+      const combinedRegex = /(\[([^\]]+)\]\s*\(([^)]+)\)|https?:\/\/[^\s<>]+(?<!\))|\$?\d{1,2}:\d{2}\$?|\*\*.*?\*\*|__.*?__)/g;
+      let itemMatch;
+
+      while ((itemMatch = combinedRegex.exec(itemText)) !== null) {
+        if (itemMatch.index > itemIndex) {
+          itemParts.push(itemText.slice(itemIndex, itemMatch.index));
+        }
+
+        if (itemMatch[0].startsWith('[') && itemMatch[0].includes('](')) {
+          const linkMatch = itemMatch[0].match(/\[([^\]]+)\]\s*\(([^)]+)\)/);
+          if (linkMatch) {
+            const [, linkText, linkUrl] = linkMatch;
+            itemParts.push(
+              <a
+                key={`list-link-${index}-${itemMatch.index}`}
+                href={linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline break-all"
+              >
+                {linkText}
+              </a>
+            );
+          }
+        } else if (itemMatch[0].startsWith('http://') || itemMatch[0].startsWith('https://')) {
+          const url = itemMatch[0];
+          const title = getTitleFromUrl(url);
+          itemParts.push(
+            <a
+              key={`list-url-${index}-${itemMatch.index}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline break-all inline-block"
+              title={url}
+            >
+              {title}
+            </a>
+          );
+        } else if (/\d{1,2}:\d{2}/.test(itemMatch[0])) {
+          const timeStr = itemMatch[0].replace(/\$/g, '');
+          const totalSeconds = timeToSeconds(timeStr);
+
+          if (onSeekToTime && totalSeconds > 0) {
+            itemParts.push(
+              <button
+                key={`list-time-${index}-${itemMatch.index}`}
+                onClick={() => onSeekToTime(totalSeconds)}
+                className="text-cyan-400 hover:text-cyan-300 underline bg-transparent border-none cursor-pointer p-0 m-0 font-inherit"
+                title={`Jump to ${timeStr}`}
+              >
+                {timeStr}
+              </button>
+            );
+          } else {
+            itemParts.push(
+              <span key={`list-time-${index}-${itemMatch.index}`} className="text-cyan-400">
+                {timeStr}
+              </span>
+            );
+          }
+        } else if (itemMatch[0].startsWith('**') || itemMatch[0].startsWith('__')) {
+          const boldText = itemMatch[0].replace(/(\*\*|__)/g, '');
+          const boldParts = [];
+          let boldIndex = 0;
+
+          const timestampRegex = /\$?(\d{1,2}:\d{2})\$?/g;
+          let timestampMatch;
+
+          while ((timestampMatch = timestampRegex.exec(boldText)) !== null) {
+            if (timestampMatch.index > boldIndex) {
+              boldParts.push(boldText.slice(boldIndex, timestampMatch.index));
+            }
+
+            const timeStr = timestampMatch[1];
+            const totalSeconds = timeToSeconds(timeStr);
+
+            if (onSeekToTime && totalSeconds > 0) {
+              boldParts.push(
+                <button
+                  key={`list-bold-time-${index}-${itemMatch.index}-${timestampMatch.index}`}
+                  onClick={() => onSeekToTime(totalSeconds)}
+                  className="text-cyan-400 hover:text-cyan-300 underline bg-transparent border-none cursor-pointer p-0 m-0 font-inherit font-bold"
+                  title={`Jump to ${timeStr}`}
+                >
+                  {timeStr}
+                </button>
+              );
+            } else {
+              boldParts.push(
+                <span key={`list-bold-time-${index}-${itemMatch.index}-${timestampMatch.index}`} className="text-cyan-400">
+                  {timeStr}
+                </span>
+              );
+            }
+
+            boldIndex = timestampMatch.index + timestampMatch[0].length;
+          }
+
+          if (boldIndex < boldText.length) {
+            boldParts.push(boldText.slice(boldIndex));
+          }
+
+          if (boldParts.length === 0) {
+            boldParts.push(boldText);
+          }
+
+          itemParts.push(
+            <strong key={`list-bold-${index}-${itemMatch.index}`} className="font-bold text-white">
+              {boldParts}
+            </strong>
+          );
+        }
+
+        itemIndex = itemMatch.index + itemMatch[0].length;
+      }
+
+      if (itemIndex < itemText.length) {
+        itemParts.push(itemText.slice(itemIndex));
+      }
+
       elements.push(
         <div key={`list-${index}`} className="mb-1 leading-relaxed flex">
           <span className="font-semibold text-white mr-2 flex-shrink-0">{number}.</span>
-          <span>{itemText}</span>
+          <span>{itemParts}</span>
         </div>
       );
       return;
@@ -585,11 +958,60 @@ export const parseMarkdown = (text, onSeekToTime = null) => {
           );
         }
       } else if (match[0].startsWith('**') || match[0].startsWith('__')) {
-        // Handle bold text
+        // Handle bold text - recursively parse content inside for timestamps and links
         const boldText = match[0].replace(/(\*\*|__)/g, '');
+        const boldParts = [];
+        let boldIndex = 0;
+
+        // Check for timestamps inside bold text
+        const timestampRegex = /\$?(\d{1,2}:\d{2})\$?/g;
+        let timestampMatch;
+
+        while ((timestampMatch = timestampRegex.exec(boldText)) !== null) {
+          // Add text before timestamp
+          if (timestampMatch.index > boldIndex) {
+            boldParts.push(boldText.slice(boldIndex, timestampMatch.index));
+          }
+
+          // Add clickable timestamp
+          const timeStr = timestampMatch[1];
+          const totalSeconds = timeToSeconds(timeStr);
+
+          if (onSeekToTime && totalSeconds > 0) {
+            boldParts.push(
+              <button
+                key={`bold-time-${index}-${match.index}-${timestampMatch.index}`}
+                onClick={() => onSeekToTime(totalSeconds)}
+                className="text-cyan-400 hover:text-cyan-300 underline bg-transparent border-none cursor-pointer p-0 m-0 font-inherit font-bold"
+                title={`Jump to ${timeStr}`}
+              >
+                {timeStr}
+              </button>
+            );
+          } else {
+            boldParts.push(
+              <span key={`bold-time-${index}-${match.index}-${timestampMatch.index}`} className="text-cyan-400">
+                {timeStr}
+              </span>
+            );
+          }
+
+          boldIndex = timestampMatch.index + timestampMatch[0].length;
+        }
+
+        // Add remaining text
+        if (boldIndex < boldText.length) {
+          boldParts.push(boldText.slice(boldIndex));
+        }
+
+        // If no special formatting found inside, just render as plain bold text
+        if (boldParts.length === 0) {
+          boldParts.push(boldText);
+        }
+
         parts.push(
           <strong key={`bold-${index}-${match.index}`} className="font-bold text-white">
-            {boldText}
+            {boldParts}
           </strong>
         );
       }
@@ -629,8 +1051,6 @@ const cleanMathMarkup = (text) => {
 
   let cleaned = text;
 
-  console.log('🧹 Cleaning math markup, original length:', text.length);
-
   // Remove markdown links with "MathML" text: [MathML](url) -> empty
   cleaned = cleaned.replace(/\[MathML\]\([^)]*\)/g, '');
 
@@ -668,8 +1088,6 @@ const cleanMathMarkup = (text) => {
   // Trim leading/trailing whitespace
   cleaned = cleaned.trim();
 
-  console.log('✅ Cleaned math markup, new length:', cleaned.length);
-
   return cleaned;
 };
 
@@ -677,14 +1095,11 @@ const cleanMathMarkup = (text) => {
 export const convertLatexToMathHTML = (text) => {
   if (!text || typeof text !== 'string') return text;
 
-  console.log('🔄 Converting LaTeX to HTML with KaTeX:', text.substring(0, 100) + '...');
-
   // Clean up any broken MathML/HTML markup first
   let converted = cleanMathMarkup(text);
 
   // Convert inline math \( ... \) to HTML using KaTeX
   converted = converted.replace(/\\\(([\s\S]+?)\\\)/g, (match, content) => {
-    console.log('📐 Found inline math:', content.substring(0, 50));
     try {
       const html = katex.renderToString(content.trim(), {
         displayMode: false,
@@ -703,7 +1118,6 @@ export const convertLatexToMathHTML = (text) => {
 
   // Convert display math \[ ... \] to HTML block using KaTeX
   converted = converted.replace(/\\\[([\s\S]+?)\\\]/g, (match, content) => {
-    console.log('📊 Found display math:', content.substring(0, 50));
     try {
       const html = katex.renderToString(content.trim(), {
         displayMode: true,
@@ -723,15 +1137,17 @@ export const convertLatexToMathHTML = (text) => {
   // Convert $ ... $ to HTML - allow any content except single $ (to avoid timestamp conflicts like 5:30)
   // More permissive: match non-digit start or ensure it contains LaTeX commands
   converted = converted.replace(/\$([^$]+?)\$/g, (match, content) => {
-    // Skip if it looks like a timestamp (e.g., $5:30$, $00:07$)
-    if (/^0?\d{1,2}:\d{2}$/.test(content.trim())) {
+    const trimmedContent = content.trim();
+
+    // Skip if it looks like a timestamp or timestamp range
+    // Matches: 5:30, 01:30, 1:30:45, or ranges like "01:30 - 03:45"
+    if (/^0?\d{1,2}:\d{2}(:\d{2})?(\s*-\s*0?\d{1,2}:\d{2}(:\d{2})?)?$/.test(trimmedContent)) {
       return match;
     }
-    console.log('💲 Found dollar math:', match.substring(0, 50), '→ content:', content.substring(0, 50));
+
     return `<span class="math-expression">${convertLatexToHTML(content)}</span>`;
   });
-  
-  console.log('✅ Conversion result:', converted.substring(0, 100) + '...');
+
   return converted;
 };
 

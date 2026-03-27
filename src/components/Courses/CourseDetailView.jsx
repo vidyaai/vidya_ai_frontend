@@ -122,14 +122,14 @@ const CourseDetailView = ({
 
       {/* HEADER */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button onClick={onBack} className="p-2 text-gray-400 hover:text-white transition-colors">
                 <ArrowLeft size={24} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-teal-400">
+                <h1 className="text-3xl font-bold text-teal-400">
                   {course.course_code ? `${course.course_code} ` : ''}
                   <span className="text-white">{course.title}</span>
                 </h1>
@@ -148,7 +148,7 @@ const CourseDetailView = ({
       </div>
 
       {/* BODY: sidebar + content */}
-      <div className="flex-1 flex max-w-screen-2xl mx-auto w-full">
+      <div className="flex-1 flex w-max-full w-full">
         {/* LEFT SIDEBAR */}
         <aside className="w-64 flex-shrink-0 border-r border-gray-800 bg-gray-950">
           <nav className="py-4">
@@ -1037,26 +1037,27 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
                   className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors"
                 >Edit</button>
                 {a.status === 'published' && <>
-                <button
-                  onClick={() => onViewSubmissions?.(a)}
-                  className="px-3 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 rounded text-xs transition-colors"
-                >Submissions</button>
-                <button
-                  onClick={() => handleDownloadPDF(a)}
-                  disabled={downloadingPDF === a.id}
-                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Download assignment PDF"
-                >
-                  {downloadingPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
-                </button>
-                <button
-                  onClick={() => handleDownloadSolutionPDF(a)}
-                  disabled={downloadingSolutionPDF === a.id}
-                  className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Download solutions PDF"
-                >
-                  {downloadingSolutionPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
-                </button>
+                  <button
+                    onClick={() => onViewSubmissions?.(a)}
+                    className="px-3 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 rounded text-xs transition-colors"
+                  >Submissions</button>
+                  <button
+                    onClick={() => handleDownloadPDF(a)}
+                    disabled={downloadingPDF === a.id}
+                    className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Download assignment PDF"
+                  >
+                    {downloadingPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                  </button>
+                  <button
+                    onClick={() => handleDownloadSolutionPDF(a)}
+                    disabled={downloadingSolutionPDF === a.id}
+                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Download solutions PDF"
+                  >
+                    {downloadingSolutionPDF === a.id ? <Loader2 size={13} className="animate-spin" /> : <BookOpen size={13} />}
+                  </button>
+                </>}
                 <button
                   onClick={() => handleDeleteAssignment(a.id)}
                   className="p-2 text-gray-400 hover:text-red-400 transition-colors ml-auto"
@@ -1064,7 +1065,6 @@ const AssignmentsSection = ({ courseId, onCreateAssignment, onEditAssignment, on
                 >
                     <Trash2 size={16} />
                 </button>
-                </>}
               </div>
             </div>
           ))}

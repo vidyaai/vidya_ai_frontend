@@ -339,24 +339,48 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
     
     // Immediately mark this as an uploaded video to prevent clearing
     lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const fetchUploadedVideoInfoWithRetry = async (maxAttempts = 8, delayMs = 1000) => {
+      let lastResponseData = null;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const response = await api.get(`/api/user-videos/info`, {
+          params: { video_id: videoId },
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+
+        lastResponseData = response.data;
+        const candidateUrl = buildAbsoluteVideoUrl(response.data?.video_url);
+        if (candidateUrl) {
+          return { data: response.data, videoUrl: candidateUrl };
+        }
+
+        if (attempt < maxAttempts) {
+          await sleep(delayMs);
+        }
+      }
+
+      return {
+        data: lastResponseData,
+        videoUrl: buildAbsoluteVideoUrl(lastResponseData?.video_url)
+      };
+    };
     
     try {
-      const response = await api.get(`/api/user-videos/info`, {
-        params: { video_id: videoId },
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      });
+      const { data, videoUrl } = await fetchUploadedVideoInfoWithRetry();
 
-      if (response.data) {
+      if (data && videoUrl) {
         console.log("Upload completion: Setting video data for ID:", videoId);
         
-        setTranscript(response.data.transcript || '');
+        setTranscript(data.transcript || '');
         
         const newVideoObject = {
-          title: response.data.title || 'Uploaded Video',
+          title: data.title || 'Uploaded Video',
           videoId: videoId,
           source: '',
           sourceType: 'uploaded',
-          videoUrl: buildAbsoluteVideoUrl(response.data.video_url),
+          videoUrl,
           isShared: false, // Uploaded videos are not shared
           shareToken: null,
           shareId: null,
@@ -378,7 +402,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
         // Update refs to prevent conflicts
         lastSelectedRef.current = { videoId, sourceType: 'uploaded' };
       } else {
-        setErrorMessage('Upload completed but no video data received');
+        setErrorMessage('Upload completed but video is not ready yet. Please try selecting it from Gallery in a moment.');
       }
     } catch (e) {
       setErrorMessage('Upload completed but failed to load video details');

@@ -311,9 +311,15 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
                       ${currentPrice}
                     </span>
                     {currentPrice > 0 && (
-                      <span className="text-gray-600 text-sm ml-1">
-                        /month
-                      </span>
+                      isAnnual ? (
+                        <span className="text-gray-600 text-sm ml-1">
+                          /year
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-sm ml-1">
+                          /month
+                        </span>
+                      )
                     )}
                     {isAnnual && plan.price.monthly > 0 && (
                       <div className="text-sm text-gray-500 mt-1">

@@ -1007,12 +1007,18 @@ const QuestionCard = ({
         return <span className="text-lg">123</span>;
       case 'long-answer':
         return <span className="text-lg">¶</span>;
+      case 'clinical-case':
+        return <span className="text-lg">🏥</span>;
+      case 'osce':
+        return <span className="text-lg">📋</span>;
       case 'true-false':
         return <span className="text-lg">T/F</span>;
       case 'code-writing':
         return <Code size={18} className="text-purple-400" />;
       case 'diagram-analysis':
         return <ImageIcon size={18} className="text-orange-400" />;
+      case 'diagram-required-in-answer':
+        return <Edit3 size={18} className="text-green-400" />;
       case 'multi-part':
         return <Layers size={18} className="text-blue-400" />;
       default:
@@ -1625,14 +1631,15 @@ const QuestionCard = ({
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Correct Answer
+                Solution & Derivation
               </label>
               <EditableTextWithEquations 
                 text={question.correctAnswer}
                 equations={question.equations || []}
                 onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
-                placeholder="Enter correct answer..."
-                multiline={false}
+                placeholder={`Step 1: [state given values and formula]\nStep 2: [substitute values and simplify]\n...\nFinal answer: [value with units]`}
+                multiline={true}
+                rows={5}
                 className="text-white"
               />
             </div>
@@ -1642,6 +1649,10 @@ const QuestionCard = ({
       case 'short-answer':
 
       case 'long-answer':
+
+      case 'clinical-case':
+
+      case 'osce':
         return (
           <div className="space-y-3">
             <div>
@@ -1932,6 +1943,160 @@ const QuestionCard = ({
                 multiline={true}
                 rows={4}
               />
+            </div>
+            
+            {/* Correct Answer Diagram (instructor-only answer key) */}
+            <div>
+              <label className="block text-sm font-medium text-green-400 mb-2">
+                Sample Answer Diagram (Instructor Only)
+              </label>
+              <p className="text-gray-400 text-xs mb-2">
+                Upload a diagram showing the complete sample answer if required (e.g., completed waveform, filled truth table). Only visible to instructors.
+              </p>
+              <div className="border-2 border-dashed border-green-700/50 rounded-lg p-4 text-center hover:border-green-600/50 transition-colors bg-green-900/10">
+                <input
+                  type="file"
+                  accept="image/*,.pdf,.svg"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      handleDiagramUpload(file, 'correctAnswerDiagram');
+                    }
+                  }}
+                  className="hidden"
+                  id={`answer-diagram-upload-${question.id}`}
+                />
+                {!question.correctAnswerDiagram && !uploadingDiagram && (
+                  <label
+                    htmlFor={`answer-diagram-upload-${question.id}`}
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <ImageIcon size={24} className="text-green-500 mb-2" />
+                    <p className="text-green-400 font-medium text-sm mb-1">Upload Answer Diagram</p>
+                    <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF supported</p>
+                  </label>
+                )}
+                {question.correctAnswerDiagram && !uploadingDiagram && renderDiagramDisplay(
+                  question.correctAnswerDiagram,
+                  false,
+                  () => handleDiagramDelete('correctAnswerDiagram'),
+                  (file) => handleDiagramReplace(file, 'correctAnswerDiagram'),
+                  'correctAnswerDiagram'
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'diagram-required-in-answer':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Question
+              </label>
+              <EditableTextWithEquations 
+                text={question.question}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ question: text, equations: equations })}
+                placeholder="Enter question text... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={3}
+              />
+            </div>
+
+            {/* Optional question diagram */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Question Diagram (Optional)
+              </label>
+              <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-600 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*,.pdf,.svg"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      handleDiagramUpload(file, 'diagram');
+                    }
+                  }}
+                  className="hidden"
+                  id={`diagram-upload-${question.id}`}
+                />
+                {!question.diagram && !uploadingDiagram && (
+                <label
+                  htmlFor={`diagram-upload-${question.id}`}
+                  className="cursor-pointer flex flex-col items-center"
+                >
+                    <ImageIcon size={32} className="text-gray-400 mb-2" />
+                    <p className="text-white font-medium mb-1">Upload Diagram</p>
+                    <p className="text-gray-400 text-sm">PNG, JPG, SVG, PDF supported</p>
+                </label>
+                )}
+                {uploadingDiagram && renderDiagramDisplay(null, true)}
+                {question.diagram && !uploadingDiagram && renderDiagramDisplay(
+                  question.diagram, 
+                  false, 
+                  () => handleDiagramDelete('diagram'),
+                  (file) => handleDiagramReplace(file, 'diagram'),
+                  'diagram'
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Sample Answer (Required)
+              </label>
+              <EditableTextWithEquations 
+                text={question.correctAnswer}
+                equations={question.equations || []}
+                onChange={({text, equations}) => onUpdate({ correctAnswer: text, equations: equations })}
+                placeholder="Describe the expected diagram and answer... Use <eq {latex}> or <eq {}> to add equations"
+                multiline={true}
+                rows={4}
+              />
+            </div>
+
+            {/* Correct Answer Diagram (instructor-only answer key) */}
+            <div>
+              <label className="block text-sm font-medium text-green-400 mb-2">
+                Correct Answer Diagram (Required for DRA)
+              </label>
+              <p className="text-gray-400 text-xs mb-2">
+                Upload a diagram showing the complete correct answer. Students must draw/sketch a diagram for this question. Only visible to instructors.
+              </p>
+              <div className="border-2 border-dashed border-green-700/50 rounded-lg p-4 text-center hover:border-green-600/50 transition-colors bg-green-900/10">
+                <input
+                  type="file"
+                  accept="image/*,.pdf,.svg"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      handleDiagramUpload(file, 'correctAnswerDiagram');
+                    }
+                  }}
+                  className="hidden"
+                  id={`answer-diagram-upload-${question.id}`}
+                />
+                {!question.correctAnswerDiagram && !uploadingDiagram && (
+                  <label
+                    htmlFor={`answer-diagram-upload-${question.id}`}
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <ImageIcon size={24} className="text-green-500 mb-2" />
+                    <p className="text-green-400 font-medium text-sm mb-1">Upload Answer Diagram</p>
+                    <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF supported</p>
+                  </label>
+                )}
+                {question.correctAnswerDiagram && !uploadingDiagram && renderDiagramDisplay(
+                  question.correctAnswerDiagram,
+                  false,
+                  () => handleDiagramDelete('correctAnswerDiagram'),
+                  (file) => handleDiagramReplace(file, 'correctAnswerDiagram'),
+                  'correctAnswerDiagram'
+                )}
+              </div>
             </div>
           </div>
         );

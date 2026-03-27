@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FolderPlus, Folder as FolderIcon, ArrowLeft, RefreshCw, MessageSquare, Trash2, Share2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FolderPlus, Folder as FolderIcon, ArrowLeft, RefreshCw, MessageSquare, Trash2, Share2, Menu, X, Home } from 'lucide-react';
 import { api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import SharingModal from '../Sharing/SharingModal.jsx';
@@ -20,10 +20,12 @@ const SectionTabs = ({ section, setSection }) => {
   );
 };
 
-const Gallery = ({ onNavigateToChat }) => {
+const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
   const { currentUser } = useAuth();
   const userId = currentUser?.uid || '';
   const [section, setSection] = useState('uploaded');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
   const [folders, setFolders] = useState([]);
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [videos, setVideos] = useState([]);
@@ -415,10 +417,56 @@ const Gallery = ({ onNavigateToChat }) => {
     return contentInfo[`${contentType}_${contentId}`] || null;
   };
 
-
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
-    <div className="w-full bg-gray-900 border border-gray-800 rounded-2xl p-4">
+    <div className="w-full">
+      {/* Navigation Menu */}
+      <div className="flex items-center gap-3 mb-4" ref={menuRef}>
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
+              <button
+                onClick={() => { onNavigateToChat?.(); setIsMenuOpen(false); }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <MessageSquare size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">Chat with a video</span>
+              </button>
+
+              <button
+                onClick={() => { onNavigateToHome?.(); setIsMenuOpen(false); }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors"
+              >
+                <div className="p-2 bg-emerald-600/10 rounded-lg">
+                  <Home size={18} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-medium">Home</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="w-full bg-gray-900 border border-gray-800 rounded-2xl p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           {currentFolderId && (
@@ -940,6 +988,7 @@ const Gallery = ({ onNavigateToChat }) => {
         </div>
       )}
     </div>
+      </div>
   );
 };
 

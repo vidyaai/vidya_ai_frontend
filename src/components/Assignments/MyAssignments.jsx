@@ -231,8 +231,13 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
     setCurrentView('main');
     setParsedAssignmentData(null);
     setCourseDetailId(null);
-    setSelectedCourseId(undefined); // Go back to courses grid
-    loadCourses();
+    if (selectedCourseId === null) {
+      // Coming back to Open Assignments — reload the list
+      loadAssignments(null);
+    } else {
+      setSelectedCourseId(undefined); // Go back to courses grid
+      loadCourses();
+    }
   };
 
   const handleSelectCourse = (courseId) => {
@@ -320,7 +325,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
       
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -386,7 +391,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
 
       {/* ─── COURSES GRID (when no course is selected) ─── */}
       {selectedCourseId === undefined && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-10">
           {loadingCourses ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 size={32} className="text-teal-500 animate-spin" />
@@ -422,7 +427,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
 
       {/* ─── ASSIGNMENTS INSIDE A COURSE ─── */}
       {selectedCourseId !== undefined && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-8">
           {/* Statistics Cards */}
           {!loading && !error && assignments.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -574,9 +579,19 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        assignment.engineering_level === 'graduate' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
+                        assignment.engineering_level === 'graduate' ? 'bg-purple-500/20 text-purple-300' :
+                        assignment.engineering_level === 'pre_med' ? 'bg-yellow-500/20 text-yellow-300' :
+                        assignment.engineering_level === 'mbbs_preclinical' ? 'bg-green-500/20 text-green-300' :
+                        assignment.engineering_level === 'mbbs_clinical' ? 'bg-teal-500/20 text-teal-300' :
+                        assignment.engineering_level === 'md' ? 'bg-purple-500/20 text-purple-300' :
+                        'bg-blue-500/20 text-blue-300'
                       }`}>
-                        {assignment.engineering_level === 'graduate' ? 'Graduate' : 'Undergraduate'}
+                        {assignment.engineering_level === 'graduate' ? 'Graduate' :
+                         assignment.engineering_level === 'pre_med' ? 'Pre-Med' :
+                         assignment.engineering_level === 'mbbs_preclinical' ? 'MBBS Pre-Clinical' :
+                         assignment.engineering_level === 'mbbs_clinical' ? 'MBBS Clinical' :
+                         assignment.engineering_level === 'md' ? 'MD / PG' :
+                         'Undergraduate'}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">

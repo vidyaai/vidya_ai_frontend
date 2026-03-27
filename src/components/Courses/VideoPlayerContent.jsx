@@ -110,7 +110,7 @@ const VideoPlayerContent = () => {
 
       {/* HEADER */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-5">
           <div className="flex items-center space-x-4">
             <button onClick={handleBack} className="p-2 text-gray-400 hover:text-white transition-colors">
               <ArrowLeft size={24} />
@@ -130,7 +130,7 @@ const VideoPlayerContent = () => {
       </div>
 
       {/* BODY: sidebar + video */}
-      <div className="flex-1 flex max-w-screen-2xl mx-auto w-full">
+      <div className="flex-1 flex max-w-full mx-auto w-full">
         {/* LEFT SIDEBAR */}
         <aside className="w-64 flex-shrink-0 border-r border-gray-800 bg-gray-950">
           <nav className="py-4">

@@ -48,7 +48,10 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
     { type: 'true-false', label: 'True/False', icon: 'T/F', category: 'Basic' },
     { type: 'code-writing', label: 'Code Writing', icon: '</>', category: 'Engineering', color: 'purple' },
     { type: 'diagram-analysis', label: 'Diagram Analysis', icon: '⚡', category: 'Engineering', color: 'orange' },
-    { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' }
+    { type: 'diagram-required-in-answer', label: 'Diagram Required in Answer', icon: '✏️', category: 'Engineering', color: 'green' },
+    { type: 'multi-part', label: 'Multi-Part Question', icon: '📋', category: 'Engineering', color: 'blue' },
+    { type: 'clinical-case-study', label: 'Clinical Case Study', icon: '🏥', category: 'Medical', color: 'green' },
+    { type: 'osce', label: 'OSCE / Clinical Skills', icon: '🩺', category: 'Medical', color: 'teal' }
   ];
 
   // Helper function to normalize question diagrams (for multi-part questions)
@@ -175,6 +178,10 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       },
       'diagram-analysis': {
         diagram: null
+      },
+      'diagram-required-in-answer': {
+        diagram: null,
+        correctAnswerDiagram: null
       },
       'multi-part': {
         subquestions: [],
@@ -547,6 +554,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         due_date: assignmentDueDate ? new Date(assignmentDueDate).toISOString() : null,
         questions: processedQuestions,
         status: status,
+        subject_category: preloadedData?.subject_category || 'engineering',
         engineering_level: preloadedData?.engineering_level || 'undergraduate',
         engineering_discipline: preloadedData?.engineering_discipline || 'general',
         question_types: [...new Set(questions.map(q => q.type))],
@@ -596,7 +604,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -676,7 +684,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-8">
         <div className={`grid gap-8 ${showPreview ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
           {/* Assignment Builder */}
           <div className={`${showPreview ? 'lg:col-span-2' : 'col-span-1'}`}>
@@ -790,7 +798,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                         
                         {/* Engineering Question Types */}
                         <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
-                          Engineering Question Types
+                          Science/Engineering Question Types
                         </div>
                         {questionTypes.filter(type => type.category === 'Engineering').map((type) => (
                           <button
@@ -812,7 +820,34 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                               <div className="text-xs text-gray-400 mt-1">
                                 {type.type === 'code-writing' && 'Programming problems with syntax highlighting'}
                                 {type.type === 'diagram-analysis' && 'Circuit diagrams and technical drawings'}
+                                {type.type === 'diagram-required-in-answer' && 'Student must draw/sketch a diagram as part of their answer'}
                                 {type.type === 'multi-part' && 'Complex problems with multiple sub-questions and code/diagrams'}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+
+                        {/* Medical Question Types */}
+                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
+                          Medical Question Types
+                        </div>
+                        {questionTypes.filter(type => type.category === 'Medical').map((type) => (
+                          <button
+                            key={type.type}
+                            onClick={() => addQuestion(type.type)}
+                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
+                          >
+                            <span className={`text-lg mr-3 ${
+                              type.color === 'green' ? 'group-hover:text-green-400' :
+                              type.color === 'teal' ? 'group-hover:text-teal-400' : ''
+                            }`}>
+                              {type.icon}
+                            </span>
+                            <div>
+                              <div>{type.label}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {type.type === 'clinical-case-study' && 'Patient scenario with diagnosis, investigations, and management'}
+                                {type.type === 'osce' && 'Clinical skill station with structured marking scheme'}
                               </div>
                             </div>
                           </button>

@@ -725,7 +725,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     setEngineeringLevel('');
                     setEngineeringDiscipline('');
                   }}
-                  className={`flex-1 px-3 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200 ${
+                  className={`flex-1 px-3 py-3 rounded-lg border-2 font-medium text-sm transition-all duration-200 ${
                     subjectCategory === cat.value
                       ? 'border-blue-500 bg-blue-500/20 text-blue-300'
                       : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
@@ -737,8 +737,9 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             </div>
           </div>
 
-          {/* Academic Level */}
-          <div>
+          <div className='grid grid-cols-2 gap-4'>
+            {/* Academic Level */}
+            <div>
             <label className="block text-white font-medium mb-3">Academic Level</label>
             <select
               value={engineeringLevel}
@@ -760,10 +761,10 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 </>
               )}
             </select>
-          </div>
+            </div>
 
-          {/* Subject Area (discipline) */}
-          <div>
+            {/* Subject Area (discipline) */}
+            <div>
             <label className="block text-white font-medium mb-3">Subject Area</label>
             <select
               value={engineeringDiscipline}
@@ -801,6 +802,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 </>
               )}
             </select>
+            </div>
           </div>
         </div>
 

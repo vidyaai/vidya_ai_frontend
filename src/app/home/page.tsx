@@ -34,7 +34,7 @@ export default function HomeRoute() {
       }}
       onNavigateToTranslate={() => router.push('/translate')}
       onNavigateToGallery={() => router.push('/gallery')}
-      onNavigateToAssignments={() => router.push('/assignments')}
+      onNavigateToAssignments={(section?: string) => router.push(section === 'ai-generator' ? '/assignments?view=my-assignments&section=ai-generator' : '/assignments')}
       onNavigateToPricing={() => router.push('/pricing')}
     />
   )

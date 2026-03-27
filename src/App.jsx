@@ -81,19 +81,18 @@ const AppContent = () => {
     setSelectedVideo(null);
     window.history.pushState({ page: 'home' }, '', '/home');
   };
-  
+
   const handleNavigateToChat = (videoData = null) => {
     setCurrentPage('chat');
     setSelectedVideo(videoData);
     if (videoData) {
-      // Add video ID to URL for bookmarking
       const url = videoData.videoId ? `/chat?v=${videoData.videoId}` : '/chat';
       window.history.pushState({ page: 'chat', videoData }, '', url);
     } else {
       window.history.pushState({ page: 'chat' }, '', '/chat');
     }
   };
-  
+
   const handleNavigateToTranslate = () => {
     setCurrentPage('translate');
     setSelectedVideo(null);

@@ -23,8 +23,7 @@ if (NODE_ENV === 'development') {
 } else if (NODE_ENV === 'production') {
   API_URL = 'https://api.vidyaai.co';
 } else if (NODE_ENV === 'local') {
-  API_URL = 'http://54.153.26.252:8001';  // EC2 backend on port 8001
-  // API_URL = 'http://localhost:8001';
+  API_URL = 'http://localhost:8000';
 }
 
 console.log("Final API_URL", API_URL);

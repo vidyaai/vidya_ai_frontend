@@ -29,7 +29,8 @@ import CourseDetailView from '../Courses/CourseDetailView';
 import { courseApi } from '../Courses/courseApi';
 
 const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSection }) => {
-  const [currentView, setCurrentView] = useState(initialCourseId ? 'course-detail' : 'main');
+  const isOpenAIGenerator = initialSection === 'ai-generator' && !initialCourseId;
+  const [currentView, setCurrentView] = useState(initialCourseId ? 'course-detail' : isOpenAIGenerator ? 'ai-generator' : 'main');
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [sharingModalOpen, setSharingModalOpen] = useState(false);
   const [parseModalOpen, setParseModalOpen] = useState(false);
@@ -43,7 +44,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
 
   // Course state
   const [courses, setCourses] = useState([]);
-  const [selectedCourseId, setSelectedCourseId] = useState(undefined); // undefined = show courses grid, null = "Open Assignments"
+  const [selectedCourseId, setSelectedCourseId] = useState(isOpenAIGenerator ? null : undefined); // undefined = show courses grid, null = "Open Assignments"
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [showCreateCourse, setShowCreateCourse] = useState(false);
   const [courseDetailId, setCourseDetailId] = useState(initialCourseId || null);

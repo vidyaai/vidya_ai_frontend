@@ -359,13 +359,19 @@ const PlayerComponent = ({
       console.log("New S3 URL:", currentVideoUrl);
       
       setLoadingState('Switching to new uploaded video...');
-      
-      // Wait for next tick to ensure video element is available
-      setTimeout(() => {
+
+      // Wait for video element to be mounted (with retry logic)
+      const waitForElement = (attempts = 0) => {
         const el = html5Ref.current;
+        if (!el && attempts < 10) {
+          // Element not ready, retry after 50ms
+          setTimeout(() => waitForElement(attempts + 1), 50);
+          return;
+        }
+
         if (!el) {
-          console.error("Video element still not available after timeout");
-          setLoadingState('Error: Video element not ready');
+          console.error("Video element not available after multiple attempts");
+          setLoadingState('Error: Video element not ready - please refresh');
           return;
         }
 
@@ -406,16 +412,27 @@ const PlayerComponent = ({
           setLoadingState('Video metadata loaded');
         };
 
-        const handleCanPlay = () => {
+        const handleCanPlay = async () => {
           console.log("NEW UPLOADED VIDEO: Ready to play!");
           setPlayerReady(true);
           setLoadingState(''); // Clear loading state when ready to play
           if (onPlayerReady) onPlayerReady(null);
+
+          // Auto-play when ready
+          try {
+            console.log("Attempting to auto-play uploaded video");
+            await videoEl.play();
+            console.log("Auto-play successful");
+          } catch (error) {
+            // Auto-play was prevented (likely due to browser policy)
+            console.log("Auto-play prevented, waiting for user interaction:", error.message);
+            setLoadingState('Click play to start');
+          }
         };
 
         const handleCanPlayThrough = () => {
           console.log("NEW UPLOADED VIDEO: Can play through (enough buffered)");
-          setLoadingState('Fully loaded');
+          setLoadingState(''); // Clear loading state when fully buffered
         };
 
         const handleError = (e) => {
@@ -425,9 +442,13 @@ const PlayerComponent = ({
             message: e.target.error?.message,
             src: videoEl.src,
             readyState: videoEl.readyState,
-            networkState: videoEl.networkState
+            networkState: videoEl.networkState,
+            currentVideoUrl: currentVideoUrl
           });
-          
+
+          // Log the full URL to help debug S3 issues
+          console.error('Full video URL:', currentVideoUrl);
+
           let errorMsg = 'Unknown error';
           if (e.target.error) {
             switch(e.target.error.code) {
@@ -435,31 +456,37 @@ const PlayerComponent = ({
                 errorMsg = 'Video loading aborted';
                 break;
               case 2:
-                errorMsg = 'Network error loading video';
+                errorMsg = 'Network error - check S3 URL and CORS';
                 break;
               case 3:
-                errorMsg = 'Video decode error';
+                errorMsg = 'Video decode error - codec may not be supported';
                 break;
               case 4:
-                errorMsg = 'Video format not supported';
+                errorMsg = 'Video format not supported or S3 access denied';
                 break;
               default:
                 errorMsg = `Video error code: ${e.target.error.code}`;
             }
           }
-          
+
           setLoadingState(`Error: ${errorMsg}`);
           setPlayerReady(false);
         };
 
         const handleProgress = () => {
-          // Only show buffering progress if the video is not playing or is stalled
-          if (videoEl.buffered.length > 0 && videoEl.duration && (!isPlaying || videoEl.readyState < 3)) {
+          // Only show buffering progress if video is loading and NOT ready to play
+          if (videoEl.buffered.length > 0 && videoEl.duration) {
             const buffered = (videoEl.buffered.end(0) / videoEl.duration) * 100;
-            setLoadingState(`Buffering: ${Math.round(buffered)}%`);
-          } else if (isPlaying && videoEl.readyState >= 3) {
-            // Video is playing and has enough data, clear loading state
-            setLoadingState('');
+
+            // Show buffering only if:
+            // 1. Video is not playing AND readyState < 3 (not enough data)
+            // 2. Video is playing but stalled (readyState < 3)
+            if (videoEl.readyState < 3 && !isPlaying) {
+              setLoadingState(`Buffering: ${Math.round(buffered)}%`);
+            } else if (videoEl.readyState >= 3) {
+              // Video has enough data, clear any buffering message
+              setLoadingState('');
+            }
           }
         };
 
@@ -496,7 +523,10 @@ const PlayerComponent = ({
           console.error("Error setting NEW video source:", error);
           setLoadingState(`Source error: ${error.message}`);
         }
-      }, 100);
+      };
+
+      // Start waiting for element
+      waitForElement();
     } else if (currentVideoId && currentVideo?.sourceType === 'youtube' && shouldSwitchVideo && !isInitializing) {
       console.log("Loading YouTube video:", currentVideoId);
       initializeYouTubePlayer(currentVideoId);

@@ -1,7 +1,7 @@
 // ChatBoxComponent.jsx - AI chat interface with clickable timestamps
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X, Share2 } from 'lucide-react';
-import { formatTime, parseMarkdown, parseMarkdownWithMath, SimpleSpinner, api, convertLatexToMathHTML } from '../generic/utils.jsx';
+import { formatTime, parseMarkdown, parseMarkdownWithMath, SimpleSpinner, api, auth, convertLatexToMathHTML } from '../generic/utils.jsx';
 import SharingModal from '../Sharing/SharingModal.jsx';
 
 const ChatBoxComponent = ({
@@ -30,7 +30,8 @@ const ChatBoxComponent = ({
   const [sharedHistoryError, setSharedHistoryError] = useState(null);
   const [isLoadingSharedChat, setIsLoadingSharedChat] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null); // { status, progress, message }
-  
+  const [useStreaming, setUseStreaming] = useState(true); // Enable streaming by default
+
   const chatContainerRef = useRef(null);
   const progressPollingRef = useRef(null);
 
@@ -174,6 +175,129 @@ const ChatBoxComponent = ({
     }
   }, [currentVideo?.sourceType, currentVideo?.videoId]);
 
+  // Streaming query handler
+  const handleStreamingQuery = async (userMessage, currentQuery, conversationContext) => {
+    try {
+      // Create placeholder AI message that will be updated
+      const aiMessageId = Date.now() + 1;
+      const aiMessage = {
+        id: aiMessageId,
+        sender: 'ai',
+        text: '',
+        timestamp: currentTime,
+        isStreaming: true
+      };
+
+      setChatMessages(prevMessages => addMessageWithHistory(aiMessage, prevMessages));
+
+      // Create request body
+      const requestBody = {
+        video_id: currentVideo.videoId,
+        query: currentQuery,
+        timestamp: currentTime,
+        is_image_query: queryType === 'frame',
+        conversation_history: conversationContext,
+        session_id: activeSessionId
+      };
+
+      // Get Firebase ID token
+      let token = '';
+      const user = auth?.currentUser;
+      if (user) {
+        token = await user.getIdToken();
+      }
+
+      // Use fetch for streaming (EventSource doesn't support POST)
+      const response = await fetch(`${api.defaults.baseURL}/api/query/video/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulatedText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6); // Remove 'data: ' prefix
+
+            try {
+              const chunk = JSON.parse(jsonStr);
+
+              if (chunk.type === 'content') {
+                // Append content chunk
+                accumulatedText += chunk.data;
+
+                // Update the AI message with accumulated text
+                setChatMessages(prevMessages => {
+                  return prevMessages.map(msg =>
+                    msg.id === aiMessageId
+                      ? { ...msg, text: accumulatedText, isStreaming: true }
+                      : msg
+                  );
+                });
+
+                // Auto-scroll to bottom
+                if (chatContainerRef.current) {
+                  chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                }
+              } else if (chunk.type === 'metadata') {
+                // Store metadata (web sources, etc.)
+                // Could be used to show source citations
+                console.log('Metadata:', chunk.data);
+              } else if (chunk.type === 'done') {
+                // Streaming complete - mark message as done
+                setChatMessages(prevMessages => {
+                  return prevMessages.map(msg =>
+                    msg.id === aiMessageId
+                      ? { ...msg, isStreaming: false }
+                      : msg
+                  );
+                });
+              } else if (chunk.type === 'error') {
+                throw new Error(chunk.data);
+              }
+            } catch (parseError) {
+              console.error('Error parsing chunk:', parseError, jsonStr);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error("Streaming error:", error);
+
+      const errorMessage = {
+        id: Date.now() + 1,
+        sender: 'system',
+        text: `Error: ${error.response?.data?.detail || error.message || "Streaming failed"}`,
+        timestamp: null,
+        isError: true
+      };
+
+      setChatMessages(prevMessages => addMessageWithHistory(errorMessage, prevMessages));
+    }
+  };
+
   const handleQuerySubmit = async (e) => {
     e.preventDefault();
     
@@ -190,16 +314,23 @@ const ChatBoxComponent = ({
     const currentQuery = userQuestion;
     setUserQuestion('');
     setIsProcessingQuery(true);
-    
+
     try {
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
-      
+
       // Get conversation context before making API call
       const conversationContext = getConversationContext(chatMessages);
-      
-      // Use different endpoints based on whether the video is shared or not
+
+      // Use streaming for better UX (unless disabled or shared video)
+      if (useStreaming && !currentVideo.isShared && queryType !== 'frame') {
+        await handleStreamingQuery(userMessage, currentQuery, conversationContext);
+        setIsProcessingQuery(false);
+        return;
+      }
+
+      // Fallback to regular (non-streaming) request
       let response;
       if (currentVideo.isShared && currentVideo.shareToken) {
         // Use shared video chat endpoint
@@ -572,6 +703,9 @@ const ChatBoxComponent = ({
                   parseMarkdownWithMath(message.text, onSeekToTime)
                 ) : (
                   parseMarkdown(message.text, onSeekToTime)
+                )}
+                {message.isStreaming && (
+                  <span className="inline-block ml-1 w-1.5 h-4 bg-emerald-500 animate-pulse"></span>
                 )}
               </div>
             </div>

@@ -42,10 +42,14 @@ const AssignmentManager = ({ onNavigateToHome }) => {
   }, []);
 
   const handleNavigateToMyAssignments = () => {
+    setInitialSection(null);
+    setInitialCourseId(null);
     setCurrentView('my-assignments');
   };
 
   const handleNavigateToAssignedToMe = () => {
+    setInitialSection(null);
+    setInitialCourseId(null);
     setCurrentView('assigned-to-me');
   };
 

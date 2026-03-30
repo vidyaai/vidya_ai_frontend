@@ -56,7 +56,15 @@ const StudentCourseView = ({ courseId, onBack, onNavigateToHome, onOpenAssignmen
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Loader2 size={32} className="text-teal-500 animate-spin" />
+        <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+          <defs>
+            <mask id="crescent-mask-student-course">
+              <circle cx="40" cy="40" r="36" fill="white" />
+              <circle cx="43" cy="40" r="37" fill="black" />
+            </mask>
+          </defs>
+          <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-student-course)" />
+        </svg>
       </div>
     );
   }

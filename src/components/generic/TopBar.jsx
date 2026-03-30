@@ -181,8 +181,15 @@ const TopBar = ({ onNavigateToHome }) => {
       {isNavigatingHome && (
         <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-400 text-sm tracking-wide">Loading...</p>
+            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+              <defs>
+                <mask id="crescent-mask-topbar">
+                  <circle cx="40" cy="40" r="36" fill="white" />
+                  <circle cx="43" cy="40" r="37" fill="black" />
+                </mask>
+              </defs>
+              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-topbar)" />
+            </svg>
           </div>
         </div>
       )}

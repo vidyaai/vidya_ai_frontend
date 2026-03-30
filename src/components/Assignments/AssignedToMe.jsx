@@ -21,6 +21,13 @@ import StudentCourseView from '../Courses/StudentCourseView';
 import { courseApi } from '../Courses/courseApi';
 
 const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSection }) => {
+  const [isGoingBack, setIsGoingBack] = useState(false);
+
+  useEffect(() => {
+    if (!isGoingBack) return;
+    onBack?.();
+  }, [isGoingBack]);
+
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [doAssignmentModalOpen, setDoAssignmentModalOpen] = useState(false);
   const [assignedAssignments, setAssignedAssignments] = useState([]);
@@ -255,16 +262,31 @@ const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSectio
 
   return (
     <div className="min-h-screen bg-gray-950">
+      {isGoingBack && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+              <defs>
+                <mask id="crescent-mask-assigned">
+                  <circle cx="40" cy="40" r="36" fill="white" />
+                  <circle cx="43" cy="40" r="37" fill="black" />
+                </mask>
+              </defs>
+              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-assigned)" />
+            </svg>
+          </div>
+        </div>
+      )}
       {/* Top Navigation */}
       <TopBar onNavigateToHome={onNavigateToHome} />
-      
+
       {/* Page Header */}
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={onBack}
+                onClick={() => setIsGoingBack(true)}
                 className="p-2 text-gray-400 hover:text-white transition-colors"
               >
                 <ArrowLeft size={24} />

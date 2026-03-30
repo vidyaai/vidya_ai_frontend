@@ -23,8 +23,15 @@ const SectionTabs = ({ section, setSection }) => {
 const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
   const { currentUser } = useAuth();
   const userId = currentUser?.uid || '';
+  const [navigatingTo, setNavigatingTo] = useState(null);
   const [section, setSection] = useState('uploaded');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!navigatingTo) return;
+    if (navigatingTo === 'chat') onNavigateToChat?.();
+    else if (navigatingTo === 'home') onNavigateToHome?.();
+  }, [navigatingTo]);
   const menuRef = useRef(null);
   const [folders, setFolders] = useState([]);
   const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -430,6 +437,19 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
 
   return (
     <div className="w-full">
+      {navigatingTo && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+            <defs>
+              <mask id="crescent-mask-gallery">
+                <circle cx="40" cy="40" r="36" fill="white" />
+                <circle cx="43" cy="40" r="37" fill="black" />
+              </mask>
+            </defs>
+            <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-gallery)" />
+          </svg>
+        </div>
+      )}
       {/* Navigation Menu */}
       <div className="flex items-center gap-3 mb-4" ref={menuRef}>
         <div className="relative">
@@ -443,7 +463,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
           {isMenuOpen && (
             <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
               <button
-                onClick={() => { onNavigateToChat?.(); setIsMenuOpen(false); }}
+                onClick={() => { setIsMenuOpen(false); setNavigatingTo('chat'); }}
                 className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
               >
                 <div className="p-2 bg-emerald-600/10 rounded-lg">
@@ -453,7 +473,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
               </button>
 
               <button
-                onClick={() => { onNavigateToHome?.(); setIsMenuOpen(false); }}
+                onClick={() => { setIsMenuOpen(false); setNavigatingTo('home'); }}
                 className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors"
               >
                 <div className="p-2 bg-emerald-600/10 rounded-lg">
@@ -629,15 +649,17 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
       {/* Subfolders */}
       {section !== 'shared' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
-          {/* Root drop area */}
-          <div
-            onDragOver={allowDrop}
-            onDrop={(e) => onDropFolder(e, null)}
-            className="rounded-xl border border-dashed border-gray-700 bg-gray-800 p-3 text-center text-gray-400"
-            title="Drop here to move to root"
-          >
-            Move to Root
-          </div>
+          {/* Root drop area - only shown inside folders */}
+          {currentFolderId && (
+            <div
+              onDragOver={allowDrop}
+              onDrop={(e) => onDropFolder(e, null)}
+              className="rounded-xl border border-dashed border-gray-700 bg-gray-800 p-3 text-center text-gray-400"
+              title="Drop here to move to root"
+            >
+              Move to Root
+            </div>
+          )}
           {subfolders.map((f) => {
             const folderInfo = getContentInfo('folder', f.id);
             const isShared = folderInfo?.is_shared || false;
@@ -709,7 +731,12 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
       )}
 
       {/* Videos */}
-      {section !== 'shared' && (
+      {section !== 'shared' && isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        </div>
+      )}
+      {section !== 'shared' && !isLoading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {videos.map((v) => {
             const videoInfo = getContentInfo('video', v.id);
@@ -813,7 +840,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
           })}
           {videos.length === 0 && (
             <div className="col-span-full text-gray-500 text-sm py-6 text-center">
-              {isLoading ? 'Loading...' : 'No videos in this folder'}
+              No videos in this folder
             </div>
           )}
         </div>

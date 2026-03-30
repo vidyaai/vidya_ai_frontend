@@ -8,6 +8,14 @@ import { API_URL, saveToLocalStorage, loadFromLocalStorage, api } from '../gener
 import VideoUploader from './VideoUploader.jsx';
 
 const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGallery, onClearVideo }) => {
+  const [navigatingTo, setNavigatingTo] = useState(null);
+
+  useEffect(() => {
+    if (!navigatingTo) return;
+    if (navigatingTo === 'home') onNavigateToHome?.();
+    else if (navigatingTo === 'gallery') onNavigateToGallery?.();
+  }, [navigatingTo]);
+
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -669,6 +677,19 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
 
   return (
     <div className="w-full">
+      {navigatingTo && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+            <defs>
+              <mask id="crescent-mask-chat">
+                <circle cx="40" cy="40" r="36" fill="white" />
+                <circle cx="43" cy="40" r="37" fill="black" />
+              </mask>
+            </defs>
+            <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-chat)" />
+          </svg>
+        </div>
+      )}
       {/* Top Navigation Bar */}
       <div className="flex items-center gap-3 mb-4">
         {/* Menu Button */}
@@ -695,8 +716,8 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
 
               <button
                 onClick={() => {
-                  if (onNavigateToGallery) onNavigateToGallery();
                   setIsMenuOpen(false);
+                  setNavigatingTo('gallery');
                 }}
                 className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
               >
@@ -708,8 +729,8 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
 
               <button
                 onClick={() => {
-                  if (onNavigateToHome) onNavigateToHome();
                   setIsMenuOpen(false);
+                  setNavigatingTo('home');
                 }}
                 className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors"
               >
@@ -725,9 +746,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
         {/* Back Arrow - only show when video is loaded */}
         {currentVideo.videoId && (
           <button
-            onClick={() => {
-              if (onNavigateToHome) onNavigateToHome();
-            }}
+            onClick={() => setNavigatingTo('home')}
             className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
             title="Back to Home"
           >

@@ -7,6 +7,7 @@ import { API_URL } from './utils';
 const TopBar = ({ onNavigateToHome }) => {
   const { currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,11 @@ const TopBar = ({ onNavigateToHome }) => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isNavigatingHome) return;
+    onNavigateToHome?.();
+  }, [isNavigatingHome]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -172,10 +178,18 @@ const TopBar = ({ onNavigateToHome }) => {
 
   return (
     <header className="bg-gray-900 border-b border-gray-800 shadow-lg">
+      {isNavigatingHome && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-400 text-sm tracking-wide">Loading...</p>
+          </div>
+        </div>
+      )}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6">
         <div className="flex justify-between items-center py-3">
           <button
-            onClick={onNavigateToHome}
+            onClick={() => onNavigateToHome && setIsNavigatingHome(true)}
             className="focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded-lg transition-all duration-200 hover:opacity-80"
             aria-label="Go to Home Page"
           >

@@ -1,24 +1,22 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { useEffect, ReactNode } from 'react'
+import SetUserTypePage from '@/components/SetUserType/SetUserTypePage'
 
-export default function ProtectedRouteWrapper({ children }: { children: ReactNode }) {
+export default function SetUserTypeRoute() {
   const router = useRouter()
   const { currentUser, loading, userType, userTypeLoading } = useAuth()
 
   useEffect(() => {
     if (loading || userTypeLoading) return
-
     if (!currentUser) {
-      const currentPath = window.location.pathname + window.location.search
-      router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`)
+      router.push('/login?returnUrl=/set-user-type')
       return
     }
-
-    if (userType === null) {
-      router.push('/set-user-type')
+    if (userType !== null) {
+      router.push('/home')
     }
   }, [currentUser, loading, userType, userTypeLoading, router])
 
@@ -30,9 +28,9 @@ export default function ProtectedRouteWrapper({ children }: { children: ReactNod
     )
   }
 
-  if (!currentUser || userType === null) {
+  if (!currentUser || userType !== null) {
     return null // Will redirect
   }
 
-  return <>{children}</>
+  return <SetUserTypePage />
 }

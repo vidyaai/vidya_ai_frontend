@@ -2,9 +2,9 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../firebase/config';
+import { api } from '../components/generic/utils';
 
 const AuthContext = createContext();
 
@@ -22,6 +23,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState(null);
+  const [userTypeLoading, setUserTypeLoading] = useState(false);
 
   // Check if Firebase is properly configured
   const isFirebaseConfigured = auth !== null;
@@ -151,6 +154,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    setUserType(null);
     if (!isFirebaseConfigured) {
       return demoLogout();
     }
@@ -166,13 +170,34 @@ export const AuthProvider = ({ children }) => {
     return sendPasswordResetEmail(auth, email);
   };
 
+  const fetchUserType = async () => {
+    setUserTypeLoading(true);
+    try {
+      const response = await api.get('/api/users/profile');
+      setUserType(response.data.user_type ?? null);
+    } catch (error) {
+      console.error('Failed to fetch user type:', error);
+      setUserType(null);
+    } finally {
+      setUserTypeLoading(false);
+    }
+  };
+
+  const updateUserType = async (type) => {
+    const response = await api.patch('/api/users/profile', { user_type: type });
+    setUserType(response.data.user_type);
+    return response.data.user_type;
+  };
+
   useEffect(() => {
     if (!isFirebaseConfigured) {
       // Check for demo user in localStorage
       const demoUser = localStorage.getItem('demoUser');
       if (demoUser) {
         try {
-          setCurrentUser(JSON.parse(demoUser));
+          const parsedUser = JSON.parse(demoUser);
+          setCurrentUser(parsedUser);
+          fetchUserType();
         } catch (error) {
           console.error('Failed to parse demo user from localStorage:', error);
           localStorage.removeItem('demoUser');
@@ -184,6 +209,11 @@ export const AuthProvider = ({ children }) => {
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      if (user) {
+        fetchUserType();
+      } else {
+        setUserType(null);
+      }
       setLoading(false);
     });
 
@@ -192,7 +222,10 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     currentUser,
-    loading,  // ← ADD THIS LINE
+    loading,
+    userType,
+    userTypeLoading,
+    updateUserType,
     signup,
     login,
     signInWithGoogle,

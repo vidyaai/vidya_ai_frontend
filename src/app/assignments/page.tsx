@@ -24,6 +24,7 @@ function AssignmentsContent() {
         onBack={onBack}
         onNavigateToHome={onNavigateToHome}
         initialCourseId={courseId}
+        initialSection={section}
       />
     )
   }

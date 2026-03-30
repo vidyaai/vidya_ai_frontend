@@ -1,17 +1,27 @@
 // src/components/generic/TopBar.jsx
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, Menu, X, Settings, CreditCard, XCircle, RefreshCw } from 'lucide-react';
+import { User, LogOut, Menu, X, Settings, CreditCard, XCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL } from './utils';
 
 const TopBar = ({ onNavigateToHome }) => {
   const { currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isNavigatingHome) return;
+    onNavigateToHome?.();
+  }, [isNavigatingHome]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -129,12 +139,64 @@ const TopBar = ({ onNavigateToHome }) => {
     window.location.href = '/pricing';
   };
 
+  const openDeleteAccountModal = () => {
+    setDeleteConfirmText('');
+    setDeleteError('');
+    setShowDeleteAccountModal(true);
+    setIsUserDropdownOpen(false);
+    setIsMenuOpen(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${API_URL}/api/users/account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      if (response.ok) {
+        setShowDeleteAccountModal(false);
+        await logout();
+        window.location.href = '/login';
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setDeleteError(data.detail || 'Failed to delete account. Please try again.');
+      }
+    } catch {
+      setDeleteError('Failed to delete account. Please check your connection and try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <header className="bg-gray-900 border-b border-gray-800 shadow-lg">
+      {isNavigatingHome && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+              <defs>
+                <mask id="crescent-mask-topbar">
+                  <circle cx="40" cy="40" r="36" fill="white" />
+                  <circle cx="43" cy="40" r="37" fill="black" />
+                </mask>
+              </defs>
+              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-topbar)" />
+            </svg>
+          </div>
+        </div>
+      )}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6">
         <div className="flex justify-between items-center py-3">
           <button
-            onClick={onNavigateToHome}
+            onClick={() => onNavigateToHome && setIsNavigatingHome(true)}
             className="focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded-lg transition-all duration-200 hover:opacity-80"
             aria-label="Go to Home Page"
           >
@@ -290,6 +352,14 @@ const TopBar = ({ onNavigateToHome }) => {
                         </button>
                       )}
 
+                      <button
+                        onClick={openDeleteAccountModal}
+                        className="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                      >
+                        <Trash2 size={16} className="mr-3" />
+                        Delete Account
+                      </button>
+
                       <div className="border-t border-gray-100 mt-2 pt-2">
                         <button
                           onClick={() => {
@@ -395,6 +465,14 @@ const TopBar = ({ onNavigateToHome }) => {
             )}
 
             <button
+              onClick={openDeleteAccountModal}
+              className="flex items-center w-full px-4 py-3 text-red-400 hover:text-red-300 hover:bg-gray-800 rounded-lg transition-all duration-200 font-medium"
+            >
+              <Trash2 size={20} className="mr-3" />
+              Delete Account
+            </button>
+
+            <button
               onClick={handleLogout}
               className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 font-medium"
             >
@@ -413,7 +491,7 @@ const TopBar = ({ onNavigateToHome }) => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Cancel plan</h2>
               <p className="text-gray-700 mb-6">
                 Cancel to stop recurring billing. You can still use {subscription?.plan_name || 'Vidya AI Plus'} until{' '}
-                {subscription?.current_period_end 
+                {subscription?.current_period_end
                   ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   : 'the end of your billing period'}.
               </p>
@@ -431,6 +509,65 @@ const TopBar = ({ onNavigateToHome }) => {
                   className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:bg-red-400"
                 >
                   {loading ? 'Cancelling...' : 'Cancel plan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                  <Trash2 size={20} className="text-red-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Delete Account</h2>
+              </div>
+
+              <p className="text-gray-700 mb-3">
+                This will <strong>permanently delete</strong> your account and all associated data including videos, assignments, courses, and summaries. This action cannot be undone.
+              </p>
+
+              {subscription && subscription.plan_name !== 'Free' && subscription.status === 'active' && !subscription.cancel_at_period_end && (
+                <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-700">
+                  You have an active <strong>{subscription.plan_name}</strong> subscription. It will be cancelled immediately upon deletion.
+                </div>
+              )}
+
+              <p className="text-gray-700 mb-2">
+                Type <strong className="font-mono text-red-600">DELETE</strong> to confirm:
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE to confirm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                autoComplete="off"
+              />
+
+              {deleteError && (
+                <p className="text-red-600 text-sm mb-3">{deleteError}</p>
+              )}
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteAccountModal(false)}
+                  disabled={deleteLoading}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:bg-red-400"
+                >
+                  {deleteLoading ? 'Deleting...' : 'Delete Account'}
                 </button>
               </div>
             </div>

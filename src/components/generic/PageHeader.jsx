@@ -4,7 +4,17 @@ import { Menu, X, MessageSquare, Folder, Globe, Home, DollarSign } from 'lucide-
 
 const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToHome, onNavigateToPricing }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [navigatingTo, setNavigatingTo] = useState(null);
   const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!navigatingTo) return;
+    if (navigatingTo === 'chat') onNavigateToChat?.(null);
+    else if (navigatingTo === 'gallery') onNavigateToGallery?.();
+    else if (navigatingTo === 'translate') onNavigateToTranslate?.();
+    else if (navigatingTo === 'pricing') onNavigateToPricing?.();
+    else if (navigatingTo === 'home') onNavigateToHome?.();
+  }, [navigatingTo]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -24,31 +34,46 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
     {
       icon: MessageSquare,
       label: 'Chat with My Video',
-      onClick: () => onNavigateToChat(null),
+      key: 'chat',
       active: title === 'Chat with My Video'
     },
     {
       icon: Folder,
       label: 'My Gallery',
-      onClick: onNavigateToGallery,
+      key: 'gallery',
       active: title === 'My Gallery'
     },
     {
       icon: Globe,
       label: 'Translate',
-      onClick: onNavigateToTranslate,
+      key: 'translate',
       active: title === 'Translate'
     },
     {
       icon: DollarSign,
       label: 'Pricing',
-      onClick: onNavigateToPricing,
+      key: 'pricing',
       active: title === 'Pricing'
     }
   ];
 
   return (
     <div className="flex items-center justify-between mb-6">
+      {navigatingTo && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+              <defs>
+                <mask id="crescent-mask-pageheader">
+                  <circle cx="40" cy="40" r="36" fill="white" />
+                  <circle cx="43" cy="40" r="37" fill="black" />
+                </mask>
+              </defs>
+              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-pageheader)" />
+            </svg>
+          </div>
+        </div>
+      )}
       <div className="flex items-center space-x-3">
         <img 
           src="/logo-new-2.png" 
@@ -78,8 +103,8 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
                   <button
                     key={index}
                     onClick={() => {
-                      item.onClick();
                       setIsMenuOpen(false);
+                      setNavigatingTo(item.key);
                     }}
                     className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors duration-200 ${
                       item.active
@@ -92,15 +117,15 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
                   </button>
                 );
               })}
-              
+
               {/* Divider */}
               <div className="border-t border-gray-700 my-2"></div>
-              
+
               {/* Home option */}
               <button
                 onClick={() => {
-                  onNavigateToHome();
                   setIsMenuOpen(false);
+                  setNavigatingTo('home');
                 }}
                 className="w-full flex items-center px-4 py-3 text-left text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors duration-200"
               >

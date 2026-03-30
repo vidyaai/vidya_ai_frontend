@@ -14,7 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import TopBar from '../generic/TopBar';
 
 const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery, onNavigateToAssignments, onNavigateToPricing }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userType } = useAuth();
   const [navigatingTo, setNavigatingTo] = useState(null);
 
   // Fire navigation AFTER React has committed the overlay to the DOM.
@@ -30,6 +30,24 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
     else if (navigatingTo === 'translate') onNavigateToTranslate();
   }, [navigatingTo]);
 
+  const assignmentFeature = userType === 'student'
+    ? {
+        icon: ClipboardList,
+        title: "Submit & View Assignments",
+        description: "Access assignments shared with you, submit your work, track due dates, and view grades and feedback from your professor.",
+        action: "View Assignments",
+        onClick: () => setNavigatingTo('assignments'),
+        gradient: "from-teal-500 to-cyan-500"
+      }
+    : {
+        icon: ClipboardList,
+        title: "Create & Manage Assignments",
+        description: "Create assignments manually or with AI-powered generation. Share with students, review submissions, and provide grades and feedback.",
+        action: "Manage Assignments",
+        onClick: () => setNavigatingTo('assignments'),
+        gradient: "from-teal-500 to-cyan-500"
+      };
+
   const features = [
     {
       icon: MessageSquare,
@@ -39,22 +57,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       onClick: () => setNavigatingTo('chat'),
       gradient: "from-blue-500 to-cyan-500"
     },
-    {
-      icon: ClipboardList,
-      title: "AI Assignment Manager",
-      description: "Create, manage, and share assignments with AI-powered generation. Build custom assignments or let AI create them from your content.",
-      action: "Manage Assignments",
-      onClick: () => setNavigatingTo('assignments'),
-      gradient: "from-teal-500 to-cyan-500"
-    },
-    // {
-    //   icon: Video,
-    //   title: "Gallery",
-    //   description: "Organize your uploaded and YouTube videos into folders. Drag and drop to move items within each section.",
-    //   action: "Open Gallery",
-    //   onClick: onNavigateToGallery,
-    //   gradient: "from-indigo-500 to-purple-500"
-    // },
+    assignmentFeature,
   ];
 
   return (
@@ -63,8 +66,15 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
       {navigatingTo && (
         <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-400 text-sm tracking-wide">Loading...</p>
+            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+              <defs>
+                <mask id="crescent-mask-home">
+                  <circle cx="40" cy="40" r="36" fill="white" />
+                  <circle cx="43" cy="40" r="37" fill="black" />
+                </mask>
+              </defs>
+              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-home)" />
+            </svg>
           </div>
         </div>
       )}
@@ -161,13 +171,23 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
               <MessageSquare size={20} className="mr-2" />
               Chat with a Video
             </button>
-            <button
-              onClick={() => setNavigatingTo('assignments:ai-generator')}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
-            >
-              <ClipboardList size={20} className="mr-2" />
-              Generate Assignment
-            </button>
+            {userType === 'student' ? (
+              <button
+                onClick={() => setNavigatingTo('assignments')}
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
+              >
+                <ClipboardList size={20} className="mr-2" />
+                View Assignments
+              </button>
+            ) : (
+              <button
+                onClick={() => setNavigatingTo('assignments:ai-generator')}
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
+              >
+                <ClipboardList size={20} className="mr-2" />
+                Generate Assignment
+              </button>
+            )}
             <button
               onClick={() => setNavigatingTo('pricing')}
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all duration-300 hover:scale-105 shadow-lg"

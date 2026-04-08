@@ -48,6 +48,7 @@ const CourseDetailView = ({
   onViewSubmissions,
   onImportDocument,
   onGenerateWithAI,
+  onCourseUpdated,
   initialSection,
 }) => {
   const [course, setCourse] = useState(null);
@@ -83,6 +84,7 @@ const CourseDetailView = ({
       const updated = await courseApi.updateCourse(courseId, editData);
       setCourse(updated);
       setEditing(false);
+      onCourseUpdated?.(updated);
     } catch (err) {
       alert('Failed to save changes.');
     } finally {
@@ -202,7 +204,7 @@ const CourseDetailView = ({
                 setEditing(true);
               }}
               onCancelEdit={() => setEditing(false)}
-              onChangeField={(field, value) => setEditData({ ...editData, [field]: value })}
+              onChangeField={(field, value) => setEditData(prev => ({ ...prev, [field]: value }))}
               onSave={handleSaveOverview}
             />
           )}

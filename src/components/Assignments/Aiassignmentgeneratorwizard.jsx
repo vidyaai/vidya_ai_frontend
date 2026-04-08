@@ -656,6 +656,26 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   );
 
   // Step 2: Assignment Settings
+  const CATEGORY_LABELS = { engineering: 'Engineering', pcm: 'PCM', medical: 'Medical' };
+  const LEVEL_LABELS = {
+    undergraduate: 'Undergraduate', graduate: 'Graduate',
+    pre_med: 'Pre-Med', mbbs_preclinical: 'MBBS Pre-Clinical',
+    mbbs_clinical: 'MBBS Clinical', md: 'MD / Postgraduate',
+  };
+  const DISCIPLINE_LABELS = {
+    electrical: 'Electrical Engineering', mechanical: 'Mechanical Engineering',
+    civil: 'Civil Engineering', computer_eng: 'Computer Engineering', cs: 'Computer Science',
+    math: 'Mathematics', physics: 'Physics', chemistry: 'Chemistry',
+    anatomy: 'Anatomy', physiology: 'Physiology', biochemistry: 'Biochemistry',
+    pharmacology: 'Pharmacology', pathology: 'Pathology', microbiology: 'Microbiology',
+    surgery: 'Surgery (Clinical)', medicine: 'Medicine (Clinical)', obgyn: 'OB/GYN (Clinical)',
+  };
+  const inheritedFromCoursePlaceholder = [
+    CATEGORY_LABELS[subjectCategory] ?? subjectCategory,
+    courseSubjectData?.engineering_level ? (LEVEL_LABELS[engineeringLevel] ?? engineeringLevel) : null,
+    courseSubjectData?.engineering_discipline ? (DISCIPLINE_LABELS[engineeringDiscipline] ?? engineeringDiscipline) : null,
+  ].filter(Boolean).join(' · ');
+
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -822,14 +842,88 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
           )}
 
           {inCourseContext && (
-            <div className="p-4 bg-gray-800/60 rounded-lg border border-gray-700 text-sm text-gray-400">
-              Subject settings inherited from course:
-              <span className="ml-1 text-white font-medium capitalize">
-                {subjectCategory}
-                {engineeringLevel && ` · ${engineeringLevel.replace(/_/g, ' ')}`}
-                {engineeringDiscipline && ` · ${engineeringDiscipline.replace(/_/g, ' ')}`}
-              </span>
-            </div>
+            <>
+              {/* Col 1: Inherited from course box — aligns with Number of Questions */}
+              <div>
+                <label className="block text-white font-medium mb-3">Inherited from course</label>
+                <input
+                  type="text"
+                  placeholder={inheritedFromCoursePlaceholder}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ appearance: 'textfield' }}
+                />
+              </div>
+
+              {/* Col 2: Dropdowns for fields not set on course — aligns with Total Points */}
+              <div className="space-y-4">
+                {!courseSubjectData?.engineering_level && (
+                  <div>
+                    <label className="block text-white font-medium mb-3">Academic Level</label>
+                    <select
+                      value={engineeringLevel}
+                      onChange={(e) => setEngineeringLevel(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">None</option>
+                      {subjectCategory === 'medical' ? (
+                        <>
+                          <option value="pre_med">Pre-Med</option>
+                          <option value="mbbs_preclinical">MBBS Pre-Clinical (Year 1–2)</option>
+                          <option value="mbbs_clinical">MBBS Clinical (Year 3–5)</option>
+                          <option value="md">MD / Postgraduate</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="undergraduate">Undergraduate Level</option>
+                          <option value="graduate">Graduate Level</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                )}
+                {!courseSubjectData?.engineering_discipline && (
+                  <div>
+                    <label className="block text-white font-medium mb-3">Subject Area</label>
+                    <select
+                      value={engineeringDiscipline}
+                      onChange={(e) => setEngineeringDiscipline(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">None</option>
+                      {subjectCategory === 'engineering' && (
+                        <>
+                          <option value="electrical">Electrical Engineering</option>
+                          <option value="mechanical">Mechanical Engineering</option>
+                          <option value="civil">Civil Engineering</option>
+                          <option value="computer_eng">Computer Engineering</option>
+                          <option value="cs">Computer Science</option>
+                        </>
+                      )}
+                      {subjectCategory === 'pcm' && (
+                        <>
+                          <option value="math">Mathematics</option>
+                          <option value="physics">Physics</option>
+                          <option value="chemistry">Chemistry</option>
+                        </>
+                      )}
+                      {subjectCategory === 'medical' && (
+                        <>
+                          <option value="anatomy">Anatomy</option>
+                          <option value="physiology">Physiology</option>
+                          <option value="biochemistry">Biochemistry</option>
+                          <option value="pharmacology">Pharmacology</option>
+                          <option value="pathology">Pathology</option>
+                          <option value="microbiology">Microbiology</option>
+                          <option value="surgery">Surgery (Clinical)</option>
+                          <option value="medicine">Medicine (Clinical)</option>
+                          <option value="obgyn">OB/GYN (Clinical)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 

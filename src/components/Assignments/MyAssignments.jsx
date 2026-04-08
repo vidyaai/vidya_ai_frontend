@@ -338,6 +338,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
           onViewSubmissions={(a) => handleViewSubmissions(a)}
           onImportDocument={handleParseFromDocument}
           onGenerateWithAI={handleGenerateAssignment}
+          onCourseUpdated={(updated) => setCourses(prev => prev.map(c => c.id === updated.id ? updated : c))}
           initialSection={courseDetailReturnSection || (courseDetailId === initialCourseId ? initialSection : null)}
         />
         {parseModalOpen && (

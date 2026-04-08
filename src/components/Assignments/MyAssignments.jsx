@@ -107,7 +107,29 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
     }
   }, [selectedCourseId]);
 
+  const getActiveCourseSubjectData = (cid) => {
+    if (!cid) return null;
+    const c = courses.find(c => c.id === cid);
+    return c ? {
+      subject_category: c.subject_category,
+      engineering_level: c.engineering_level,
+      engineering_discipline: c.engineering_discipline,
+    } : null;
+  };
+
   const handleCreateAssignment = () => {
+    // Pass course_id and inherited subject data when we're inside a course
+    if (selectedCourseId) {
+      const subjectData = getActiveCourseSubjectData(selectedCourseId);
+      setParsedAssignmentData({
+        course_id: selectedCourseId,
+        ...(subjectData && {
+          subject_category: subjectData.subject_category || 'engineering',
+          engineering_level: subjectData.engineering_level || 'undergraduate',
+          engineering_discipline: subjectData.engineering_discipline || 'general',
+        }),
+      });
+    }
     setCurrentView('assignment-builder');
   };
 
@@ -120,8 +142,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   };
 
   const handleParsedAssignment = (assignmentData) => {
-    // Preserve the course_id if we came from a course detail view
-    setParsedAssignmentData({ ...assignmentData, course_id: courseDetailId || assignmentData.course_id || null });
+    // Preserve the course_id if we came from a course detail view or are inside a selected course
+    setParsedAssignmentData({ ...assignmentData, course_id: courseDetailId || selectedCourseId || assignmentData.course_id || null });
     setParseModalOpen(false);
     setCurrentView('assignment-builder');
   };
@@ -223,8 +245,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   };
 
   const handleContinueFromGenerator = (generatedData) => {
-    // Preserve the course_id if we came from a course detail view
-    setParsedAssignmentData({ ...generatedData, course_id: courseDetailId || generatedData.course_id || null });
+    // Preserve the course_id if we came from a course detail view or are inside a selected course
+    setParsedAssignmentData({ ...generatedData, course_id: courseDetailId || selectedCourseId || generatedData.course_id || null });
     setCurrentView('assignment-builder');
   };
 
@@ -267,8 +289,16 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   };
 
   const handleCreateAssignmentForCourse = (courseId) => {
-    // Pre-load course_id into the assignment data so the builder includes it
-    setParsedAssignmentData({ course_id: courseId });
+    // Pre-load course_id and inherited subject data into the assignment data
+    const subjectData = getActiveCourseSubjectData(courseId);
+    setParsedAssignmentData({
+      course_id: courseId,
+      ...(subjectData && {
+        subject_category: subjectData.subject_category || 'engineering',
+        engineering_level: subjectData.engineering_level || 'undergraduate',
+        engineering_discipline: subjectData.engineering_discipline || 'general',
+      }),
+    });
     setCurrentView('assignment-builder');
   };
 
@@ -281,12 +311,14 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   }
 
   if (currentView === 'ai-generator') {
-    return <AIAssignmentGeneratorWizard 
-      onBack={handleBackToMain} 
-      onNavigateToHome={onNavigateToHome} 
+    const activeCourseId = courseDetailId || selectedCourseId || null;
+    return <AIAssignmentGeneratorWizard
+      onBack={handleBackToMain}
+      onNavigateToHome={onNavigateToHome}
       onContinueToBuilder={handleContinueFromGenerator}
-      inCourseContext={!!courseDetailId}
-      courseId={courseDetailId || null}
+      inCourseContext={!!activeCourseId}
+      courseId={activeCourseId}
+      courseSubjectData={getActiveCourseSubjectData(activeCourseId)}
     />;
   }
 
@@ -306,6 +338,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
           onViewSubmissions={(a) => handleViewSubmissions(a)}
           onImportDocument={handleParseFromDocument}
           onGenerateWithAI={handleGenerateAssignment}
+          onCourseUpdated={(updated) => setCourses(prev => prev.map(c => c.id === updated.id ? updated : c))}
           initialSection={courseDetailReturnSection || (courseDetailId === initialCourseId ? initialSection : null)}
         />
         {parseModalOpen && (

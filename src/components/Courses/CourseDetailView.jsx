@@ -195,6 +195,9 @@ const CourseDetailView = ({
                   course_code: course.course_code || '',
                   semester: course.semester || '',
                   description: course.description || '',
+                  subject_category: course.subject_category || 'engineering',
+                  engineering_level: course.engineering_level || '',
+                  engineering_discipline: course.engineering_discipline || '',
                 });
                 setEditing(true);
               }}
@@ -232,8 +235,70 @@ const CourseDetailView = ({
 };
 
 // SECTION: Course Overview
+const LEVEL_LABELS = {
+  undergraduate: 'Undergraduate',
+  graduate: 'Graduate',
+  pre_med: 'Pre-Med',
+  mbbs_preclinical: 'MBBS Pre-Clinical',
+  mbbs_clinical: 'MBBS Clinical',
+  md: 'MD / Postgraduate',
+};
+
+const DISCIPLINE_LABELS = {
+  electrical: 'Electrical Engineering',
+  mechanical: 'Mechanical Engineering',
+  civil: 'Civil Engineering',
+  computer_eng: 'Computer Engineering',
+  cs: 'Computer Science',
+  math: 'Mathematics',
+  physics: 'Physics',
+  chemistry: 'Chemistry',
+  anatomy: 'Anatomy',
+  physiology: 'Physiology',
+  biochemistry: 'Biochemistry',
+  pharmacology: 'Pharmacology',
+  pathology: 'Pathology',
+  microbiology: 'Microbiology',
+  surgery: 'Surgery (Clinical)',
+  medicine: 'Medicine (Clinical)',
+  obgyn: 'OB/GYN (Clinical)',
+};
+
+const DISCIPLINE_OPTIONS = {
+  engineering: [
+    { value: 'electrical', label: 'Electrical Engineering' },
+    { value: 'mechanical', label: 'Mechanical Engineering' },
+    { value: 'civil', label: 'Civil Engineering' },
+    { value: 'computer_eng', label: 'Computer Engineering' },
+    { value: 'cs', label: 'Computer Science' },
+  ],
+  pcm: [
+    { value: 'math', label: 'Mathematics' },
+    { value: 'physics', label: 'Physics' },
+    { value: 'chemistry', label: 'Chemistry' },
+  ],
+  medical: [
+    { value: 'anatomy', label: 'Anatomy' },
+    { value: 'physiology', label: 'Physiology' },
+    { value: 'biochemistry', label: 'Biochemistry' },
+    { value: 'pharmacology', label: 'Pharmacology' },
+    { value: 'pathology', label: 'Pathology' },
+    { value: 'microbiology', label: 'Microbiology' },
+    { value: 'surgery', label: 'Surgery (Clinical)' },
+    { value: 'medicine', label: 'Medicine (Clinical)' },
+    { value: 'obgyn', label: 'OB/GYN (Clinical)' },
+  ],
+};
+
 const OverviewSection = ({ course, editing, editData, saving, onStartEdit, onCancelEdit, onChangeField, onSave }) => {
+  const handleCategoryChange = (cat) => {
+    onChangeField('subject_category', cat);
+    onChangeField('engineering_level', '');
+    onChangeField('engineering_discipline', '');
+  };
+
   if (editing) {
+    const cat = editData.subject_category || 'engineering';
     return (
       <div className="max-w-2xl space-y-5">
         <h2 className="text-xl font-bold text-white mb-4">Edit Course Information</h2>
@@ -265,6 +330,73 @@ const OverviewSection = ({ course, editing, editData, saving, onStartEdit, onCan
             rows={4}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-teal-500 resize-none"
           />
+
+          {/* Subject Configuration */}
+          <div className="border-t border-gray-800 pt-3 space-y-3">
+            <p className="text-xs font-medium text-gray-400">Subject Configuration</p>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Subject Category</label>
+              <div className="flex gap-2">
+                {[
+                  { value: 'engineering', label: '⚙️ Engineering' },
+                  { value: 'pcm', label: '🔬 PCM' },
+                  { value: 'medical', label: '🩺 Medical' },
+                ].map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => handleCategoryChange(c.value)}
+                    className={`flex-1 px-2 py-1.5 rounded-lg border-2 font-medium text-xs transition-all duration-200 ${
+                      cat === c.value
+                        ? 'border-teal-500 bg-teal-500/20 text-teal-300'
+                        : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Academic Level</label>
+                <select
+                  value={editData.engineering_level || ''}
+                  onChange={(e) => onChangeField('engineering_level', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs focus:outline-none focus:border-teal-500"
+                >
+                  <option value="">None</option>
+                  {cat === 'medical' ? (
+                    <>
+                      <option value="pre_med">Pre-Med</option>
+                      <option value="mbbs_preclinical">MBBS Pre-Clinical (Year 1–2)</option>
+                      <option value="mbbs_clinical">MBBS Clinical (Year 3–5)</option>
+                      <option value="md">MD / Postgraduate</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="undergraduate">Undergraduate</option>
+                      <option value="graduate">Graduate</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Subject Area</label>
+                <select
+                  value={editData.engineering_discipline || ''}
+                  onChange={(e) => onChangeField('engineering_discipline', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs focus:outline-none focus:border-teal-500"
+                >
+                  <option value="">None</option>
+                  {(DISCIPLINE_OPTIONS[cat] || []).map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button
               onClick={onSave}
@@ -315,6 +447,18 @@ const OverviewSection = ({ course, editing, editData, saving, onStartEdit, onCan
             <p className={course.is_active ? 'text-green-400 font-medium' : 'text-gray-500 font-medium'}>
               {course.is_active ? 'Active' : 'Archived'}
             </p>
+          </div>
+          <div>
+            <span className="text-gray-500 block mb-1">Subject Category</span>
+            <p className="text-white font-medium capitalize">{course.subject_category || '\u2014'}</p>
+          </div>
+          <div>
+            <span className="text-gray-500 block mb-1">Academic Level</span>
+            <p className="text-white font-medium">{LEVEL_LABELS[course.engineering_level] || '\u2014'}</p>
+          </div>
+          <div>
+            <span className="text-gray-500 block mb-1">Subject Area</span>
+            <p className="text-white font-medium">{DISCIPLINE_LABELS[course.engineering_discipline] || '\u2014'}</p>
           </div>
         </div>
         {course.description && (

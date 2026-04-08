@@ -26,7 +26,7 @@ import { courseApi } from '../Courses/courseApi';
 import { fileToBase64 } from './ImportFromDocumentModal';
 import DisplayTextWithEquations from './DisplayTextWithEquations';
 
-const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder, inCourseContext = false, courseId = null }) => {
+const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBuilder, inCourseContext = false, courseId = null, courseSubjectData = null }) => {
   const { currentUser } = useAuth();
   
   // Wizard state
@@ -136,9 +136,21 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
   // Step 2: Assignment Settings
   const [numQuestions, setNumQuestions] = useState(10);
   const [totalPoints, setTotalPoints] = useState(50);
-  const [subjectCategory, setSubjectCategory] = useState('engineering');
-  const [engineeringLevel, setEngineeringLevel] = useState('');
-  const [engineeringDiscipline, setEngineeringDiscipline] = useState('');
+  const [subjectCategory, setSubjectCategory] = useState(
+    inCourseContext && courseSubjectData?.subject_category
+      ? courseSubjectData.subject_category
+      : 'engineering'
+  );
+  const [engineeringLevel, setEngineeringLevel] = useState(
+    inCourseContext && courseSubjectData?.engineering_level
+      ? courseSubjectData.engineering_level
+      : ''
+  );
+  const [engineeringDiscipline, setEngineeringDiscipline] = useState(
+    inCourseContext && courseSubjectData?.engineering_discipline
+      ? courseSubjectData.engineering_discipline
+      : ''
+  );
 
   // Step 3: Question Types
   const [questionTypes, setQuestionTypes] = useState({
@@ -708,102 +720,117 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
             <p className="text-gray-500 text-xs mt-1">Between 1 and 1000 points</p>
           </div>
 
-          {/* Subject Category */}
-          <div>
-            <label className="block text-white font-medium mb-3">Subject Category</label>
-            <div className="flex gap-2">
-              {[
-                { value: 'engineering', label: '⚙️ Engineering' },
-                { value: 'pcm', label: '🔬 PCM' },
-                { value: 'medical', label: '🩺 Medical' },
-              ].map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => {
-                    setSubjectCategory(cat.value);
-                    setEngineeringLevel('');
-                    setEngineeringDiscipline('');
-                  }}
-                  className={`flex-1 px-3 py-3 rounded-lg border-2 font-medium text-sm transition-all duration-200 ${
-                    subjectCategory === cat.value
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-                  }`}
+          {/* Subject Category — hidden when in course context (inherited from course) */}
+          {!inCourseContext && (
+            <>
+              <div>
+                <label className="block text-white font-medium mb-3">Subject Category</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'engineering', label: '⚙️ Engineering' },
+                    { value: 'pcm', label: '🔬 PCM' },
+                    { value: 'medical', label: '🩺 Medical' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => {
+                        setSubjectCategory(cat.value);
+                        setEngineeringLevel('');
+                        setEngineeringDiscipline('');
+                      }}
+                      className={`flex-1 px-3 py-3 rounded-lg border-2 font-medium text-sm transition-all duration-200 ${
+                        subjectCategory === cat.value
+                          ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                          : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className='grid grid-cols-2 gap-4'>
+                {/* Academic Level */}
+                <div>
+                <label className="block text-white font-medium mb-3">Academic Level</label>
+                <select
+                  value={engineeringLevel}
+                  onChange={(e) => setEngineeringLevel(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
+                  <option value="">None</option>
+                  {subjectCategory === 'medical' ? (
+                    <>
+                      <option value="pre_med">Pre-Med</option>
+                      <option value="mbbs_preclinical">MBBS Pre-Clinical (Year 1–2)</option>
+                      <option value="mbbs_clinical">MBBS Clinical (Year 3–5)</option>
+                      <option value="md">MD / Postgraduate</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="undergraduate">Undergraduate Level</option>
+                      <option value="graduate">Graduate Level</option>
+                    </>
+                  )}
+                </select>
+                </div>
 
-          <div className='grid grid-cols-2 gap-4'>
-            {/* Academic Level */}
-            <div>
-            <label className="block text-white font-medium mb-3">Academic Level</label>
-            <select
-              value={engineeringLevel}
-              onChange={(e) => setEngineeringLevel(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">None</option>
-              {subjectCategory === 'medical' ? (
-                <>
-                  <option value="pre_med">Pre-Med</option>
-                  <option value="mbbs_preclinical">MBBS Pre-Clinical (Year 1–2)</option>
-                  <option value="mbbs_clinical">MBBS Clinical (Year 3–5)</option>
-                  <option value="md">MD / Postgraduate</option>
-                </>
-              ) : (
-                <>
-                  <option value="undergraduate">Undergraduate Level</option>
-                  <option value="graduate">Graduate Level</option>
-                </>
-              )}
-            </select>
-            </div>
+                {/* Subject Area (discipline) */}
+                <div>
+                <label className="block text-white font-medium mb-3">Subject Area</label>
+                <select
+                  value={engineeringDiscipline}
+                  onChange={(e) => setEngineeringDiscipline(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">None</option>
+                  {subjectCategory === 'engineering' && (
+                    <>
+                      <option value="electrical">Electrical Engineering</option>
+                      <option value="mechanical">Mechanical Engineering</option>
+                      <option value="civil">Civil Engineering</option>
+                      <option value="computer_eng">Computer Engineering</option>
+                      <option value="cs">Computer Science</option>
+                    </>
+                  )}
+                  {subjectCategory === 'pcm' && (
+                    <>
+                      <option value="math">Mathematics</option>
+                      <option value="physics">Physics</option>
+                      <option value="chemistry">Chemistry</option>
+                    </>
+                  )}
+                  {subjectCategory === 'medical' && (
+                    <>
+                      <option value="anatomy">Anatomy</option>
+                      <option value="physiology">Physiology</option>
+                      <option value="biochemistry">Biochemistry</option>
+                      <option value="pharmacology">Pharmacology</option>
+                      <option value="pathology">Pathology</option>
+                      <option value="microbiology">Microbiology</option>
+                      <option value="surgery">Surgery (Clinical)</option>
+                      <option value="medicine">Medicine (Clinical)</option>
+                      <option value="obgyn">OB/GYN (Clinical)</option>
+                    </>
+                  )}
+                </select>
+                </div>
+              </div>
+            </>
+          )}
 
-            {/* Subject Area (discipline) */}
-            <div>
-            <label className="block text-white font-medium mb-3">Subject Area</label>
-            <select
-              value={engineeringDiscipline}
-              onChange={(e) => setEngineeringDiscipline(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">None</option>
-              {subjectCategory === 'engineering' && (
-                <>
-                  <option value="electrical">Electrical Engineering</option>
-                  <option value="mechanical">Mechanical Engineering</option>
-                  <option value="civil">Civil Engineering</option>
-                  <option value="computer_eng">Computer Engineering</option>
-                  <option value="cs">Computer Science</option>
-                </>
-              )}
-              {subjectCategory === 'pcm' && (
-                <>
-                  <option value="math">Mathematics</option>
-                  <option value="physics">Physics</option>
-                  <option value="chemistry">Chemistry</option>
-                </>
-              )}
-              {subjectCategory === 'medical' && (
-                <>
-                  <option value="anatomy">Anatomy</option>
-                  <option value="physiology">Physiology</option>
-                  <option value="biochemistry">Biochemistry</option>
-                  <option value="pharmacology">Pharmacology</option>
-                  <option value="pathology">Pathology</option>
-                  <option value="microbiology">Microbiology</option>
-                  <option value="surgery">Surgery (Clinical)</option>
-                  <option value="medicine">Medicine (Clinical)</option>
-                  <option value="obgyn">OB/GYN (Clinical)</option>
-                </>
-              )}
-            </select>
+          {inCourseContext && (
+            <div className="p-4 bg-gray-800/60 rounded-lg border border-gray-700 text-sm text-gray-400">
+              Subject settings inherited from course:
+              <span className="ml-1 text-white font-medium capitalize">
+                {subjectCategory}
+                {engineeringLevel && ` · ${engineeringLevel.replace(/_/g, ' ')}`}
+                {engineeringDiscipline && ` · ${engineeringDiscipline.replace(/_/g, ' ')}`}
+              </span>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Quick Preview */}
@@ -1264,18 +1291,19 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
         {/* Navigation */}
         {currentStep < 4 && !generatedAssignment && (
           <div className="mt-8 flex items-center justify-between">
-            <button
-              onClick={goBack}
-              disabled={currentStep === 1}
-              className={`inline-flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                currentStep === 1
+            {currentStep !== 1 && (
+              <button
+                onClick={goBack}
+                disabled={currentStep === 1}
+                className={`inline-flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                  currentStep === 1
                   ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-800 text-white hover:bg-gray-700'
               }`}
             >
               <ArrowLeft size={18} className="mr-2" />
               Back
-            </button>
+            </button>) || <div />}
 
             <div className="flex space-x-3">
               {currentStep === 2 && (

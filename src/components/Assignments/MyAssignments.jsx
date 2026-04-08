@@ -108,6 +108,10 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   }, [selectedCourseId]);
 
   const handleCreateAssignment = () => {
+    // Pass course_id when we're inside a course (selectedCourseId is set and non-null)
+    if (selectedCourseId) {
+      setParsedAssignmentData({ course_id: selectedCourseId });
+    }
     setCurrentView('assignment-builder');
   };
 
@@ -120,8 +124,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   };
 
   const handleParsedAssignment = (assignmentData) => {
-    // Preserve the course_id if we came from a course detail view
-    setParsedAssignmentData({ ...assignmentData, course_id: courseDetailId || assignmentData.course_id || null });
+    // Preserve the course_id if we came from a course detail view or are inside a selected course
+    setParsedAssignmentData({ ...assignmentData, course_id: courseDetailId || selectedCourseId || assignmentData.course_id || null });
     setParseModalOpen(false);
     setCurrentView('assignment-builder');
   };
@@ -223,8 +227,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
   };
 
   const handleContinueFromGenerator = (generatedData) => {
-    // Preserve the course_id if we came from a course detail view
-    setParsedAssignmentData({ ...generatedData, course_id: courseDetailId || generatedData.course_id || null });
+    // Preserve the course_id if we came from a course detail view or are inside a selected course
+    setParsedAssignmentData({ ...generatedData, course_id: courseDetailId || selectedCourseId || generatedData.course_id || null });
     setCurrentView('assignment-builder');
   };
 
@@ -285,8 +289,8 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
       onBack={handleBackToMain} 
       onNavigateToHome={onNavigateToHome} 
       onContinueToBuilder={handleContinueFromGenerator}
-      inCourseContext={!!courseDetailId}
-      courseId={courseDetailId || null}
+      inCourseContext={!!(courseDetailId || selectedCourseId)}
+      courseId={courseDetailId || selectedCourseId || null}
     />;
   }
 

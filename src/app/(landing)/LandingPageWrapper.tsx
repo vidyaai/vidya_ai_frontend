@@ -27,17 +27,10 @@ export default function LandingPageWrapper() {
     router.push('/login')
   }
 
-  // Show loading state briefly
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
-    )
-  }
-
-  // If logged in, show nothing (will redirect)
-  if (currentUser) {
+  // If auth is already resolved and the user is logged in, show nothing while redirecting.
+  // For the public landing page we avoid blocking the initial render behind auth loading,
+  // which can otherwise look like a blank page if hydration is delayed in the browser.
+  if (!loading && currentUser) {
     return null
   }
 

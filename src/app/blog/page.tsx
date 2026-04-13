@@ -54,27 +54,32 @@ const blogPosts = [
 export default function BlogPage() {
   return (
     <div>
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">Vidya AI Blog</h1>
-      <p className="text-gray-600 text-lg mb-12">
+      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#43ead6]">
+        THE BLOG
+      </p>
+      <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+        Vidya AI Blog
+      </h1>
+      <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
         Insights on AI-powered education for professors and students
       </p>
 
-      <div className="space-y-8">
+      <div className="mt-12 space-y-6">
         {blogPosts.map((post) => (
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="block p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-indigo-500 transition-all hover:shadow-xl hover:shadow-indigo-500/10"
+            className="group block rounded-[28px] border border-[#182842] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6 transition-all duration-200 hover:-translate-y-1 hover:border-[#43ead6]/35 hover:shadow-[0_24px_70px_rgba(0,0,0,0.24)] sm:p-7"
           >
-            <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+            <div className="mb-4 flex items-center gap-4 text-sm text-slate-400">
               <span>{post.date}</span>
               <span>•</span>
               <span>{post.readTime}</span>
             </div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3 hover:text-indigo-600 transition-colors">
+            <h2 className="mb-3 text-2xl font-semibold text-white transition-colors group-hover:text-[#43ead6]">
               {post.title}
             </h2>
-            <p className="text-gray-600">{post.description}</p>
+            <p className="text-slate-300">{post.description}</p>
           </Link>
         ))}
       </div>

@@ -10,7 +10,6 @@ import {
   Clock,
   Users,
   Headphones,
-  TrendingUp,
   Shield,
   ArrowRight,
   Menu,
@@ -18,8 +17,16 @@ import {
 } from 'lucide-react';
 import { auth } from '../../firebase/config';
 import { api } from '../generic/utils.jsx';
+import { primaryButtonClass, secondaryButtonClass } from '../Landing/buttonClasses';
 
-const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, onNavigateToTranslate, onNavigateToPricing }) => {
+const PricingPage = ({
+  onNavigateToHome,
+  onNavigateToChat,
+  onNavigateToGallery,
+  onNavigateToTranslate,
+  onNavigateToPricing,
+  embedded = false,
+}) => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -37,7 +44,11 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
         { text: "Community support", icon: Users }
       ],
       buttonText: "Get Started Free",
-      buttonStyle: "bg-gray-700 hover:bg-gray-600 text-white",
+      buttonStyle:
+        "border border-white/12 bg-white/5 text-white hover:bg-white/10",
+      iconWrapperClass: "bg-white/10 text-white",
+      cardClass: "border-[#223556] bg-[#09172e]",
+      featureIconClass: "bg-white/8 text-white",
       popular: false
     },
     {
@@ -55,7 +66,12 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
         { text: "Custom study playlists", icon: Star }
       ],
       buttonText: "Start Plus Plan",
-      buttonStyle: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white",
+      buttonStyle:
+        "border border-transparent bg-[#43ead6] text-[#051224] hover:bg-[#43ead6]/90",
+      iconWrapperClass: "bg-[#43ead6]/16 text-[#43ead6]",
+      cardClass:
+        "border-[#43ead6]/35 bg-[linear-gradient(180deg,rgba(67,234,214,0.12),rgba(8,23,45,0.98))] shadow-[0_28px_80px_rgba(67,234,214,0.12)]",
+      featureIconClass: "bg-[#43ead6]/12 text-[#43ead6]",
       popular: true
     },
     {
@@ -75,7 +91,11 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
         { text: "White-label options", icon: Crown }
       ],
       buttonText: "Go Pro",
-      buttonStyle: "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white",
+      buttonStyle:
+        "border border-[#37d3ff]/20 bg-[linear-gradient(135deg,#37d3ff,#43ead6)] text-[#051224] hover:opacity-90",
+      iconWrapperClass: "bg-[#4bc2ff]/16 text-[#7ed4ff]",
+      cardClass: "border-[#2a466b] bg-[#08172d]",
+      featureIconClass: "bg-[#4bc2ff]/12 text-[#7ed4ff]",
       popular: false
     }
   ];
@@ -165,9 +185,16 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div
+      className={
+        embedded
+          ? 'mx-auto w-full max-w-7xl px-5 py-8 sm:px-6 sm:py-10'
+          : 'min-h-screen bg-[#071224] text-white'
+      }
+    >
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 z-50">
+      {!embedded && (
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-[#12213a] bg-[#071224]/85 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-2">
@@ -179,48 +206,60 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
             </div>
 
             <nav className="hidden md:flex items-center gap-8">
-              <a href="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="/" className="text-sm text-slate-300 hover:text-white transition-colors">
                 Home
               </a>
-              <a href="/pricing" className="text-sm text-gray-900 font-medium transition-colors">
+              <a href="/pricing" className="text-sm text-[#43ead6] font-medium transition-colors">
                 Pricing
               </a>
-              <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="/blog" className="text-sm text-slate-300 hover:text-white transition-colors">
                 Blog
               </a>
             </nav>
 
             <div className="hidden md:flex items-center gap-4">
-              <a href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition">
+              <a href="/login" className="text-sm text-slate-300 hover:text-white transition">
                 Log in
               </a>
-              <a href="/login" className="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition">
+              <a
+                href="/login"
+                className="inline-flex items-center justify-center rounded-full bg-[#43ead6] px-5 py-2 text-sm font-medium text-[#051224] transition hover:bg-[#43ead6]/90"
+              >
                 Get Started
               </a>
             </div>
 
-            <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            <button
+              className="rounded-full border border-[#1a2943] bg-white/5 p-2 text-white transition hover:bg-white/10 md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
 
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-gray-200">
+            <div className="border-t border-[#12213a] py-4 md:hidden">
               <nav className="flex flex-col gap-4">
-                <a href="/" className="text-sm text-gray-600 hover:text-gray-900 text-left">
+                <a href="/" className="text-left text-sm text-slate-300 hover:text-white">
                   Home
                 </a>
-                <a href="/pricing" className="text-sm text-gray-900 font-medium text-left">
+                <a href="/pricing" className="text-left text-sm font-medium text-[#43ead6]">
                   Pricing
                 </a>
-                <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 text-left">
+                <a href="/blog" className="text-left text-sm text-slate-300 hover:text-white">
                   Blog
                 </a>
                 <div className="flex gap-4 pt-4">
-                  <a href="/login" className="text-sm flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-center">
+                  <a
+                    href="/login"
+                    className="flex-1 rounded-full border border-white/12 bg-white/5 px-4 py-2 text-center text-sm text-white hover:bg-white/10"
+                  >
                     Log in
                   </a>
-                  <a href="/login" className="text-sm flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg text-center">
+                  <a
+                    href="/login"
+                    className="flex-1 rounded-full bg-[#43ead6] px-4 py-2 text-center text-sm font-medium text-[#051224]"
+                  >
                     Get Started
                   </a>
                 </div>
@@ -229,42 +268,50 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
           )}
         </div>
       </header>
+      )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32">
+      <main
+        className={
+          embedded
+            ? 'rounded-[32px] border border-[#182842] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-4 py-8 shadow-[0_28px_80px_rgba(0,0,0,0.18)] sm:px-6 lg:px-8'
+            : 'mx-auto max-w-7xl px-4 py-6 pt-28 sm:px-6 lg:px-8'
+        }
+      >
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Choose Your Learning
-            <span className="text-indigo-600"> Journey</span>
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Unlock the full potential of AI-powered education. From casual learning to professional mastery, 
-            we have the perfect plan for your needs.
+        <div className="relative mb-7 overflow-hidden rounded-[32px] border border-[#182842] bg-[radial-gradient(circle_at_top,rgba(67,234,214,0.14),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] px-6 py-6 text-center sm:px-10 sm:py-7">
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-[radial-gradient(circle_at_left,rgba(67,234,214,0.1),transparent_70%)]" />
+          <div className="pointer-events-none absolute bottom-0 right-0 h-40 w-40 rounded-full bg-[#43ead6]/8 blur-3xl" />
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#43ead6]">
+            PRICING
           </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Choose Your Learning
+            <span className="text-[#43ead6]"> Journey</span>
+          </h1>
 
           {/* Billing Toggle */}
-          <div className="flex items-center justify-center space-x-4 mb-12">
-            <span className={`text-sm font-medium ${!isAnnual ? 'text-gray-900' : 'text-gray-400'}`}>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
+            <span className={`text-sm font-medium ${!isAnnual ? 'text-white' : 'text-slate-500'}`}>
               Monthly
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                isAnnual ? 'bg-indigo-600' : 'bg-gray-600'
+              className={`relative inline-flex h-7 w-12 items-center rounded-full border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#43ead6] focus:ring-offset-2 focus:ring-offset-[#0b1730] ${
+                isAnnual ? 'bg-[#43ead6]' : 'bg-white/10'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isAnnual ? 'translate-x-6' : 'translate-x-1'
+                className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+                  isAnnual ? 'translate-x-6 bg-[#051224]' : 'translate-x-1 bg-white'
                 }`}
               />
             </button>
-            <span className={`text-sm font-medium ${isAnnual ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium ${isAnnual ? 'text-white' : 'text-slate-500'}`}>
               Annual
             </span>
             {isAnnual && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+              <span className="inline-flex items-center rounded-full border border-[#43ead6]/20 bg-[#43ead6]/10 px-3 py-1 text-xs font-medium text-[#43ead6]">
                 Save 17%
               </span>
             )}
@@ -272,7 +319,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+        <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-3">
           {plans.map((plan, index) => {
             const IconComponent = plan.icon;
             const currentPrice = isAnnual ? plan.price.annual : plan.price.monthly;
@@ -280,49 +327,47 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
             return (
               <div
                 key={index}
-                className={`relative bg-white rounded-2xl p-8 border transition-all duration-300 hover:shadow-2xl ${
+                className={`relative rounded-[28px] border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_90px_rgba(0,0,0,0.24)] ${
                   plan.popular 
-                    ? 'border-indigo-500 shadow-lg shadow-indigo-500/20 scale-105' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? `${plan.cardClass} md:scale-[1.03]`
+                    : `${plan.cardClass} hover:border-[#30496f]`
                 }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                    <span className="inline-flex items-center rounded-full border border-[#43ead6]/20 bg-[#43ead6] px-4 py-1 text-sm font-medium text-[#051224]">
                       Most Popular
                     </span>
                   </div>
                 )}
 
                 <div className="text-center mb-8">
-                  <div className={`w-16 h-16 mx-auto rounded-xl bg-gradient-to-r ${
-                    plan.name === 'Free' ? 'from-gray-600 to-gray-700' :
-                    plan.name === 'Vidya Plus' ? 'from-indigo-500 to-purple-500' :
-                    'from-yellow-500 to-orange-500'
-                  } flex items-center justify-center mb-4`}>
-                    <IconComponent size={32} className="text-white" />
+                  <div
+                    className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/10 ${plan.iconWrapperClass}`}
+                  >
+                    <IconComponent className="h-8 w-8" />
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+                  <h3 className="mb-2 text-2xl font-bold text-white">{plan.name}</h3>
+                  <p className="mb-4 text-sm text-slate-300">{plan.description}</p>
                   
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">
+                    <span className="text-4xl font-bold text-white">
                       ${currentPrice}
                     </span>
                     {currentPrice > 0 && (
                       isAnnual ? (
-                        <span className="text-gray-600 text-sm ml-1">
+                        <span className="ml-1 text-sm text-slate-400">
                           /year
                         </span>
                       ) : (
-                        <span className="text-gray-600 text-sm ml-1">
+                        <span className="ml-1 text-sm text-slate-400">
                           /month
                         </span>
                       )
                     )}
                     {isAnnual && plan.price.monthly > 0 && (
-                      <div className="text-sm text-gray-500 mt-1">
+                      <div className="mt-1 text-sm text-slate-500">
                         <span className="line-through">${plan.price.monthly}/month</span>
                       </div>
                     )}
@@ -334,12 +379,12 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
                     const FeatureIcon = feature.icon;
                     return (
                       <div key={featureIndex} className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
-                          <Check size={12} className="text-green-600" />
+                        <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${plan.featureIconClass}`}>
+                          <Check size={12} />
                         </div>
                         <div className="flex items-center space-x-2">
-                          <FeatureIcon size={16} className="text-gray-600" />
-                          <span className="text-gray-700 text-sm">{feature.text}</span>
+                          <FeatureIcon size={16} className="text-slate-400" />
+                          <span className="text-sm text-slate-200">{feature.text}</span>
                         </div>
                       </div>
                     );
@@ -349,7 +394,7 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
                 <button
                   onClick={() => handlePlanClick(plan.name)}
                   disabled={isLoading}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${plan.buttonStyle} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full rounded-full px-4 py-3 font-medium transition-all duration-200 hover:scale-[1.01] ${plan.buttonStyle} ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   {isLoading ? 'Processing...' : plan.buttonText}
                 </button>
@@ -360,25 +405,28 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
 
         {/* FAQ Section */}
         <div className="mb-20">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#43ead6]">
+            FAQS
+          </p>
+          <h2 className="mt-4 mb-12 text-center text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Frequently Asked Questions
           </h2>
           
           <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="bg-white rounded-xl border border-gray-200">
+              <div key={index} className="overflow-hidden rounded-[24px] border border-[#182842] bg-[#0d1a33]">
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between"
+                  className="flex w-full items-center justify-between px-6 py-4 text-left transition hover:bg-white/[0.03]"
                 >
-                  <span className="font-medium text-gray-900">{faq.question}</span>
-                  <span className="text-gray-600">
+                  <span className="font-medium text-white">{faq.question}</span>
+                  <span className="text-slate-400">
                     {openFaq === index ? '−' : '+'}
                   </span>
                 </button>
                 {openFaq === index && (
                   <div className="px-6 pb-4">
-                    <p className="text-gray-600">{faq.answer}</p>
+                    <p className="text-slate-300">{faq.answer}</p>
                   </div>
                 )}
               </div>
@@ -387,25 +435,25 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-12 text-center border border-gray-200">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+        <div className="rounded-[32px] border border-[#182842] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.2)] sm:p-12">
+          <h2 className="mb-4 text-3xl font-semibold tracking-tight text-white">
             Ready to Transform Your Learning?
           </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="mx-auto mb-8 max-w-2xl text-lg leading-8 text-slate-300">
             Join thousands of learners who are already using VidyaAI to accelerate their education 
             and unlock new possibilities with AI.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="/login"
-              className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg"
+              className={primaryButtonClass}
             >
               Start Free Today
               <ArrowRight size={20} className="ml-2" />
             </a>
             <a
               href="/"
-              className="inline-flex items-center justify-center px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold rounded-xl transition-all duration-300 hover:scale-105"
+              className={secondaryButtonClass}
             >
               Learn More
             </a>
@@ -414,13 +462,15 @@ const PricingPage = ({ onNavigateToHome, onNavigateToChat, onNavigateToGallery, 
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-20">
+      {!embedded && (
+      <footer className="mt-20 border-t border-[#12213a] bg-[#081325]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600">
+          <div className="text-center text-slate-500">
             <p>&copy; 2024 VidyaAI. Empowering education through artificial intelligence.</p>
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 };

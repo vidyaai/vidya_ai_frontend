@@ -1,5 +1,5 @@
 export const LANDING_ROUTES = {
-  home: '/',
+  home: '/?landing=1',
   login: '/login',
   pricing: '/pricing',
   blog: '/blog',

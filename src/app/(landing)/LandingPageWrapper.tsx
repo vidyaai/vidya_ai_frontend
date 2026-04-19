@@ -5,16 +5,20 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useEffect } from 'react'
 
-export default function LandingPageWrapper() {
+export default function LandingPageWrapper({
+  forceLandingView = false,
+}: {
+  forceLandingView?: boolean
+}) {
   const router = useRouter()
   const { currentUser, loading } = useAuth()
 
   // Redirect to home if already logged in
   useEffect(() => {
-    if (!loading && currentUser) {
+    if (!loading && currentUser && !forceLandingView) {
       router.push('/home')
     }
-  }, [currentUser, loading, router])
+  }, [currentUser, forceLandingView, loading, router])
 
   const handleLogin = () => {
     router.push('/login')
@@ -27,10 +31,9 @@ export default function LandingPageWrapper() {
     router.push('/login')
   }
 
-  // If auth is already resolved and the user is logged in, show nothing while redirecting.
-  // For the public landing page we avoid blocking the initial render behind auth loading,
-  // which can otherwise look like a blank page if hydration is delayed in the browser.
-  if (!loading && currentUser) {
+  // If auth is already resolved and the user is logged in, show nothing while redirecting
+  // unless the user explicitly asked to view the public landing page.
+  if (!loading && currentUser && !forceLandingView) {
     return null
   }
 

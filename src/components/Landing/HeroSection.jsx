@@ -32,8 +32,6 @@ const HeroSection = ({ onLogin }) => {
             </button>
             <Link
               href={LANDING_ROUTES.samplePapers}
-              target="_blank"
-              rel="noopener noreferrer"
               className={secondaryButtonClass}
             >
               Sample Papers

@@ -17,7 +17,6 @@ export default function HomeRoute() {
             router.push('/chat')
           }
         }}
-        onNavigateToTranslate={() => router.push('/translate')}
         onNavigateToGallery={() => router.push('/gallery')}
         onNavigateToAssignments={(section?: string) => {
           if (section === 'ai-generator') {

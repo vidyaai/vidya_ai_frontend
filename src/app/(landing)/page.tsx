@@ -81,6 +81,13 @@ export const metadata: Metadata = {
   category: 'Education Technology',
 }
 
-export default function Home() {
-  return <LandingPageWrapper />
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ landing?: string }>
+}) {
+  const resolvedSearchParams = await searchParams
+  const forceLandingView = resolvedSearchParams.landing === '1'
+
+  return <LandingPageWrapper forceLandingView={forceLandingView} />
 }

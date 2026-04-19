@@ -9,9 +9,9 @@ import {
 const navItems = [
   { label: 'Problem', href: '#problem', type: 'anchor' },
   { label: 'Solution', href: '#solution', type: 'anchor' },
-  { label: 'Pricing', href: LANDING_ROUTES.pricing, type: 'page', newTab: true },
-  { label: 'Blog', href: LANDING_ROUTES.blog, type: 'page', newTab: true },
-  { label: 'Sample Papers', href: LANDING_ROUTES.samplePapers, type: 'page', newTab: true },
+  { label: 'Pricing', href: LANDING_ROUTES.pricing, type: 'page' },
+  { label: 'Blog', href: LANDING_ROUTES.blog, type: 'page' },
+  { label: 'Sample Papers', href: LANDING_ROUTES.samplePapers, type: 'page' },
   { label: 'Contact', type: 'contact' },
 ];
 
@@ -45,7 +45,7 @@ const HeaderSection = ({ onLogin, onOpenBookDemoModal, onOpenContactInfoModal, i
     <header className="fixed inset-x-0 top-0 z-50 border-b border-[#12213a] bg-[#071224]/85 backdrop-blur-md">
       <div className="mx-auto max-w-6xl px-5 sm:px-6">
         <div className="flex h-[4.5rem] items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2 transition hover:opacity-95">
+          <Link href={LANDING_ROUTES.home} className="flex items-center gap-2 transition hover:opacity-95">
             <img
               src="/images/vidya-ai-logo-1.png"
               alt="Vidya AI Logo"

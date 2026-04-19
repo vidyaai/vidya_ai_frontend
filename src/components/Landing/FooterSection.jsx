@@ -18,24 +18,24 @@ const footerColumns = [
     title: 'Company',
     links: [
       { label: 'About', href: LANDING_EXTERNAL_URLS.about, type: 'external', newTab: true },
-      { label: 'Pricing', href: LANDING_ROUTES.pricing, type: 'page', newTab: true },
+      { label: 'Pricing', href: LANDING_ROUTES.pricing, type: 'page' },
       { label: 'Contact', type: 'contact-modal' },
     ],
   },
   {
     title: 'Resources',
     links: [
-      { label: 'Blog', href: LANDING_ROUTES.blog, type: 'page', newTab: true },
-      { label: 'Sample Papers', href: LANDING_ROUTES.samplePapers, type: 'page', newTab: true },
-      { label: 'Pricing', href: LANDING_ROUTES.pricing, type: 'page', newTab: true },
+      { label: 'Blog', href: LANDING_ROUTES.blog, type: 'page' },
+      { label: 'Sample Papers', href: LANDING_ROUTES.samplePapers, type: 'page' },
+      { label: 'Pricing', href: LANDING_ROUTES.pricing, type: 'page' },
     ],
   },
   {
     title: 'Legal',
     links: [
       { label: 'Privacy Policy', type: 'legal-modal' },
-      { label: 'Terms of Service', type: 'legal-modal' },
-      { label: 'Cookies', type: 'legal-modal' },
+      { label: 'Terms of Use', type: 'legal-modal' },
+      { label: 'Cookie Policy', type: 'legal-modal' },
     ],
   },
 ];
@@ -143,7 +143,6 @@ const FooterSection = ({ onOpenContactModal, isHomePage = true }) => {
                         </button>
                       );
                     }
-
                     if (link.type === 'legal-modal') {
                       return (
                         <button

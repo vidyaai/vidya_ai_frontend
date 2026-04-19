@@ -18,12 +18,12 @@ import {
 import { auth } from '../../firebase/config';
 import { api } from '../generic/utils.jsx';
 import { primaryButtonClass, secondaryButtonClass } from '../Landing/buttonClasses';
+import { LANDING_ROUTES } from '../Landing/landingCtas';
 
 const PricingPage = ({
   onNavigateToHome,
   onNavigateToChat,
   onNavigateToGallery,
-  onNavigateToTranslate,
   onNavigateToPricing,
   embedded = false,
 }) => {
@@ -128,6 +128,11 @@ const PricingPage = ({
 
   const handlePlanClick = async (planName) => {
     if (planName === "Free") {
+      if (!auth.currentUser) {
+        window.location.href = '/login?returnUrl=%2Fchat';
+        return;
+      }
+
       if (onNavigateToChat) {
         onNavigateToChat();
       }
@@ -206,7 +211,7 @@ const PricingPage = ({
             </div>
 
             <nav className="hidden md:flex items-center gap-8">
-              <a href="/" className="text-sm text-slate-300 hover:text-white transition-colors">
+              <a href={LANDING_ROUTES.home} className="text-sm text-slate-300 hover:text-white transition-colors">
                 Home
               </a>
               <a href="/pricing" className="text-sm text-[#43ead6] font-medium transition-colors">
@@ -240,7 +245,7 @@ const PricingPage = ({
           {mobileMenuOpen && (
             <div className="border-t border-[#12213a] py-4 md:hidden">
               <nav className="flex flex-col gap-4">
-                <a href="/" className="text-left text-sm text-slate-300 hover:text-white">
+                <a href={LANDING_ROUTES.home} className="text-left text-sm text-slate-300 hover:text-white">
                   Home
                 </a>
                 <a href="/pricing" className="text-left text-sm font-medium text-[#43ead6]">
@@ -452,7 +457,7 @@ const PricingPage = ({
               <ArrowRight size={20} className="ml-2" />
             </a>
             <a
-              href="/"
+              href={LANDING_ROUTES.home}
               className={secondaryButtonClass}
             >
               Learn More

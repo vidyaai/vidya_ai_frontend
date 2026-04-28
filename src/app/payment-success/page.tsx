@@ -4,8 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { auth } from '@/firebase/config';
-
-const API_URL = 'http://localhost:8000';
+import { API_URL } from '@/components/generic/utils.jsx';
 
 function PaymentSuccessContent() {
   const router = useRouter();

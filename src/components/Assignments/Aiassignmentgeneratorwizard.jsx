@@ -851,6 +851,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                   placeholder={inheritedFromCoursePlaceholder}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{ appearance: 'textfield' }}
+                  readOnly
                 />
               </div>
 
@@ -1638,6 +1639,7 @@ function classifyLog(msg) {
   if (m.includes('diagram review:') && m.includes('pass')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Review Passed' };
   if (m.includes('regenerat')) return { icon: ICON_MAP.regen, color: 'text-amber-400', phase: 'Regenerating' };
   if (m.includes('rephrased') || m.includes('rephrase')) return { icon: ICON_MAP.rephrase, color: 'text-violet-400', phase: 'Rephrasing' };
+  if (m.includes('diagram added for question')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Diagram Complete' };
   if (m.includes('successfully added diagram') || m.includes('successfully generated')) return { icon: ICON_MAP.success, color: 'text-green-400', phase: 'Complete' };
   if (m.includes('analyzing question')) return { icon: ICON_MAP.question, color: 'text-yellow-400', phase: 'Analyzing' };
   if (m.includes('generated') && m.includes('questions')) return { icon: '✨', color: 'text-yellow-400', phase: 'Questions Ready' };
@@ -1697,7 +1699,7 @@ const GeneratingProgressView = ({ numQuestions, progressLogs, logContainerRef, e
   // Phase summary: count completed questions
   const completedQuestions = new Set();
   progressLogs.forEach(l => {
-    if (l.message.toLowerCase().includes('successfully added diagram') || l.message.toLowerCase().includes('successfully generated')) {
+    if (l.message.toLowerCase().includes('diagram added for question') || l.message.toLowerCase().includes('successfully added diagram') || l.message.toLowerCase().includes('successfully generated')) {
       const n = extractQuestionNum(l.message);
       if (n !== null) completedQuestions.add(n);
     }
@@ -1736,7 +1738,7 @@ const GeneratingProgressView = ({ numQuestions, progressLogs, logContainerRef, e
           <p className="text-gray-500 text-xs">Questions</p>
         </div>
         <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
-          <p className="text-lg font-bold text-teal-400">{latestQuestionNum !== null ? latestQuestionNum + 1 : 0}<span className="text-gray-600 text-sm">/{numQuestions}</span></p>
+          <p className="text-lg font-bold text-teal-400">{latestQuestionNum !== null ? latestQuestionNum : 0}<span className="text-gray-600 text-sm">/{numQuestions}</span></p>
           <p className="text-gray-500 text-xs">Processing</p>
         </div>
         <div className="bg-gray-900 rounded-lg p-3 border border-gray-800 text-center">
@@ -1749,7 +1751,7 @@ const GeneratingProgressView = ({ numQuestions, progressLogs, logContainerRef, e
       <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${Math.max(5, ((latestQuestionNum !== null ? latestQuestionNum + 1 : 0) / Math.max(numQuestions, 1)) * 100)}%` }}
+          style={{ width: `${Math.max(5, ((latestQuestionNum !== null ? latestQuestionNum : 0) / Math.max(numQuestions, 1)) * 100)}%` }}
         />
       </div>
 

@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import TopBar from '../generic/TopBar';
 
-const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery, onNavigateToAssignments, onNavigateToPricing }) => {
+const HomePage = ({ onNavigateToChat, onNavigateToGallery, onNavigateToAssignments, onNavigateToPricing }) => {
   const { currentUser, userType } = useAuth();
   const [navigatingTo, setNavigatingTo] = useState(null);
 
@@ -27,7 +27,6 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
     else if (navigatingTo === 'assignments:ai-generator') onNavigateToAssignments('ai-generator');
     else if (navigatingTo === 'pricing') onNavigateToPricing();
     else if (navigatingTo === 'gallery') onNavigateToGallery();
-    else if (navigatingTo === 'translate') onNavigateToTranslate();
   }, [navigatingTo]);
 
   const assignmentFeature = userType === 'student'
@@ -90,7 +89,7 @@ const HomePage = ({ onNavigateToChat, onNavigateToTranslate, onNavigateToGallery
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             Unlock the power of AI-driven education. Chat with videos, solve doubts instantly, 
-            take adaptive quizzes, and translate content seamlessly.
+            and take adaptive quizzes with less friction.
           </p>
         </div>
 

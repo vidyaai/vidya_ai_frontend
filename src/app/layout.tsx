@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import NextTopLoader from 'nextjs-toploader'
 import { AuthProvider } from '@/context/AuthContext'
 import './globals.css'
 import 'katex/dist/katex.min.css'
@@ -77,10 +78,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" type="image/png" href="/logo-new-2.png" />
+        <link rel="icon" type="image/png" href="/images/vidya-ai-favicon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className="antialiased">
+        <NextTopLoader color="#43ead6" showSpinner={false} />
         <AuthProvider>
           {children}
         </AuthProvider>

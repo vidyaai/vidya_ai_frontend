@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ExternalLink, X } from 'lucide-react';
 
 import { LANDING_EXTERNAL_URLS } from './landingCtas';
 
 const BookDemoModal = ({ open, onClose }) => {
+  const [iframeLoading, setIframeLoading] = useState(true);
+
   useEffect(() => {
     if (!open) return undefined;
+
+    setIframeLoading(true);
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -71,11 +75,18 @@ const BookDemoModal = ({ open, onClose }) => {
         </div>
 
         <div className="relative flex-1 bg-[#071224]">
+          {iframeLoading && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#071224]">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#43ead6]/20 border-t-[#43ead6]" />
+              <p className="text-sm text-slate-400">Loading calendar…</p>
+            </div>
+          )}
           <iframe
             src={LANDING_EXTERNAL_URLS.googleCalendar}
             title="Book a demo with Vidya AI"
             className="absolute inset-0 h-full w-full"
             frameBorder="0"
+            onLoad={() => setIframeLoading(false)}
           />
         </div>
       </div>

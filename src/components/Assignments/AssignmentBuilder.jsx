@@ -10,6 +10,7 @@ import {
   Edit,
   ChevronDown
 } from 'lucide-react';
+import posthog from 'posthog-js';
 import TopBar from '../generic/TopBar';
 import QuestionCard from './QuestionCard';
 import AssignmentPreview from './AssignmentPreview';
@@ -567,6 +568,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
       };
 
       let assignmentId;
+      let isNew = false;
       if (currentAssignmentId || preloadedData?.id) {
         // Update existing assignment
         assignmentId = currentAssignmentId || preloadedData.id;
@@ -579,13 +581,29 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         const response = await assignmentApi.createAssignment(assignmentData);
         assignmentId = response.id;
         setCurrentAssignmentId(assignmentId); // Save the ID for future updates
+        isNew = true;
         if (status !== 'published') {
           alert('Assignment saved successfully!');
         }
       }
 
+      const isPublishAction = status === 'published';
+      const fireCreated = isNew || isPublishAction;
+
+      posthog.capture(fireCreated ? 'assignment_created' : 'assignment_updated', {
+        assignment_id: assignmentId,
+        status,
+        question_count: questions.length,
+        question_types: assignmentData.question_types,
+        is_first_save: isNew,
+      });
+
       // Lock the assignment as published once saved with published status
-      if (status === 'published') {
+      if (isPublishAction) {
+        posthog.capture('assignment_published', {
+          assignment_id: assignmentId,
+          question_count: questions.length,
+        });
         setIsPublished(true);
         onBack(); // Navigate back to assignments list
       }

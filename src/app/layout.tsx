@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import NextTopLoader from 'nextjs-toploader'
 import { AuthProvider } from '@/context/AuthContext'
+import { PostHogProvider } from '@/components/providers/PostHogProvider'
+import { PostHogIdentify } from '@/components/providers/PostHogIdentify'
 import './globals.css'
 import 'katex/dist/katex.min.css'
 
@@ -83,9 +85,12 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <NextTopLoader color="#43ead6" showSpinner={false} />
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <PostHogProvider>
+          <AuthProvider>
+            <PostHogIdentify />
+            {children}
+          </AuthProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

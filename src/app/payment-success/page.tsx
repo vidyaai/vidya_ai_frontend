@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import posthog from 'posthog-js';
 import { auth } from '@/firebase/config';
 import { API_URL } from '@/components/generic/utils.jsx';
 
@@ -53,6 +54,13 @@ function PaymentSuccessContent() {
           const errorData = await response.json();
           throw new Error(errorData.detail || 'Failed to verify session');
         }
+
+        const data = await response.json().catch(() => ({}));
+        posthog.capture('subscription_activated', {
+          session_id: sessionId,
+          plan: data?.plan_type ?? null,
+          billing_period: data?.billing_period ?? null,
+        });
 
         setVerifying(false);
       } catch (err) {

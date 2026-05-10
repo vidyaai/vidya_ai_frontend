@@ -15,6 +15,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import posthog from 'posthog-js';
 import { auth } from '../../firebase/config';
 import { api } from '../generic/utils.jsx';
 import { primaryButtonClass, secondaryButtonClass } from '../Landing/buttonClasses';
@@ -127,6 +128,11 @@ const PricingPage = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePlanClick = async (planName) => {
+    posthog.capture('pricing_plan_clicked', {
+      plan: planName,
+      billing_period: isAnnual ? 'annual' : 'monthly',
+    });
+
     if (planName === "Free") {
       if (!auth.currentUser) {
         window.location.href = '/login?returnUrl=%2Fchat';
@@ -165,7 +171,12 @@ const PricingPage = ({
       }
 
       const { checkout_url } = await response.data;
-      
+
+      posthog.capture('checkout_started', {
+        plan: planName,
+        billing_period: isAnnual ? 'annual' : 'monthly',
+      });
+
       // Redirect to Stripe Checkout
       window.location.href = checkout_url;
       

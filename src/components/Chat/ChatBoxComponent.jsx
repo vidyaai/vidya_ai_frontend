@@ -1,6 +1,7 @@
 // ChatBoxComponent.jsx - AI chat interface with clickable timestamps
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, Clock, PlusCircle, Pencil, Check, X, Share2 } from 'lucide-react';
+import posthog from 'posthog-js';
 import { formatTime, parseMarkdown, parseMarkdownWithMath, SimpleSpinner, api, auth, convertLatexToMathHTML } from '../generic/utils.jsx';
 import SharingModal from '../Sharing/SharingModal.jsx';
 
@@ -314,6 +315,14 @@ const ChatBoxComponent = ({
     const currentQuery = userQuestion;
     setUserQuestion('');
     setIsProcessingQuery(true);
+
+    posthog.capture('chat_message_sent', {
+      video_id: currentVideo.videoId,
+      query_type: queryType,
+      is_shared_video: !!currentVideo.isShared,
+      streaming: useStreaming && !currentVideo.isShared && queryType !== 'frame',
+      message_length: currentQuery.length,
+    });
 
     try {
       if (chatContainerRef.current) {

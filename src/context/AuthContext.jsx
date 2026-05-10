@@ -11,6 +11,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import posthog from 'posthog-js';
 import { auth, googleProvider, db } from '../firebase/config';
 import { api } from '../components/generic/utils';
 
@@ -109,6 +110,8 @@ export const AuthProvider = ({ children }) => {
       lastLogin: new Date()
     });
 
+    posthog.capture('signup_completed', { method: 'email' });
+
     return userCredential;
   };
 
@@ -122,6 +125,8 @@ export const AuthProvider = ({ children }) => {
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       lastLogin: new Date()
     }, { merge: true });
+
+    posthog.capture('login_completed', { method: 'email' });
 
     return userCredential;
   };
@@ -144,10 +149,12 @@ export const AuthProvider = ({ children }) => {
         createdAt: new Date(),
         lastLogin: new Date()
       });
+      posthog.capture('signup_completed', { method: 'google' });
     } else {
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         lastLogin: new Date()
       }, { merge: true });
+      posthog.capture('login_completed', { method: 'google' });
     }
 
     return userCredential;

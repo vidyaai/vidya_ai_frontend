@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, BookOpen } from 'lucide-react';
+import posthog from 'posthog-js';
 import { useAuth } from '../../context/AuthContext';
 
 const USER_TYPE_OPTIONS = [
@@ -34,6 +35,7 @@ export default function SetUserTypePage() {
     setSelecting(type);
     try {
       await updateUserType(type);
+      posthog.capture('user_type_selected', { user_type: type });
       router.push('/home');
     } catch (error) {
       console.error('Failed to set user type:', error);

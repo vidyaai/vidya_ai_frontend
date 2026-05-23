@@ -1,19 +1,21 @@
 // src/components/Assignments/AssignmentBuilder.jsx
 import { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Save, 
-  Eye, 
+import {
+  ArrowLeft,
+  Plus,
+  Save,
+  Eye,
   GripVertical,
   Trash2,
   Edit,
-  ChevronDown
+  ChevronDown,
+  Star
 } from 'lucide-react';
 import posthog from 'posthog-js';
 import TopBar from '../generic/TopBar';
 import QuestionCard from './QuestionCard';
 import AssignmentPreview from './AssignmentPreview';
+import AssignmentReviewModal from './AssignmentReviewModal';
 import { assignmentApi } from './assignmentApi';
 
 const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
@@ -39,6 +41,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   const [saveError, setSaveError] = useState(null);
   const [validationStatus, setValidationStatus] = useState({ isValid: false, errors: [] });
   const [isPublished, setIsPublished] = useState(preloadedData?.status === 'published');
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const questionTypes = [
     { type: 'multiple-choice', label: 'Multiple Choice', icon: '○', category: 'Basic' },
@@ -926,7 +929,29 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             </div>
           )}
         </div>
+
+        {/* Review (creator feedback on AI generation quality) */}
+        <div className="mt-8 flex flex-col items-center text-center border-t border-gray-800 pt-6">
+          <p className="text-gray-400 mb-3 text-sm">
+            How was the AI-generated output? Your feedback helps us improve.
+          </p>
+          <button
+            onClick={() => setShowReviewModal(true)}
+            disabled={!currentAssignmentId}
+            title={currentAssignmentId ? 'Leave feedback on this generated assignment' : 'Save the assignment before leaving a review'}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Star size={18} className="mr-2" />
+            Review this assignment
+          </button>
+        </div>
       </div>
+
+      <AssignmentReviewModal
+        assignmentId={currentAssignmentId}
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+      />
     </div>
   );
 };

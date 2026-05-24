@@ -184,6 +184,17 @@ export const courseApi = {
     );
     return response.data;
   },
+
+  // ── Invitation acceptance ─────────────────────────────────────────────
+
+  async acceptEnrollmentInvite(token) {
+    const response = await api.post(
+      '/api/enrollments/accept',
+      { token },
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
 };
 
 export default courseApi;

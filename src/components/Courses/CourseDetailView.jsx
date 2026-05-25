@@ -23,10 +23,12 @@ import {
   Clock,
   Plus,
   Play,
+  BarChart3,
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { courseApi } from './courseApi';
 import { assignmentApi } from '../Assignments/assignmentApi';
+import ClassPerformanceSection from './ClassPerformance/ClassPerformanceSection';
 
 // Sidebar sections
 const SECTIONS = [
@@ -35,6 +37,7 @@ const SECTIONS = [
   { key: 'lecture-notes', label: 'Lecture Notes', icon: FileText },
   { key: 'videos', label: 'Videos', icon: Video },
   { key: 'assignments', label: 'Assignments', icon: BookOpen },
+  { key: 'performance', label: 'Class Performance', icon: BarChart3 },
   { key: 'tas', label: 'Teaching Assistants', icon: GraduationCap },
 ];
 
@@ -226,6 +229,9 @@ const CourseDetailView = ({
               onImportDocument={onImportDocument}
               onGenerateWithAI={onGenerateWithAI}
             />
+          )}
+          {activeSection === 'performance' && (
+            <ClassPerformanceSection courseId={courseId} course={course} />
           )}
           {activeSection === 'tas' && (
             <TeachingAssistantsSection courseId={courseId} />

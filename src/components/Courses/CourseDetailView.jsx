@@ -24,11 +24,13 @@ import {
   Plus,
   Play,
   BarChart3,
+  Sparkles,
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { courseApi } from './courseApi';
 import { assignmentApi } from '../Assignments/assignmentApi';
 import ClassPerformanceSection from './ClassPerformance/ClassPerformanceSection';
+import MaterialChatPanel from './MaterialChatPanel';
 
 // Sidebar sections
 const SECTIONS = [
@@ -680,9 +682,20 @@ const LectureNotesSection = ({ courseId }) => {
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFolder, setUploadFolder] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
+  const [chatMaterial, setChatMaterial] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => { loadNotes(); }, [courseId]);
+
+  // Poll every 5s while any uploaded note is still being indexed (chunked+embedded)
+  useEffect(() => {
+    const hasPending = materials.some(
+      (m) => m.chunking_status === 'processing' || m.chunking_status === 'pending'
+    );
+    if (!hasPending) return;
+    const timer = setTimeout(() => loadNotes(), 5000);
+    return () => clearTimeout(timer);
+  }, [materials]);
 
   const loadNotes = async () => {
     try {
@@ -820,29 +833,52 @@ const LectureNotesSection = ({ courseId }) => {
         <div className="text-center py-8 text-gray-500"><FileText size={32} className="mx-auto mb-2 opacity-50" /><p>No lecture notes yet</p></div>
       ) : (
         <div className="space-y-2">
-          {materials.map((mat) => (
-            <div key={mat.id} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 hover:border-gray-700 transition-colors">
-              <div className="flex items-center gap-3 min-w-0">
-                <FileText size={18} className="text-blue-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{mat.title}</p>
-                  {mat.description && <p className="text-xs text-gray-500 truncate">{mat.description}</p>}
-                  {mat.folder && <p className="text-xs text-gray-600 mt-0.5">{mat.folder}</p>}
+          {materials.map((mat) => {
+            const indexing = mat.chunking_status === 'processing' || mat.chunking_status === 'pending';
+            return (
+              <div key={mat.id} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 hover:border-gray-700 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText size={18} className="text-blue-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{mat.title}</p>
+                    {mat.description && <p className="text-xs text-gray-500 truncate">{mat.description}</p>}
+                    {mat.folder && <p className="text-xs text-gray-600 mt-0.5">{mat.folder}</p>}
+                    {indexing && (
+                      <p className="text-[11px] text-yellow-400/90 mt-0.5 flex items-center gap-1">
+                        <Loader2 size={10} className="animate-spin" />
+                        Indexing for chat…
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                  <button
+                    onClick={() => setChatMaterial(mat)}
+                    className="p-1.5 text-gray-400 hover:text-teal-300 transition-colors"
+                    title="Chat with this material"
+                  >
+                    <Sparkles size={14} />
+                  </button>
+                  {mat.s3_key && (
+                    <button onClick={() => handleDownload(mat)} className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors" title="Download">
+                      <Download size={14} />
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(mat.id)} className="p-1.5 text-gray-500 hover:text-red-400 transition-colors" title="Delete">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                {mat.s3_key && (
-                  <button onClick={() => handleDownload(mat)} className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors" title="Download">
-                    <Download size={14} />
-                  </button>
-                )}
-                <button onClick={() => handleDelete(mat.id)} className="p-1.5 text-gray-500 hover:text-red-400 transition-colors" title="Delete">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+
+      {chatMaterial && (
+        <MaterialChatPanel
+          material={chatMaterial}
+          onClose={() => setChatMaterial(null)}
+        />
       )}
     </div>
   );
@@ -860,6 +896,7 @@ const VideosSection = ({ courseId }) => {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
+  const [chatVideo, setChatVideo] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => { loadVideos(); }, [courseId]);
@@ -1049,15 +1086,32 @@ const VideosSection = ({ courseId }) => {
                     {v.description && <p className="text-xs text-gray-500 truncate">{v.description}</p>}
                     {v.file_size && <span className="text-xs text-gray-600 flex-shrink-0">{formatFileSize(v.file_size)}</span>}
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
-                    className="p-1 text-gray-600 hover:text-red-400 transition-colors flex-shrink-0 ml-2" title="Remove">
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setChatVideo(v); }}
+                      disabled={v.transcript_status !== 'completed'}
+                      className="p-1 text-gray-500 hover:text-teal-300 transition-colors disabled:opacity-30 disabled:hover:text-gray-500"
+                      title={v.transcript_status === 'completed' ? 'Chat with this video' : 'Available once transcript is ready'}
+                    >
+                      <Sparkles size={13} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
+                      className="p-1 text-gray-600 hover:text-red-400 transition-colors" title="Remove">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {chatVideo && (
+        <MaterialChatPanel
+          material={{ ...chatVideo, material_type: 'video' }}
+          onClose={() => setChatVideo(null)}
+        />
       )}
     </div>
   );

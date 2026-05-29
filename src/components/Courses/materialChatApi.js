@@ -121,4 +121,23 @@ export const materialChatApi = {
     );
     return response.data;
   },
+
+  // ── Summary ───────────────────────────────────────────────────────────
+
+  async generateSummary(materialId, forceRegenerate = false) {
+    const response = await api.post(
+      '/api/material-chat/summary',
+      { material_id: materialId, force_regenerate: forceRegenerate },
+      { headers: HEADERS, timeout: 120000 } // summarization is slow
+    );
+    return response.data; // {summary_id, material_id, summary, summary_metadata, created_at}
+  },
+
+  async downloadSummary(summaryId) {
+    const response = await api.get(
+      `/api/material-chat/summary/${summaryId}/download`,
+      { headers: HEADERS, responseType: 'blob' }
+    );
+    return response.data;
+  },
 };

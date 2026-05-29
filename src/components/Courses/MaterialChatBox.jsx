@@ -16,20 +16,25 @@ import {
   Loader2,
   AlertCircle,
   BookOpen,
+  Brain,
 } from 'lucide-react';
 import { parseMarkdownWithMath, formatTime } from '../generic/utils.jsx';
 import { materialChatApi } from './materialChatApi';
+import MaterialQuizPanel from './MaterialQuizPanel';
 
 // ── Suggested-prompt copy by material type ──────────────────────────────
+// "Quiz me" is intentionally absent — quizzes go through the dedicated
+// MaterialQuizPanel surfaced from the chat header instead of being a
+// free-text chat prompt that returns unstructured questions.
 const SUGGESTIONS_PDF = [
   'Summarize the key concepts in plain English.',
-  'Quiz me on this with three questions.',
   'Explain page 2 like I have never seen it.',
+  'What is the most important takeaway from this document?',
 ];
 const SUGGESTIONS_VIDEO = [
   'Give me a 5-bullet summary of this lecture.',
   'What is the most important takeaway?',
-  'Generate three quiz questions from this lecture.',
+  'Walk me through the first key concept the professor introduces.',
 ];
 
 // ── Citation chip ───────────────────────────────────────────────────────
@@ -138,6 +143,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
   const [sessions, setSessions] = useState([]);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
@@ -349,7 +355,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
       {/* ── Session bar ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800/80 bg-gray-900/30">
         <button
-          onClick={startNewChat}
+          onClick={() => { setQuizOpen(false); startNewChat(); }}
           disabled={isStreaming}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
                      bg-teal-600/15 border border-teal-500/40 text-teal-300 hover:bg-teal-600/25
@@ -360,7 +366,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
           New chat
         </button>
         <button
-          onClick={() => setSessionsOpen((v) => !v)}
+          onClick={() => { setQuizOpen(false); setSessionsOpen((v) => !v); }}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
                      border border-gray-700 text-gray-300 hover:border-gray-500
                      text-xs font-medium transition-colors"
@@ -374,7 +380,21 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
             </span>
           )}
         </button>
-        {activeSessionId && (
+        <button
+          onClick={() => { setSessionsOpen(false); setQuizOpen((v) => !v); }}
+          disabled={!!indexingState}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors
+                     ${quizOpen
+                       ? 'bg-teal-600/25 border border-teal-500/60 text-teal-200'
+                       : 'border border-gray-700 text-gray-300 hover:border-gray-500'}
+                     disabled:opacity-40 disabled:hover:border-gray-700`}
+          type="button"
+          title="Take a quick MCQ quiz on this material"
+        >
+          <Brain size={12} />
+          {quizOpen ? 'Back to chat' : 'Quiz'}
+        </button>
+        {activeSessionId && !quizOpen && (
           <span className="ml-auto text-[11px] text-gray-500 truncate max-w-[160px]">
             {sessions.find((s) => s.id === activeSessionId)?.title || 'Current chat'}
           </span>
@@ -412,6 +432,15 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
       )}
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
+      {quizOpen ? (
+        <div className="flex-1 min-h-0">
+          <MaterialQuizPanel
+            isOpen={quizOpen}
+            materialId={material?.id}
+            onClose={() => setQuizOpen(false)}
+          />
+        </div>
+      ) : (
       <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {indexingState ? (
           <div className="flex flex-col items-center justify-center text-center py-12 px-4">
@@ -464,8 +493,10 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
           ))
         )}
       </div>
+      )}
 
       {/* ── Composer ─────────────────────────────────────────────────────── */}
+      {!quizOpen && (
       <div className="border-t border-gray-800 bg-gray-900/40 px-3 py-3">
         <form
           onSubmit={(e) => { e.preventDefault(); submit(); }}
@@ -511,6 +542,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
           Press <span className="text-gray-500">Enter</span> to send, <span className="text-gray-500">Shift+Enter</span> for newline.
         </p>
       </div>
+      )}
     </div>
   );
 };

@@ -17,10 +17,12 @@ import {
   AlertCircle,
   BookOpen,
   Brain,
+  ScrollText,
 } from 'lucide-react';
 import { parseMarkdownWithMath, formatTime } from '../generic/utils.jsx';
 import { materialChatApi } from './materialChatApi';
 import MaterialQuizPanel from './MaterialQuizPanel';
+import MaterialSummaryPanel from './MaterialSummaryPanel';
 
 // ── Suggested-prompt copy by material type ──────────────────────────────
 // "Quiz me" is intentionally absent — quizzes go through the dedicated
@@ -144,6 +146,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [quizOpen, setQuizOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
@@ -355,7 +358,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
       {/* ── Session bar ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800/80 bg-gray-900/30">
         <button
-          onClick={() => { setQuizOpen(false); startNewChat(); }}
+          onClick={() => { setQuizOpen(false); setSummaryOpen(false); startNewChat(); }}
           disabled={isStreaming}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
                      bg-teal-600/15 border border-teal-500/40 text-teal-300 hover:bg-teal-600/25
@@ -366,7 +369,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
           New chat
         </button>
         <button
-          onClick={() => { setQuizOpen(false); setSessionsOpen((v) => !v); }}
+          onClick={() => { setQuizOpen(false); setSummaryOpen(false); setSessionsOpen((v) => !v); }}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
                      border border-gray-700 text-gray-300 hover:border-gray-500
                      text-xs font-medium transition-colors"
@@ -381,7 +384,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
           )}
         </button>
         <button
-          onClick={() => { setSessionsOpen(false); setQuizOpen((v) => !v); }}
+          onClick={() => { setSessionsOpen(false); setSummaryOpen(false); setQuizOpen((v) => !v); }}
           disabled={!!indexingState}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors
                      ${quizOpen
@@ -394,7 +397,21 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
           <Brain size={12} />
           {quizOpen ? 'Back to chat' : 'Quiz'}
         </button>
-        {activeSessionId && !quizOpen && (
+        <button
+          onClick={() => { setSessionsOpen(false); setQuizOpen(false); setSummaryOpen((v) => !v); }}
+          disabled={!!indexingState}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors
+                     ${summaryOpen
+                       ? 'bg-teal-600/25 border border-teal-500/60 text-teal-200'
+                       : 'border border-gray-700 text-gray-300 hover:border-gray-500'}
+                     disabled:opacity-40 disabled:hover:border-gray-700`}
+          type="button"
+          title="Generate a structured summary of this material"
+        >
+          <ScrollText size={12} />
+          {summaryOpen ? 'Back to chat' : 'Summarize'}
+        </button>
+        {activeSessionId && !quizOpen && !summaryOpen && (
           <span className="ml-auto text-[11px] text-gray-500 truncate max-w-[160px]">
             {sessions.find((s) => s.id === activeSessionId)?.title || 'Current chat'}
           </span>
@@ -438,6 +455,14 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
             isOpen={quizOpen}
             materialId={material?.id}
             onClose={() => setQuizOpen(false)}
+          />
+        </div>
+      ) : summaryOpen ? (
+        <div className="flex-1 min-h-0">
+          <MaterialSummaryPanel
+            isOpen={summaryOpen}
+            material={material}
+            onClose={() => setSummaryOpen(false)}
           />
         </div>
       ) : (
@@ -496,7 +521,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
       )}
 
       {/* ── Composer ─────────────────────────────────────────────────────── */}
-      {!quizOpen && (
+      {!quizOpen && !summaryOpen && (
       <div className="border-t border-gray-800 bg-gray-900/40 px-3 py-3">
         <form
           onSubmit={(e) => { e.preventDefault(); submit(); }}

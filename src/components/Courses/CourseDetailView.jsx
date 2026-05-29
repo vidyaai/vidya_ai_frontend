@@ -24,13 +24,11 @@ import {
   Plus,
   Play,
   BarChart3,
-  Sparkles,
 } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { courseApi } from './courseApi';
 import { assignmentApi } from '../Assignments/assignmentApi';
 import ClassPerformanceSection from './ClassPerformance/ClassPerformanceSection';
-import MaterialChatPanel from './MaterialChatPanel';
 
 // Sidebar sections
 const SECTIONS = [
@@ -672,6 +670,7 @@ const EnrolledStudentsSection = ({ courseId }) => {
 
 // SECTION: Lecture Notes
 const LectureNotesSection = ({ courseId }) => {
+  const router = useRouter();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -682,7 +681,6 @@ const LectureNotesSection = ({ courseId }) => {
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFolder, setUploadFolder] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
-  const [chatMaterial, setChatMaterial] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => { loadNotes(); }, [courseId]);
@@ -835,8 +833,18 @@ const LectureNotesSection = ({ courseId }) => {
         <div className="space-y-2">
           {materials.map((mat) => {
             const indexing = mat.chunking_status === 'processing' || mat.chunking_status === 'pending';
+            const openViewer = () => {
+              const title = encodeURIComponent(mat.title || 'Notes');
+              router.push(
+                `/lecture_note_viewer?courseId=${courseId}&materialId=${mat.id}&role=professor&title=${title}`
+              );
+            };
             return (
-              <div key={mat.id} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 hover:border-gray-700 transition-colors">
+              <div
+                key={mat.id}
+                onClick={openViewer}
+                className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 hover:border-teal-500/50 cursor-pointer transition-colors"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <FileText size={18} className="text-blue-400 flex-shrink-0" />
                   <div className="min-w-0">
@@ -852,19 +860,20 @@ const LectureNotesSection = ({ courseId }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                  <button
-                    onClick={() => setChatMaterial(mat)}
-                    className="p-1.5 text-gray-400 hover:text-teal-300 transition-colors"
-                    title="Chat with this material"
-                  >
-                    <Sparkles size={14} />
-                  </button>
                   {mat.s3_key && (
-                    <button onClick={() => handleDownload(mat)} className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors" title="Download">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownload(mat); }}
+                      className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
+                      title="Download"
+                    >
                       <Download size={14} />
                     </button>
                   )}
-                  <button onClick={() => handleDelete(mat.id)} className="p-1.5 text-gray-500 hover:text-red-400 transition-colors" title="Delete">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(mat.id); }}
+                    className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
+                    title="Delete"
+                  >
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -872,13 +881,6 @@ const LectureNotesSection = ({ courseId }) => {
             );
           })}
         </div>
-      )}
-
-      {chatMaterial && (
-        <MaterialChatPanel
-          material={chatMaterial}
-          onClose={() => setChatMaterial(null)}
-        />
       )}
     </div>
   );
@@ -896,7 +898,6 @@ const VideosSection = ({ courseId }) => {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
-  const [chatVideo, setChatVideo] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => { loadVideos(); }, [courseId]);
@@ -1086,32 +1087,15 @@ const VideosSection = ({ courseId }) => {
                     {v.description && <p className="text-xs text-gray-500 truncate">{v.description}</p>}
                     {v.file_size && <span className="text-xs text-gray-600 flex-shrink-0">{formatFileSize(v.file_size)}</span>}
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setChatVideo(v); }}
-                      disabled={v.transcript_status !== 'completed'}
-                      className="p-1 text-gray-500 hover:text-teal-300 transition-colors disabled:opacity-30 disabled:hover:text-gray-500"
-                      title={v.transcript_status === 'completed' ? 'Chat with this video' : 'Available once transcript is ready'}
-                    >
-                      <Sparkles size={13} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
-                      className="p-1 text-gray-600 hover:text-red-400 transition-colors" title="Remove">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
+                    className="p-1 text-gray-600 hover:text-red-400 transition-colors flex-shrink-0 ml-2" title="Remove">
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      )}
-
-      {chatVideo && (
-        <MaterialChatPanel
-          material={{ ...chatVideo, material_type: 'video' }}
-          onClose={() => setChatVideo(null)}
-        />
       )}
     </div>
   );

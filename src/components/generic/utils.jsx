@@ -294,6 +294,25 @@ export const parseMarkdownWithMath = (text, onSeekToTime = null) => {
     if (listMatch) {
       const [, number, itemText] = listMatch;
 
+      // If the item carries KaTeX HTML (e.g. inline math the LLM emitted as
+      // `\(K\)`), the bold-regex below would swallow that HTML as a plain
+      // string and React would escape it. Short-circuit to a single
+      // dangerouslySetInnerHTML block so the math renders correctly.
+      // Same trust boundary as the equivalent katex branch below at line ~447.
+      if (itemText.includes('<span class="katex">')) {
+        const processedItem = itemText
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+          .replace(/__(.*?)__/g, '<strong class="font-bold text-white">$1</strong>')
+          .replace(/\[(.*?)\]\s*\((.*?)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+        elements.push(
+          <div key={`list-katex-${index}`} className="mb-1 leading-relaxed flex">
+            <span className="font-semibold text-white mr-2 flex-shrink-0">{number}.</span>
+            <span dangerouslySetInnerHTML={{ __html: processedItem }} />
+          </div>
+        );
+        return;
+      }
+
       // Parse inline formatting properly (timestamps, links, bold, etc.)
       const itemParts = [];
       let itemIndex = 0;

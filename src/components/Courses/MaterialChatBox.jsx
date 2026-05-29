@@ -11,7 +11,10 @@ import {
   FileText,
   Video as VideoIcon,
   Plus,
-  MessageSquare,
+  Clock,
+  Pencil,
+  Check,
+  X,
   Trash2,
   Loader2,
   AlertCircle,
@@ -147,6 +150,8 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [quizOpen, setQuizOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
@@ -252,6 +257,36 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
     } catch {
       // ignore
     }
+  };
+
+  const submitRename = async (e, sessionId) => {
+    e.preventDefault();
+    const title = (editingTitle || '').trim();
+    if (!title) {
+      setEditingSessionId(null);
+      setEditingTitle('');
+      return;
+    }
+    try {
+      await materialChatApi.renameSession(sessionId, title);
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === sessionId
+            ? { ...s, title, updated_at: new Date().toISOString() }
+            : s
+        )
+      );
+    } catch {
+      // swallow — title stays unchanged on failure
+    } finally {
+      setEditingSessionId(null);
+      setEditingTitle('');
+    }
+  };
+
+  const cancelRename = () => {
+    setEditingSessionId(null);
+    setEditingTitle('');
   };
 
   const submit = async (queryText) => {
@@ -370,18 +405,15 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
         </button>
         <button
           onClick={() => { setQuizOpen(false); setSummaryOpen(false); setSessionsOpen((v) => !v); }}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
-                     border border-gray-700 text-gray-300 hover:border-gray-500
-                     text-xs font-medium transition-colors"
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors
+                     ${sessionsOpen
+                       ? 'bg-teal-600/25 border border-teal-500/60 text-teal-200'
+                       : 'border border-gray-700 text-gray-300 hover:border-gray-500'}`}
           type="button"
+          title="Conversation history"
         >
-          <MessageSquare size={12} />
+          <Clock size={12} />
           History
-          {sessions.length > 0 && (
-            <span className="ml-0.5 px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 text-[10px]">
-              {sessions.length}
-            </span>
-          )}
         </button>
         <button
           onClick={() => { setSessionsOpen(false); setSummaryOpen(false); setQuizOpen((v) => !v); }}
@@ -418,36 +450,6 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
         )}
       </div>
 
-      {/* History dropdown */}
-      {sessionsOpen && (
-        <div className="border-b border-gray-800 max-h-56 overflow-y-auto bg-gray-900/40">
-          {sessions.length === 0 ? (
-            <div className="px-4 py-4 text-xs text-gray-500">No previous chats yet.</div>
-          ) : (
-            sessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => loadSession(s.id)}
-                className={`w-full text-left flex items-center justify-between
-                            px-4 py-2.5 transition-colors
-                            ${s.id === activeSessionId
-                              ? 'bg-teal-600/10 text-teal-200'
-                              : 'hover:bg-gray-800/60 text-gray-300'}`}
-              >
-                <span className="text-xs truncate flex-1">{s.title || 'Untitled chat'}</span>
-                <span
-                  onClick={(e) => deleteSession(e, s.id)}
-                  className="ml-2 p-1 text-gray-600 hover:text-red-400 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={12} />
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       {quizOpen ? (
         <div className="flex-1 min-h-0">
@@ -464,6 +466,89 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
             material={material}
             onClose={() => setSummaryOpen(false)}
           />
+        </div>
+      ) : sessionsOpen ? (
+        <div className="flex-1 overflow-y-auto p-3">
+          {(!sessions || sessions.length === 0) ? (
+            <div className="text-gray-500 text-sm p-8 text-center">No history</div>
+          ) : (
+            sessions.map((s) => (
+              <div
+                key={s.id}
+                className={`w-full px-3 py-2.5 rounded-lg mb-2 text-sm transition-colors border
+                            ${s.id === activeSessionId
+                              ? 'bg-teal-600/15 border-teal-500/40 text-teal-100'
+                              : 'bg-gray-900/60 hover:bg-gray-800/80 text-gray-300 border-gray-800'}`}
+              >
+                {editingSessionId === s.id ? (
+                  <form
+                    onSubmit={(e) => submitRename(e, s.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      autoFocus
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') cancelRename(); }}
+                      className="flex-1 bg-gray-900/60 text-white px-3 py-2 rounded-lg
+                                 border border-gray-700/50 focus:outline-none
+                                 focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50
+                                 transition-all text-sm"
+                      placeholder="Conversation name"
+                    />
+                    <button
+                      type="submit"
+                      className="text-green-400 hover:text-green-300 transition-colors p-1 hover:bg-green-400/10 rounded-lg"
+                      title="Save"
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelRename}
+                      className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-gray-700/50 rounded-lg"
+                      title="Cancel"
+                    >
+                      <X size={16} />
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => loadSession(s.id)}
+                      className="flex-1 text-left truncate"
+                      type="button"
+                    >
+                      <span className="font-medium text-sm">{s.title || 'Untitled chat'}</span>
+                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => { setEditingSessionId(s.id); setEditingTitle(s.title || ''); }}
+                        className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-gray-700/50 rounded-lg"
+                        title="Rename"
+                        type="button"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        onClick={(e) => deleteSession(e, s.id)}
+                        className="text-gray-400 hover:text-red-400 transition-all p-1.5 hover:bg-gray-700/50 rounded-lg"
+                        title="Delete"
+                        type="button"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {editingSessionId !== s.id && (
+                  <div className="text-xs text-gray-500 mt-1.5">
+                    {new Date(s.updated_at || Date.now()).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       ) : (
       <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -521,7 +606,7 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
       )}
 
       {/* ── Composer ─────────────────────────────────────────────────────── */}
-      {!quizOpen && !summaryOpen && (
+      {!quizOpen && !summaryOpen && !sessionsOpen && (
       <div className="border-t border-gray-800 bg-gray-900/40 px-3 py-3">
         <form
           onSubmit={(e) => { e.preventDefault(); submit(); }}

@@ -561,6 +561,40 @@ const PlayerComponent = ({
       };
     }
   }, [player, seekToTime, isHtml5]);
+
+  // Expose a "snapshot the current video frame" function to callers so the
+  // material-chat box can ask "Frame" questions (gallery parity). Only
+  // works for uploaded videos rendered via the HTML5 <video> element —
+  // YouTube iframes can't be rasterized cross-origin. Returns a JPEG
+  // base64 string (without the data: prefix) plus the playhead time.
+  useEffect(() => {
+    if (!isHtml5) {
+      // Clean up any stale handle from a previous YouTube → uploaded swap
+      if (window.captureCurrentFrame) window.captureCurrentFrame = null;
+      return;
+    }
+    window.captureCurrentFrame = () => {
+      const el = html5Ref.current;
+      if (!el || !el.videoWidth || !el.videoHeight) return null;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = el.videoWidth;
+        canvas.height = el.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        // Strip the "data:image/jpeg;base64," prefix — backend expects raw base64.
+        const base64 = dataUrl.split(',', 2)[1] || '';
+        return { base64, timestamp: el.currentTime || 0 };
+      } catch (e) {
+        console.error('captureCurrentFrame failed:', e);
+        return null;
+      }
+    };
+    return () => {
+      if (window.captureCurrentFrame) window.captureCurrentFrame = null;
+    };
+  }, [isHtml5]);
   
   const handleSliderChange = (e) => {
     setSliderPosition(parseFloat(e.target.value));

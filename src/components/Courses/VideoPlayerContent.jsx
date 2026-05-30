@@ -137,18 +137,22 @@ const VideoPlayerContent = () => {
         </div>
       </div>
 
-      {/* BODY: player + transcript on the left, chat on the right */}
+      {/* BODY: player + transcript on the left, chat on the right.
+          PlayerComponent renders its own aspect-video container plus a
+          controls bar as a sibling div; if we wrap it in overflow-hidden
+          + fixed flex-basis the controls get clipped, so the player gets
+          natural height and the transcript flex-1's the remainder. */}
       <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 md:gap-6 h-[calc(100vh-200px)] min-h-[720px]">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 md:gap-6 h-[calc(100vh-160px)] min-h-[720px]">
           {/* Left column: video player on top, transcript underneath */}
           <div className="flex flex-col gap-4 md:gap-5 min-h-0">
-            <div className="bg-black border border-gray-800 rounded-xl overflow-hidden flex flex-col flex-[3] min-h-0">
+            <div className="flex-shrink-0">
               <PlayerComponent
                 currentVideo={currentVideo}
                 onTimeUpdate={(s) => setCurrentTime(s)}
               />
             </div>
-            <div className="flex-[2] min-h-0">
+            <div className="flex-1 min-h-0">
               <MaterialTranscriptPanel
                 materialId={material?.id}
                 onSeekToTime={handleSeekToTime}

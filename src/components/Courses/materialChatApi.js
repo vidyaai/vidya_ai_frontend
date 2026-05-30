@@ -153,4 +153,15 @@ export const materialChatApi = {
     );
     return response.data;
   },
+
+  // ── Transcript ────────────────────────────────────────────────────────
+
+  async getTranscript(materialId) {
+    const response = await api.get(
+      `/api/material-chat/transcript/${materialId}`,
+      { headers: HEADERS }
+    );
+    return response.data; // {material_id, material_type, transcript_status,
+                          //  transcript_text, segments, length_seconds}
+  },
 };

@@ -140,7 +140,7 @@ const MessageRow = ({ msg, materialType, onSeekToTime, onJumpToPage }) => {
 };
 
 // ── Main embeddable chat box ────────────────────────────────────────────
-const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
+const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage, onCaptureFrame }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -152,6 +152,11 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+  // 'video' = ask about the lecture transcript; 'frame' = ask about the
+  // currently-displayed video frame (visual question, captures a JPEG of
+  // the <video> element and sends it to the vision model). Frame mode is
+  // only meaningful for video materials with an onCaptureFrame callback.
+  const [queryType, setQueryType] = useState('video');
 
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
@@ -293,8 +298,25 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
     const trimmed = (queryText ?? input).trim();
     if (!trimmed || isStreaming) return;
 
+    // Frame mode: snapshot the current playhead now (before clearing input
+    // / async) so the captured frame matches what the user was looking at
+    // when they hit Send. If capture fails, fall back to a text query.
+    let frame = null;
+    if (queryType === 'frame' && typeof onCaptureFrame === 'function') {
+      try {
+        frame = onCaptureFrame();
+      } catch {
+        frame = null;
+      }
+    }
+    const useFrame = !!(frame && frame.base64);
+
     setInput('');
-    const userTurn = { id: `u-${Date.now()}`, role: 'user', content: trimmed };
+    const userTurn = {
+      id: `u-${Date.now()}`,
+      role: 'user',
+      content: useFrame ? `[frame @ ${Math.floor(frame.timestamp || 0)}s] ${trimmed}` : trimmed,
+    };
     const assistantId = `a-${Date.now() + 1}`;
     const assistantTurn = { id: assistantId, role: 'assistant', content: '', citations: [] };
     setMessages((prev) => [...prev, userTurn, assistantTurn]);
@@ -312,7 +334,10 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
         material.id,
         trimmed,
         activeSessionId,
-        controller.signal
+        controller.signal,
+        useFrame
+          ? { isImageQuery: true, imageBase64: frame.base64, timestamp: frame.timestamp }
+          : {}
       )) {
         if (evt.type === 'metadata') {
           citations = evt.data?.citations || [];
@@ -608,6 +633,38 @@ const MaterialChatBox = ({ material, onSeekToTime, onJumpToPage }) => {
       {/* ── Composer ─────────────────────────────────────────────────────── */}
       {!quizOpen && !summaryOpen && !sessionsOpen && (
       <div className="border-t border-gray-800 bg-gray-900/40 px-3 py-3">
+        {/* Gallery-parity "Video / Frame" toggle — visible only for video
+            materials with a frame-capture callback wired up. */}
+        {isVideo && typeof onCaptureFrame === 'function' && (
+          <div className="flex gap-4 mb-2 px-1">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="materialQueryType"
+                value="video"
+                checked={queryType === 'video'}
+                onChange={() => setQueryType('video')}
+                disabled={isStreaming}
+                className="mr-1.5 accent-teal-500"
+              />
+              <span className="text-xs text-gray-400">Video</span>
+            </label>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="materialQueryType"
+                value="frame"
+                checked={queryType === 'frame'}
+                onChange={() => setQueryType('frame')}
+                disabled={isStreaming}
+                className="mr-1.5 accent-teal-500"
+              />
+              <span className="text-xs text-gray-400" title="Ask a visual question about the current frame">
+                Frame
+              </span>
+            </label>
+          </div>
+        )}
         <form
           onSubmit={(e) => { e.preventDefault(); submit(); }}
           className="flex items-end gap-2"

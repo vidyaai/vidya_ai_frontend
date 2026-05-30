@@ -68,6 +68,13 @@ const VideoPlayerContent = () => {
     }
   };
 
+  const handleCaptureFrame = () => {
+    if (typeof window !== 'undefined' && typeof window.captureCurrentFrame === 'function') {
+      return window.captureCurrentFrame();
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -145,6 +152,7 @@ const VideoPlayerContent = () => {
             <MaterialChatBox
               material={material}
               onSeekToTime={handleSeekToTime}
+              onCaptureFrame={handleCaptureFrame}
             />
           </div>
         </div>

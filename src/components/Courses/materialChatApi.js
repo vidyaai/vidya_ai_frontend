@@ -9,10 +9,18 @@ const HEADERS = { 'ngrok-skip-browser-warning': 'true' };
 
 export const materialChatApi = {
   // Non-streaming query (fallback / first-page hydration).
-  async query(materialId, query, sessionId = null) {
+  async query(materialId, query, sessionId = null, opts = {}) {
+    const body = {
+      material_id: materialId,
+      query,
+      session_id: sessionId,
+      is_image_query: !!opts.isImageQuery,
+      image_base64: opts.imageBase64 || null,
+      timestamp: opts.timestamp ?? null,
+    };
     const response = await api.post(
       '/api/material-chat/query',
-      { material_id: materialId, query, session_id: sessionId },
+      body,
       { headers: HEADERS }
     );
     return response.data; // { response, session_id, citations }
@@ -24,12 +32,21 @@ export const materialChatApi = {
   //   { type: 'session',  data: { session_id } }
   //   { type: 'done' }
   //   { type: 'error',    data: '<message>' }
-  async *streamQuery(materialId, query, sessionId = null, signal = undefined) {
+  async *streamQuery(materialId, query, sessionId = null, signal = undefined, opts = {}) {
     let token = '';
     const user = auth?.currentUser;
     if (user) {
       token = await user.getIdToken();
     }
+
+    const body = {
+      material_id: materialId,
+      query,
+      session_id: sessionId,
+      is_image_query: !!opts.isImageQuery,
+      image_base64: opts.imageBase64 || null,
+      timestamp: opts.timestamp ?? null,
+    };
 
     const response = await fetch(
       `${api.defaults.baseURL}/api/material-chat/query/stream`,
@@ -40,11 +57,7 @@ export const materialChatApi = {
           Authorization: `Bearer ${token}`,
           ...HEADERS,
         },
-        body: JSON.stringify({
-          material_id: materialId,
-          query,
-          session_id: sessionId,
-        }),
+        body: JSON.stringify(body),
         signal,
       }
     );

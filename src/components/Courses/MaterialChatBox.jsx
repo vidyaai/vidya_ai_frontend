@@ -22,7 +22,7 @@ import {
   Brain,
   ScrollText,
 } from 'lucide-react';
-import { parseMarkdownWithMath, formatTime } from '../generic/utils.jsx';
+import { parseMarkdownWithMath } from '../generic/utils.jsx';
 import { materialChatApi } from './materialChatApi';
 import MaterialQuizPanel from './MaterialQuizPanel';
 import MaterialSummaryPanel from './MaterialSummaryPanel';
@@ -42,37 +42,10 @@ const SUGGESTIONS_VIDEO = [
   'Walk me through the first key concept the professor introduces.',
 ];
 
-// ── Citation chip ───────────────────────────────────────────────────────
-const CitationChip = ({ citation, materialType, onSeekToTime, onJumpToPage }) => {
-  let label = null;
-  let handler = null;
-  if (citation.page_number != null) {
-    label = `Page ${citation.page_number}`;
-    handler = () => onJumpToPage && onJumpToPage(citation.page_number);
-  } else if (citation.start_seconds != null) {
-    label = formatTime(Math.floor(citation.start_seconds));
-    handler = () => onSeekToTime && onSeekToTime(citation.start_seconds);
-  } else if (citation.chunk_index != null) {
-    label = `#${citation.chunk_index}`;
-  }
-  if (!label) return null;
-  const Icon = materialType === 'video' ? VideoIcon : FileText;
-  return (
-    <button
-      onClick={handler || undefined}
-      disabled={!handler}
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md
-                 bg-gray-900 border border-gray-700 hover:border-teal-500/60
-                 text-[11px] text-gray-300 hover:text-teal-300
-                 disabled:hover:border-gray-700 disabled:hover:text-gray-300
-                 disabled:cursor-default transition-colors"
-      type="button"
-    >
-      <Icon size={10} className="text-teal-400/70" />
-      {label}
-    </button>
-  );
-};
+// (CitationChip removed — citations now live inline in the assistant's
+// prose: [MM:SS] timestamps for videos and `Page N` references for PDFs.
+// Both render as clickable links via parseMarkdownWithMath + click
+// delegation in MessageRow.)
 
 // ── Three teal dots that pulse while we wait for the first token ────────
 const ThinkingDots = () => (
@@ -82,6 +55,18 @@ const ThinkingDots = () => (
     <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" style={{ animationDelay: '300ms' }} />
   </div>
 );
+
+// Convert "Page N" references in the AI's prose into markdown links
+// pointing at a custom URL scheme. parseMarkdownWithMath renders them as
+// <a href="vidya:page:N"> tags; the MessageRow's onClick handler then
+// intercepts those clicks and dispatches onJumpToPage instead of letting
+// the browser try to navigate. \bPage\s+\d+ avoids matching e.g. "Pages 2-3"
+// (range syntax — would need its own pattern) and won't touch references
+// already inside an existing markdown link.
+const wrapPageReferences = (text) => {
+  if (!text) return text;
+  return text.replace(/(^|[^\]\(])\b[Pp]age\s+(\d+)\b/g, (m, lead, n) => `${lead}[Page ${n}](vidya:page:${n})`);
+};
 
 // ── A single message row ────────────────────────────────────────────────
 const MessageRow = ({ msg, materialType, onSeekToTime, onJumpToPage }) => {
@@ -109,32 +94,40 @@ const MessageRow = ({ msg, materialType, onSeekToTime, onJumpToPage }) => {
     );
   }
 
+  // Click delegation so inline `Page N` references jump the PDF viewer.
+  // The markdown renderer turns [Page 3](vidya:page:3) into an <a> tag;
+  // we catch the click, preventDefault to stop browser navigation, and
+  // call onJumpToPage instead. MM:SS timestamps are already wired by
+  // parseMarkdownWithMath via the onSeekToTime arg.
+  const handleContainerClick = (e) => {
+    const target = e.target;
+    if (!target || !target.closest) return;
+    const a = target.closest('a[href^="vidya:page:"]');
+    if (!a) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onJumpToPage) return;
+    const href = a.getAttribute('href') || '';
+    const n = parseInt(href.split(':')[2], 10);
+    if (Number.isFinite(n) && n > 0) onJumpToPage(n);
+  };
+
+  const renderableContent = onJumpToPage ? wrapPageReferences(msg.content) : msg.content;
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-2.5">
-        <div className="flex-shrink-0 w-6 h-6 rounded-md bg-gradient-to-br from-teal-500/30 to-teal-700/30
-                        border border-teal-500/40 flex items-center justify-center mt-0.5">
-          <Sparkles size={12} className="text-teal-300" />
-        </div>
-        <div className="min-w-0 flex-1 text-sm text-gray-100 leading-relaxed">
-          {msg.content
-            ? parseMarkdownWithMath(msg.content, onSeekToTime)
-            : <ThinkingDots />}
-        </div>
+    <div className="flex items-start gap-2.5">
+      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-gradient-to-br from-teal-500/30 to-teal-700/30
+                      border border-teal-500/40 flex items-center justify-center mt-0.5">
+        <Sparkles size={12} className="text-teal-300" />
       </div>
-      {msg.citations && msg.citations.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 ml-8">
-          {msg.citations.map((c, i) => (
-            <CitationChip
-              key={`${c.chunk_index ?? i}-${i}`}
-              citation={c}
-              materialType={materialType}
-              onSeekToTime={onSeekToTime}
-              onJumpToPage={onJumpToPage}
-            />
-          ))}
-        </div>
-      )}
+      <div
+        onClick={handleContainerClick}
+        className="min-w-0 flex-1 text-sm text-gray-100 leading-relaxed material-chat-message"
+      >
+        {msg.content
+          ? parseMarkdownWithMath(renderableContent, onSeekToTime)
+          : <ThinkingDots />}
+      </div>
     </div>
   );
 };

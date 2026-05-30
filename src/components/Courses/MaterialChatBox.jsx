@@ -56,16 +56,43 @@ const ThinkingDots = () => (
   </div>
 );
 
-// Convert "Page N" references in the AI's prose into markdown links
-// pointing at a custom URL scheme. parseMarkdownWithMath renders them as
-// <a href="vidya:page:N"> tags; the MessageRow's onClick handler then
-// intercepts those clicks and dispatches onJumpToPage instead of letting
-// the browser try to navigate. \bPage\s+\d+ avoids matching e.g. "Pages 2-3"
-// (range syntax — would need its own pattern) and won't touch references
-// already inside an existing markdown link.
-const wrapPageReferences = (text) => {
+// Pre-process the AI's prose so inline citations render as clickable
+// affordances.
+//
+// Two passes:
+//   1. Strip surrounding bold markers around `Page N` references and
+//      around `MM:SS` (or bracketed `[MM:SS]`) timestamps. parseMarkdownWithMath's
+//      bold branch only processes plain text + timestamps inside <strong>;
+//      it can't render markdown links there. Wrapping a citation in **...**
+//      breaks the click — we'd rather lose the bold than the click.
+//   2. Wrap each remaining `Page N` reference in a markdown link pointing
+//      at a custom `vidya:page:N` URL scheme. The renderer turns these
+//      into <a> tags; MessageRow's onClick delegate intercepts the click
+//      and dispatches onJumpToPage. Lookbehind/lookahead skip references
+//      already sitting inside an existing markdown link.
+//
+// Timestamps need no equivalent wrap step — parseMarkdownWithMath
+// already turns any `MM:SS` substring into a clickable button when an
+// onSeekToTime handler is supplied.
+const preprocessCitations = (text, { withPageLinks } = {}) => {
   if (!text) return text;
-  return text.replace(/(^|[^\]\(])\b[Pp]age\s+(\d+)\b/g, (m, lead, n) => `${lead}[Page ${n}](vidya:page:${n})`);
+  // Strip bold/italic-bold around citations regardless of material type —
+  // safe even if the citation doesn't end up wrapped in a link.
+  text = text.replace(/\*\*\s*(\[?[Pp]age\s+\d+\]?)\s*\*\*/g, '$1');
+  text = text.replace(/__\s*(\[?[Pp]age\s+\d+\]?)\s*__/g, '$1');
+  text = text.replace(/\*\*\s*(\[?\d{1,2}:\d{2}(?::\d{2})?\]?)\s*\*\*/g, '$1');
+  text = text.replace(/__\s*(\[?\d{1,2}:\d{2}(?::\d{2})?\]?)\s*__/g, '$1');
+  // Wrap Page N in a clickable markdown link only when the host actually
+  // has a page-jump handler (i.e. the lecture-note viewer). For videos
+  // there's no destination, so leave the text alone — the `**` strip
+  // above is the only useful change.
+  if (withPageLinks) {
+    text = text.replace(
+      /(?<![\]\(\w])([Pp]age)\s+(\d+)\b(?!\]|\))/g,
+      (m, _word, n) => `[Page ${n}](vidya:page:${n})`
+    );
+  }
+  return text;
 };
 
 // ── A single message row ────────────────────────────────────────────────
@@ -112,7 +139,9 @@ const MessageRow = ({ msg, materialType, onSeekToTime, onJumpToPage }) => {
     if (Number.isFinite(n) && n > 0) onJumpToPage(n);
   };
 
-  const renderableContent = onJumpToPage ? wrapPageReferences(msg.content) : msg.content;
+  const renderableContent = preprocessCitations(msg.content, {
+    withPageLinks: !!onJumpToPage,
+  });
 
   return (
     <div className="flex items-start gap-2.5">

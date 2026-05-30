@@ -11,6 +11,7 @@ import TopBar from '../generic/TopBar';
 import { courseApi } from './courseApi';
 import PlayerComponent from '../Chat/PlayerComponent';
 import MaterialChatBox from './MaterialChatBox';
+import MaterialTranscriptPanel from './MaterialTranscriptPanel';
 
 const VideoPlayerContent = () => {
   const router = useRouter();
@@ -136,18 +137,26 @@ const VideoPlayerContent = () => {
         </div>
       </div>
 
-      {/* BODY: player + chat side by side */}
+      {/* BODY: player + transcript on the left, chat on the right */}
       <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 md:gap-6 h-[calc(100vh-200px)] min-h-[640px]">
-          {/* Video player */}
-          <div className="bg-black border border-gray-800 rounded-xl overflow-hidden flex flex-col">
-            <PlayerComponent
-              currentVideo={currentVideo}
-              onTimeUpdate={(s) => setCurrentTime(s)}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 md:gap-6 h-[calc(100vh-200px)] min-h-[720px]">
+          {/* Left column: video player on top, transcript underneath */}
+          <div className="flex flex-col gap-4 md:gap-5 min-h-0">
+            <div className="bg-black border border-gray-800 rounded-xl overflow-hidden flex flex-col flex-[3] min-h-0">
+              <PlayerComponent
+                currentVideo={currentVideo}
+                onTimeUpdate={(s) => setCurrentTime(s)}
+              />
+            </div>
+            <div className="flex-[2] min-h-0">
+              <MaterialTranscriptPanel
+                materialId={material?.id}
+                onSeekToTime={handleSeekToTime}
+              />
+            </div>
           </div>
 
-          {/* Chat */}
+          {/* Right column: chat */}
           <div className="min-h-0">
             <MaterialChatBox
               material={material}

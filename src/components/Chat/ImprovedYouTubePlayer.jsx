@@ -678,7 +678,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
   return (
     <div className="w-full">
       {navigatingTo && (
-        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
             <defs>
               <mask id="crescent-mask-chat">

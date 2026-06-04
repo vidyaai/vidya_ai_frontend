@@ -619,24 +619,24 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-[#071224]">
       {/* Top Navigation */}
       <TopBar onNavigateToHome={onNavigateToHome} />
       
       {/* Page Header */}
-      <div className="bg-gray-900 border-b border-gray-800">
+      <div className="bg-[#0d1f38] border-b border-[#182842]">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={onBack}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft size={24} />
               </button>
               <div>
                 <h1 className="text-3xl font-bold text-white">Assignment Builder</h1>
-                <p className="text-gray-400 mt-2">
+                <p className="text-slate-400 mt-2">
                   {preloadedData ? 
                     (preloadedData.id ? 'Editing assignment - modify as needed' : 'Assignment parsed from document - review and modify as needed') : 
                     'Create your assignment manually'
@@ -647,7 +647,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="inline-flex items-center px-4 py-2 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-white/[0.08] text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
               >
                 <Eye size={18} className="mr-2" />
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
@@ -657,7 +657,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                   onClick={() => saveAssignment('draft')}
                   disabled={saving || isPublished}
                   title={isPublished ? 'Already published — cannot revert to draft' : 'Save as draft'}
-                  className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center px-4 py-2 bg-white/10 hover:bg-white/[0.08] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save size={18} className="mr-2" />
                   {saving ? 'Saving...' : 'Save Draft'}
@@ -669,7 +669,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     className={`inline-flex items-center px-4 py-2 font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                       validationStatus.isValid 
                         ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700' 
-                        : 'bg-gray-600 text-gray-300'
+                        : 'bg-white/10 text-slate-300'
                     }`}
                     title={validationStatus.isValid ? 'Ready to publish' : `Cannot publish: ${validationStatus.errors.length} validation error(s)`}
                   >
@@ -710,11 +710,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
           {/* Assignment Builder */}
           <div className={`${showPreview ? 'lg:col-span-2' : 'col-span-1'}`}>
             {/* Assignment Details */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
+            <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842] mb-6">
               <h2 className="text-xl font-bold text-white mb-4">Assignment Details</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     Assignment Title
                   </label>
                   <input
@@ -722,11 +722,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     value={assignmentTitle}
                     onChange={(e) => setAssignmentTitle(e.target.value)}
                     placeholder="Enter assignment title..."
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     Description
                   </label>
                   <textarea
@@ -734,24 +734,24 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                     onChange={(e) => setAssignmentDescription(e.target.value)}
                     placeholder="Enter assignment description..."
                     rows={3}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
+                    className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-vertical"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     Due Date
                   </label>
                   <input
                     type="datetime-local"
                     value={assignmentDueDate}
                     onChange={(e) => setAssignmentDueDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     AI Plagiarism Penalty (%)
-                    <span className="ml-2 text-xs text-gray-400">Score reduction for AI-flagged answers</span>
+                    <span className="ml-2 text-xs text-slate-400">Score reduction for AI-flagged answers</span>
                   </label>
                   <div className="flex items-center space-x-4">
                     <input
@@ -761,7 +761,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                       step="5"
                       value={aiPenaltyPercentage}
                       onChange={(e) => setAiPenaltyPercentage(Number(e.target.value))}
-                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                      className="flex-1 h-2 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-teal-500"
                     />
                     <input
                       type="number"
@@ -772,11 +772,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                         const val = Number(e.target.value);
                         if (val >= 0 && val <= 100) setAiPenaltyPercentage(val);
                       }}
-                      className="w-20 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-20 px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
-                    <span className="text-gray-400 text-sm">%</span>
+                    <span className="text-slate-400 text-sm">%</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-slate-500 mt-2">
                     {aiPenaltyPercentage === 0 ? 'No penalty applied' : 
                      aiPenaltyPercentage === 100 ? 'Full score deduction (0 points)' :
                      `${aiPenaltyPercentage}% score reduction for AI-detected answers`}
@@ -786,7 +786,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
             </div>
 
             {/* Questions Section */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842]">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Questions</h2>
                 <div className="relative">
@@ -800,17 +800,17 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                   </button>
                   
                   {showQuestionTypes && (
-                    <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                    <div className="absolute right-0 mt-2 w-80 bg-[#1a2943] border border-[#1a2943] rounded-lg shadow-lg z-10">
                       <div className="py-2">
                         {/* Basic Question Types */}
-                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-700">
+                        <div className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider border-b border-[#1a2943]">
                           Basic Question Types
                         </div>
                         {questionTypes.filter(type => type.category === 'Basic').map((type) => (
                           <button
                             key={type.type}
                             onClick={() => addQuestion(type.type)}
-                            className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center"
+                            className="w-full px-4 py-3 text-left text-white hover:bg-white/[0.08] transition-colors flex items-center"
                           >
                             <span className="text-lg mr-3">{type.icon}</span>
                             <span>{type.label}</span>
@@ -818,19 +818,19 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                         ))}
                         
                         {/* Engineering Question Types */}
-                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
+                        <div className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider border-t border-b border-[#1a2943] mt-2">
                           Science/Engineering Question Types
                         </div>
                         {questionTypes.filter(type => type.category === 'Engineering').map((type) => (
                           <button
                             key={type.type}
                             onClick={() => addQuestion(type.type)}
-                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
+                            className={`w-full px-4 py-3 text-left text-white hover:bg-white/[0.08] transition-colors flex items-center group`}
                           >
                             <span className={`text-lg mr-3 ${
                               type.color === 'purple' ? 'group-hover:text-purple-400' :
                               type.color === 'orange' ? 'group-hover:text-orange-400' :
-                              type.color === 'blue' ? 'group-hover:text-blue-400' :
+                              type.color === 'blue' ? 'group-hover:text-[#43ead6]' :
                               type.color === 'green' ? 'group-hover:text-green-400' :
                               type.color === 'yellow' ? 'group-hover:text-yellow-400' : ''
                             }`}>
@@ -838,7 +838,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                             </span>
                             <div>
                               <div>{type.label}</div>
-                              <div className="text-xs text-gray-400 mt-1">
+                              <div className="text-xs text-slate-400 mt-1">
                                 {type.type === 'code-writing' && 'Programming problems with syntax highlighting'}
                                 {type.type === 'diagram-analysis' && 'Circuit diagrams and technical drawings'}
                                 {type.type === 'diagram-required-in-answer' && 'Student must draw/sketch a diagram as part of their answer'}
@@ -849,14 +849,14 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                         ))}
 
                         {/* Medical Question Types */}
-                        <div className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-t border-b border-gray-700 mt-2">
+                        <div className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider border-t border-b border-[#1a2943] mt-2">
                           Medical Question Types
                         </div>
                         {questionTypes.filter(type => type.category === 'Medical').map((type) => (
                           <button
                             key={type.type}
                             onClick={() => addQuestion(type.type)}
-                            className={`w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center group`}
+                            className={`w-full px-4 py-3 text-left text-white hover:bg-white/[0.08] transition-colors flex items-center group`}
                           >
                             <span className={`text-lg mr-3 ${
                               type.color === 'green' ? 'group-hover:text-green-400' :
@@ -866,7 +866,7 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
                             </span>
                             <div>
                               <div>{type.label}</div>
-                              <div className="text-xs text-gray-400 mt-1">
+                              <div className="text-xs text-slate-400 mt-1">
                                 {type.type === 'clinical-case-study' && 'Patient scenario with diagnosis, investigations, and management'}
                                 {type.type === 'osce' && 'Clinical skill station with structured marking scheme'}
                               </div>
@@ -883,11 +883,11 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
               <div className="space-y-4">
                 {questions.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Plus size={32} className="text-gray-400" />
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Plus size={32} className="text-slate-400" />
                     </div>
                     <h3 className="text-lg font-medium text-white mb-2">No Questions Yet</h3>
-                    <p className="text-gray-400 mb-4">Add your first question to get started</p>
+                    <p className="text-slate-400 mb-4">Add your first question to get started</p>
                     <button
                       onClick={() => setShowQuestionTypes(true)}
                       className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300"
@@ -931,8 +931,8 @@ const AssignmentBuilder = ({ onBack, onNavigateToHome, preloadedData }) => {
         </div>
 
         {/* Review (creator feedback on AI generation quality) */}
-        <div className="mt-8 flex flex-col items-center text-center border-t border-gray-800 pt-6">
-          <p className="text-gray-400 mb-3 text-sm">
+        <div className="mt-8 flex flex-col items-center text-center border-t border-[#182842] pt-6">
+          <p className="text-slate-400 mb-3 text-sm">
             How was the AI-generated output? Your feedback helps us improve.
           </p>
           <button

@@ -191,7 +191,7 @@ const EditableTextWithEquations = ({
 
   // If editing, show textarea/input
   if (isEditing) {
-    const inputClassName = `w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${className}`;
+    const inputClassName = `w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${className}`;
     
     if (multiline) {
       return (
@@ -228,10 +228,10 @@ const EditableTextWithEquations = ({
   return (
     <div 
       onClick={handleContainerClick}
-      className={`cursor-text min-h-[2.5rem] px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors whitespace-pre-wrap ${className}`}
+      className={`cursor-text min-h-[2.5rem] px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg hover:border-white/25 transition-colors whitespace-pre-wrap ${className}`}
     >
       {segments.length === 0 && !text ? (
-        <span className="text-gray-400">{placeholder}</span>
+        <span className="text-slate-400">{placeholder}</span>
       ) : (
         <span className="text-white">
           {segments.map((segment, idx) => {

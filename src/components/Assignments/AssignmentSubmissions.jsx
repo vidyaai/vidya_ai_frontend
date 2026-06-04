@@ -286,7 +286,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     switch (status) {
       case 'graded': return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      default: return 'bg-[#43ead6]/15 text-[#43ead6] border-[#43ead6]/30';
     }
   };
 
@@ -358,12 +358,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     if (!subQuestion) {
       return (
         <div className="space-y-2">
-          <div className="bg-gray-800 rounded p-3">
-            <p className="text-gray-300">{typeof answerText === 'string' ? answerText : JSON.stringify(answerText)}</p>
+          <div className="bg-white/5 rounded p-3">
+            <p className="text-slate-300">{typeof answerText === 'string' ? answerText : JSON.stringify(answerText)}</p>
           </div>
           {answerDiagram && (
-            <div className="bg-gray-800 rounded p-3">
-              <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+            <div className="bg-white/5 rounded p-3">
+              <p className="text-slate-400 text-xs mb-2">Diagram:</p>
               <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
             </div>
           )}
@@ -385,7 +385,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <p className="text-teal-300 font-medium text-sm">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
               {selectedOptions.length > 0 ? (
                 <ul className="mt-1 space-y-1">
@@ -398,8 +398,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               )}
             </div>
             {subQuestion.options && (
-              <div className="bg-gray-900 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Available options:</p>
+              <div className="bg-[#0d1f38] rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Available options:</p>
                 <div className="space-y-1">
                   {subQuestion.options.map((option, index) => (
                     <div 
@@ -407,7 +407,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       className={`text-xs p-2 rounded ${
                         selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
-                          : 'text-gray-400 bg-gray-800'
+                          : 'text-slate-400 bg-white/5'
                       }`}
                     >
                       {option}
@@ -417,8 +417,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </div>
             )}
             {answerDiagram && (
-              <div className="bg-gray-800 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+              <div className="bg-white/5 rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Diagram:</p>
                 <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
               </div>
             )}
@@ -429,28 +429,28 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       case 'code-writing':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-xs">Code Answer:</p>
-                <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400">
+                <p className="text-slate-400 text-xs">Code Answer:</p>
+                <span className="text-xs bg-white/[0.08] px-2 py-1 rounded text-slate-400">
                   {subQuestion.code_language || 'code'}
                 </span>
               </div>
-              <pre className="text-gray-200 text-xs overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-2 rounded">
+              <pre className="text-slate-200 text-xs overflow-x-auto whitespace-pre-wrap font-mono bg-[#0d1f38] p-2 rounded">
                 {answerText}
               </pre>
             </div>
             {subQuestion.subCode && (
-              <div className="bg-gray-900 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
-                <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
+              <div className="bg-[#0d1f38] rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Reference Code:</p>
+                <pre className="text-slate-300 text-xs overflow-x-auto font-mono">
                   {subQuestion.subCode}
                 </pre>
               </div>
             )}
             {answerDiagram && (
-              <div className="bg-gray-800 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+              <div className="bg-white/5 rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Diagram:</p>
                 <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
               </div>
             )}
@@ -460,7 +460,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       case 'true_false':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                 answerText === 'true' || answerText === true 
                   ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
@@ -470,8 +470,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </span>
             </div>
             {answerDiagram && (
-              <div className="bg-gray-800 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+              <div className="bg-white/5 rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Diagram:</p>
                 <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
               </div>
             )}
@@ -482,22 +482,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       case 'fill_blank':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
                   FILL IN THE BLANK
                 </span>
               </div>
-              <div className="bg-gray-900 rounded p-3">
+              <div className="bg-[#0d1f38] rounded p-3">
                 <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
-                <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
+                <p className="text-white mt-1 font-mono bg-white/5 px-2 py-1 rounded inline-block">
                   "{answerText}"
                 </p>
               </div>
             </div>
             {answerDiagram && (
-              <div className="bg-gray-800 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+              <div className="bg-white/5 rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Diagram:</p>
                 <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
               </div>
             )}
@@ -510,7 +510,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         // Pass the feedbackKeyPrefix as the prefix for nested levels
         // Also pass currentSubmission for AI Flag override functionality
         return (
-          <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
+          <div className="ml-4 border-l-2 border-[#43ead6]/30 pl-4">
             {renderMultiPartAnswer(subQuestion, subAnswer, null, feedbackKeyPrefix, currentSubmission)}
           </div>
         );
@@ -518,14 +518,14 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       default:
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
-              <p className="text-gray-200 text-sm whitespace-pre-wrap">
+            <div className="bg-white/5 rounded p-3">
+              <p className="text-slate-200 text-sm whitespace-pre-wrap">
                 {typeof answerText === 'string' ? answerText : JSON.stringify(answerText)}
               </p>
             </div>
             {answerDiagram && (
-              <div className="bg-gray-800 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+              <div className="bg-white/5 rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Diagram:</p>
                 <DiagramImage diagramData={answerDiagram} displayName="Student's Diagram" />
               </div>
             )}
@@ -635,7 +635,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     
     if (!question || !question.subquestions) {
       return (
-        <div className="bg-gray-700 rounded p-3">
+        <div className="bg-white/[0.08] rounded p-3">
           <p className="text-white">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
         </div>
       );
@@ -648,30 +648,30 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       <div className="space-y-4">
         {/* Main question code/diagram if present */}
         {question.hasMainCode && question.mainCode && (
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-white/5 rounded-lg p-4 border border-white/20">
             <div className="flex items-center space-x-2 mb-3">
-              <span className="text-xs bg-blue-600 px-2 py-1 rounded text-blue-100">
+              <span className="text-xs bg-[#43ead6] px-2 py-1 rounded text-blue-100">
                 MAIN CODE
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-slate-400">
                 {question.mainCodeLanguage || 'code'}
               </span>
             </div>
-            <pre className="text-gray-200 text-sm overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-3 rounded">
+            <pre className="text-slate-200 text-sm overflow-x-auto whitespace-pre-wrap font-mono bg-[#0d1f38] p-3 rounded">
               {question.mainCode}
             </pre>
           </div>
         )}
 
         {question.hasMainDiagram && question.mainDiagram && (
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-white/5 rounded-lg p-4 border border-white/20">
             <div className="flex items-center space-x-2 mb-3">
               <span className="text-xs bg-purple-600 px-2 py-1 rounded text-purple-100">
                 MAIN DIAGRAM
               </span>
             </div>
-            <div className="bg-gray-900 p-3 rounded">
-              <p className="text-gray-300 text-sm">Diagram: {JSON.stringify(question.mainDiagram)}</p>
+            <div className="bg-[#0d1f38] p-3 rounded">
+              <p className="text-slate-300 text-sm">Diagram: {JSON.stringify(question.mainDiagram)}</p>
             </div>
           </div>
         )}
@@ -722,18 +722,18 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             const subQuestionFeedback = currentFeedbackKey ? getSubQuestionFeedback(currentFeedbackKey, currentSubmission) : null;
             
             return (
-              <div key={subQuestion.id || index} className="bg-gray-700 rounded-lg p-4 border-l-4 border-teal-500">
+              <div key={subQuestion.id || index} className="bg-white/[0.08] rounded-lg p-4 border-l-4 border-teal-500">
                 {/* Sub-question header */}
                 <div className="mb-3">
                   <div className="flex items-center space-x-3 mb-2">
                     <span className="bg-teal-600 text-white px-2 py-1 rounded text-sm font-medium">
                       Part {partNumber}
                     </span>
-                    <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                    <span className="bg-white/10 text-slate-300 px-2 py-1 rounded text-xs uppercase">
                       {subQuestion.type?.replace('_', ' ')}
                     </span>
                     {subQuestion.points && (
-                      <span className="text-gray-400 text-xs">
+                      <span className="text-slate-400 text-xs">
                         {subQuestion.points} pts
                       </span>
                     )}
@@ -748,15 +748,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   </div>
                   
                   {/* Sub-question text */}
-                  <div className="bg-gray-600 rounded p-3">
-                    <p className="text-gray-100 font-medium text-sm">{subQuestion.question}</p>
+                  <div className="bg-white/10 rounded p-3">
+                    <p className="text-slate-100 font-medium text-sm">{subQuestion.question}</p>
                   </div>
 
                   {/* Sub-question code if present */}
                   {((subQuestion.hasSubCode && subQuestion.subCode) || (subQuestion.hasCode && subQuestion.code) || subQuestion.code) && (
-                    <div className="mt-2 bg-gray-800 rounded p-3">
-                      <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
-                      <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
+                    <div className="mt-2 bg-white/5 rounded p-3">
+                      <p className="text-slate-400 text-xs mb-2">Reference Code:</p>
+                      <pre className="text-slate-300 text-xs overflow-x-auto font-mono">
                         {subQuestion.subCode || subQuestion.code}
                       </pre>
                     </div>
@@ -764,8 +764,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
                   {/* Sub-question diagram if present */}
                   {((subQuestion.hasDiagram && subQuestion.subDiagram) || subQuestion.diagram) && (
-                    <div className="mt-2 bg-gray-800 rounded p-3 border border-gray-600">
-                      <p className="text-gray-400 text-xs mb-2">Diagram:</p>
+                    <div className="mt-2 bg-white/5 rounded p-3 border border-white/20">
+                      <p className="text-slate-400 text-xs mb-2">Diagram:</p>
                       <DiagramImage diagramData={subQuestion.subDiagram || subQuestion.diagram} displayName="Sub-question diagram" />
                     </div>
                   )}
@@ -773,12 +773,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
                 {/* Sub-question answer */}
                 <div>
-                  <p className="text-gray-300 font-medium text-sm mb-2">Answer:</p>
+                  <p className="text-slate-300 font-medium text-sm mb-2">Answer:</p>
                   {subAnswer !== undefined ? (
                     renderSubQuestionAnswer(subQuestion, subAnswer, currentFeedbackKey, currentSubmission)
                   ) : (
-                    <div className="bg-gray-800 rounded p-3">
-                      <p className="text-gray-500 text-sm italic">No answer provided</p>
+                    <div className="bg-white/5 rounded p-3">
+                      <p className="text-slate-500 text-sm italic">No answer provided</p>
                     </div>
                   )}
                 </div>
@@ -805,13 +805,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                   : 'Possible AI-Generated Content'}
                               </p>
                               {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
-                                <p className="text-xs text-gray-300 mb-1">
+                                <p className="text-xs text-slate-300 mb-1">
                                   Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                                   Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                                 </p>
                               )}
                               {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
-                                <div className="text-xs text-gray-300 mb-1">
+                                <div className="text-xs text-slate-300 mb-1">
                                   <p className="font-medium">Detection Reasons:</p>
                                   <ul className="list-disc list-inside space-y-0.5 mt-1">
                                     {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -820,7 +820,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                   </ul>
                                 </div>
                               )}
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-slate-400">
                                 Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                               </p>
                             </div>
@@ -842,7 +842,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               });
                               setOverrideModalOpen(true);
                             }}
-                            className="ml-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                            className="ml-2 px-2 py-1 bg-white/[0.08] hover:bg-white/10 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
                           >
                             Override
                           </button>
@@ -850,7 +850,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       </div>
                     )}
                     
-                    <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                    <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                       <p className="text-green-400 font-medium text-sm mb-2 flex items-center">
                         <Brain size={14} className="mr-1" />
                         AI Feedback
@@ -858,22 +858,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       
                       {subQuestionFeedback.breakdown && (
                         <div className="mb-2">
-                          <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                          <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                          <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                          <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                         </div>
                       )}
                       
                       {subQuestionFeedback.strengths && (
                         <div className="mb-2">
                           <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                          <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                          <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                         </div>
                       )}
                       
                       {subQuestionFeedback.areas_for_improvement && (
                         <div>
                           <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                          <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                          <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                         </div>
                       )}
                     </div>
@@ -893,8 +893,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   const renderAnswer = (question, answer, questionId = null, submission = null) => {
     if (!question) {
       return (
-        <div className="bg-gray-700 rounded p-3">
-          <p className="text-gray-300">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
+        <div className="bg-white/[0.08] rounded p-3">
+          <p className="text-slate-300">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
         </div>
       );
     }
@@ -913,8 +913,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
         return (
           <div className="space-y-3">
-            <div className="bg-gray-700 rounded p-3">
-              <p className="text-gray-300 font-medium">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
+            <div className="bg-white/[0.08] rounded p-3">
+              <p className="text-slate-300 font-medium">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
               {selectedOptions.length > 0 ? (
                 <ul className="mt-2 space-y-1">
                   {selectedOptions.map((opt, idx) => (
@@ -926,8 +926,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               )}
             </div>
             {question.options && (
-              <div className="bg-gray-800 rounded p-3 border border-gray-600">
-                <p className="text-gray-400 text-sm mb-2">Available Options:</p>
+              <div className="bg-white/5 rounded p-3 border border-white/20">
+                <p className="text-slate-400 text-sm mb-2">Available Options:</p>
                 <ul className="space-y-1">
                   {question.options.map((option, index) => (
                     <li 
@@ -935,7 +935,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       className={`text-sm p-2 rounded ${
                         selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
-                          : 'text-gray-400'
+                          : 'text-slate-400'
                       }`}
                     >
                       {option}
@@ -951,10 +951,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       case 'code-writing':
         return (
           <div className="space-y-3">
-            <div className="bg-gray-700 rounded p-3">
+            <div className="bg-white/[0.08] rounded p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-300 font-medium">Code Answer:</p>
-                <span className="text-xs bg-gray-600 px-2 py-1 rounded text-gray-300">
+                <p className="text-slate-300 font-medium">Code Answer:</p>
+                <span className="text-xs bg-white/10 px-2 py-1 rounded text-slate-300">
                   {question.code_language || 'code'}
                 </span>
               </div>
@@ -975,7 +975,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       default:
         // For short_answer, long_answer, true_false, and other types
         return (
-          <div className="bg-gray-700 rounded p-3">
+          <div className="bg-white/[0.08] rounded p-3">
             <p className="text-white whitespace-pre-wrap">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
           </div>
         );
@@ -990,15 +990,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
     return (
       <div className="space-y-3">
         {answerText && (
-          <div className="bg-gray-700 rounded p-3">
+          <div className="bg-white/[0.08] rounded p-3">
             <p className="text-white whitespace-pre-wrap">{answerText}</p>
           </div>
         )}
         {diagram && diagram.s3_key && (
-          <div className="bg-gray-800 p-3 rounded border border-gray-700">
+          <div className="bg-white/5 p-3 rounded border border-[#1a2943]">
             <div className="flex items-center space-x-2 mb-2">
               <ImageIcon size={16} className="text-teal-400" />
-              <span className="text-sm text-gray-300">Attached Diagram</span>
+              <span className="text-sm text-slate-300">Attached Diagram</span>
             </div>
             <DiagramImage diagramData={diagram} displayName={diagram.filename || 'Student diagram'} />
           </div>
@@ -1048,7 +1048,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
     if (imageLoading) {
       return (
-        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+        <div className="flex items-center justify-center h-48 bg-white/5 rounded">
           <Loader2 size={24} className="text-teal-500 animate-spin" />
         </div>
       );
@@ -1056,10 +1056,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
     if (imageError || !imageUrl) {
       return (
-        <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+        <div className="flex items-center justify-center h-48 bg-white/5 rounded">
           <div className="text-center">
-            <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">Failed to load image</p>
+            <ImageIcon size={32} className="text-slate-500 mx-auto mb-2" />
+            <p className="text-slate-400 text-sm">Failed to load image</p>
           </div>
         </div>
       );
@@ -1069,7 +1069,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       <img 
         src={imageUrl} 
         alt={displayName}
-        className="w-full max-h-64 object-contain bg-gray-900 rounded"
+        className="w-full max-h-64 object-contain bg-[#0d1f38] rounded"
         onError={() => setImageError(true)}
       />
     );
@@ -1092,9 +1092,9 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl border border-gray-800 w-full max-w-4xl h-[90vh] flex flex-col">
+        <div className="bg-[#0d1f38] rounded-xl border border-[#182842] w-full max-w-4xl h-[90vh] flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-800">
+          <div className="flex items-center justify-between p-6 border-b border-[#182842]">
             <div>
               <h2 className="text-2xl font-bold text-white">
                 {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
@@ -1102,7 +1102,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                   : (userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User')
                 }
               </h2>
-              <p className="text-gray-400 mt-1">
+              <p className="text-slate-400 mt-1">
                 {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
                   ? `Uploaded by ${userDetails[submission.submitted_by_user_id]?.displayName} on behalf of student`
                   : userDetails[submission.user_id]?.email || `User ID: ${submission.user_id}`
@@ -1115,7 +1115,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               </span>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-slate-400 hover:text-white transition-colors"
               >
                 <Eye size={24} />
               </button>
@@ -1125,26 +1125,26 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           {/* Content */}
           <div ref={submissionModalScrollRef} className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-gray-800 rounded-lg p-4">
+              <div className="bg-white/5 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <Calendar size={16} className="text-teal-400" />
-                  <span className="text-gray-300 text-sm">Submitted</span>
+                  <span className="text-slate-300 text-sm">Submitted</span>
                 </div>
                 <p className="text-white font-medium">{submission.submitted_at ? formatDate(submission.submitted_at) : 'Not submitted'}</p>
               </div>
               
-              <div className="bg-gray-800 rounded-lg p-4">
+              <div className="bg-white/5 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <FileText size={16} className="text-teal-400" />
-                  <span className="text-gray-300 text-sm">Type</span>
+                  <span className="text-slate-300 text-sm">Type</span>
                 </div>
                 <p className="text-white font-medium capitalize">{submission.submission_method || 'in-app'}</p>
               </div>
               
-              <div className="bg-gray-800 rounded-lg p-4">
+              <div className="bg-white/5 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <CheckCircle size={16} className="text-teal-400" />
-                  <span className="text-gray-300 text-sm">Score</span>
+                  <span className="text-slate-300 text-sm">Score</span>
                 </div>
                 <p className="text-white font-medium">
                   {submission.score ? `${submission.score}/${submission?.assignment?.total_points || '---'}` : 'Not graded'}
@@ -1164,20 +1164,20 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     <div className="text-3xl font-bold text-green-400">
                       {submission.score && submission.percentage ? `${submission.percentage}%` : submission.score || 'N/A'}
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-slate-400">
                       {submission.score ? `${submission.score} points` : ''}
                     </div>
                   </div>
                 </div>
                 
                 {submission.overall_feedback && (
-                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <p className="text-gray-300 font-medium mb-2">Overall Feedback:</p>
-                    <p className="text-gray-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
+                  <div className="bg-white/5 rounded-lg p-4 mb-4">
+                    <p className="text-slate-300 font-medium mb-2">Overall Feedback:</p>
+                    <p className="text-slate-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
                   </div>
                 )}
                 
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-slate-400">
                   Graded at: {submission.graded_at ? formatDate(submission.graded_at) : 'N/A'}
                 </div>
               </div>
@@ -1194,7 +1194,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     const questionFeedback = submission.feedback?.[questionId];
                     
                     return (
-                      <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                      <div key={questionId} className="bg-white/5 rounded-lg p-6 border border-[#1a2943]">
                         {/* Question Header */}
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-3">
@@ -1203,12 +1203,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                 Question {questionNumber}
                               </span>
                               {question?.type && (
-                                <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                                <span className="bg-white/10 text-slate-300 px-2 py-1 rounded text-xs uppercase">
                                   {question.type.replace('_', ' ')}
                                 </span>
                               )}
                               {question?.points && (
-                                <span className="text-gray-400 text-sm">
+                                <span className="text-slate-400 text-sm">
                                   {question.points} {question.points === 1 ? 'point' : 'points'}
                                 </span>
                               )}
@@ -1226,10 +1226,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                           
                           {/* Optional Parts Indicator */}
                           {question?.type === 'multi-part' && question?.optionalParts && (
-                            <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                            <div className="mb-3 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg p-3">
                               <div className="flex items-center space-x-2 text-sm">
-                                <span className="text-blue-300 font-medium">Optional Parts:</span>
-                                <span className="text-gray-300">
+                                <span className="text-[#43ead6] font-medium">Optional Parts:</span>
+                                <span className="text-slate-300">
                                   Student answered {answer?.subAnswers ? Object.keys(answer.subAnswers).filter(k => answer.subAnswers[k]).length : 0} of {question.requiredPartsCount} required parts
                                   {question.subquestions ? ` (${question.subquestions.length} total)` : ''}
                                 </span>
@@ -1250,15 +1250,15 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                           
                           {/* Question Text */}
                           {question?.question && (
-                            <div className="bg-gray-700 rounded-lg p-4 mb-4">
+                            <div className="bg-white/[0.08] rounded-lg p-4 mb-4">
                               <p className="text-white font-medium mb-2">Question:</p>
-                              <p className="text-gray-200 whitespace-pre-wrap">{question.question}</p>
+                              <p className="text-slate-200 whitespace-pre-wrap">{question.question}</p>
                               
                               {/* Show code if available */}
                               {question.code && (
                                 <div className="mt-3">
-                                  <p className="text-gray-400 text-sm mb-2">Code:</p>
-                                  <pre className="bg-gray-800 p-3 rounded text-sm text-green-400 overflow-x-auto font-mono">
+                                  <p className="text-slate-400 text-sm mb-2">Code:</p>
+                                  <pre className="bg-white/5 p-3 rounded text-sm text-green-400 overflow-x-auto font-mono">
                                     {question.code}
                                   </pre>
                                 </div>
@@ -1267,8 +1267,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               {/* Show diagram if available */}
                               {question.diagram && (
                                 <div className="mt-3">
-                                  <p className="text-gray-400 text-sm mb-2">Diagram:</p>
-                                  <div className="bg-gray-800 p-3 rounded border border-gray-600">
+                                  <p className="text-slate-400 text-sm mb-2">Diagram:</p>
+                                  <div className="bg-white/5 p-3 rounded border border-white/20">
                                     <DiagramImage diagramData={question.diagram} displayName="Question diagram" />
                                   </div>
                                 </div>
@@ -1277,8 +1277,8 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               {/* Additional question content for specific types */}
                               {question.type === 'code_writing' && question.starter_code && (
                                 <div className="mt-3">
-                                  <p className="text-gray-400 text-sm mb-2">Starter Code:</p>
-                                  <pre className="bg-gray-800 p-3 rounded text-sm text-gray-300 overflow-x-auto">
+                                  <p className="text-slate-400 text-sm mb-2">Starter Code:</p>
+                                  <pre className="bg-white/5 p-3 rounded text-sm text-slate-300 overflow-x-auto">
                                     {question.starter_code}
                                   </pre>
                                 </div>
@@ -1289,7 +1289,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         
                         {/* Answer Section */}
                         <div className="mb-4">
-                          <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
+                          <p className="text-slate-300 font-medium mb-3">Student Answer:</p>
                           {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
                             ? renderAnswerWithDiagram(answer)
                             : renderAnswer(question, answer, questionId, submission)
@@ -1318,13 +1318,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                           : 'Possible AI-Generated Content'}
                                       </p>
                                       {questionFeedback.ai_flag.original_score && questionFeedback.ai_flag.penalized_score && (
-                                        <p className="text-sm text-gray-300 mb-2">
+                                        <p className="text-sm text-slate-300 mb-2">
                                           Original: <span className="line-through">{questionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                                           Penalized: <span className="font-bold text-red-300">{questionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                                         </p>
                                       )}
                                       {questionFeedback.ai_flag.reasons && questionFeedback.ai_flag.reasons.length > 0 && (
-                                        <div className="text-sm text-gray-300 mb-2">
+                                        <div className="text-sm text-slate-300 mb-2">
                                           <p className="font-medium">Detection Reasons:</p>
                                           <ul className="list-disc list-inside space-y-1 mt-1">
                                             {questionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -1333,7 +1333,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                           </ul>
                                         </div>
                                       )}
-                                      <p className="text-xs text-gray-400">
+                                      <p className="text-xs text-slate-400">
                                         Confidence: {(questionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                                       </p>
                                     </div>
@@ -1351,7 +1351,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                       });
                                       setOverrideModalOpen(true);
                                     }}
-                                    className="ml-3 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                                    className="ml-3 px-3 py-1 bg-white/[0.08] hover:bg-white/10 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
                                   >
                                     Override
                                   </button>
@@ -1360,7 +1360,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                             )}
                             
                             {/* Regular Feedback */}
-                            <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                            <div className="bg-[#0d1f38] rounded-lg p-4 border border-green-500/20">
                               <p className="text-green-400 font-medium mb-3 flex items-center">
                                 <Brain size={16} className="mr-2" />
                                 AI Feedback
@@ -1368,22 +1368,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               
                               {questionFeedback.breakdown && (
                                 <div className="mb-3">
-                                  <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
-                                  <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                                  <p className="text-slate-400 text-sm mb-1">Breakdown:</p>
+                                  <p className="text-slate-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
                                 </div>
                               )}
                               
                               {questionFeedback.strengths && (
                                 <div className="mb-3">
                                   <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
-                                  <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                                  <p className="text-slate-200 text-sm">{questionFeedback.strengths}</p>
                                 </div>
                               )}
                               
                               {questionFeedback.areas_for_improvement && (
                                 <div>
                                   <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
-                                  <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                                  <p className="text-slate-200 text-sm">{questionFeedback.areas_for_improvement}</p>
                                 </div>
                               )}
                             </div>
@@ -1392,18 +1392,18 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       </div>
                     );
                   }) :
-                  <p className="text-gray-400">No answers available</p>
+                  <p className="text-slate-400">No answers available</p>
                 }
               </div>
             ) : (
               <div className="space-y-6">
                 {/* PDF Submission Header */}
                 <div className="text-center py-8">
-                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <FileText size={40} className="text-gray-400" />
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText size={40} className="text-slate-400" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
-                  <p className="text-gray-400 mb-6">
+                  <p className="text-slate-400 mb-6">
                     This student submitted their answers as a PDF file.
                   </p>
                   <button 
@@ -1441,7 +1441,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         return aNum - bNum;
                       })
                       .map(([questionId, feedback]) => (
-                        <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <div key={questionId} className="bg-white/5 rounded-lg p-6 border border-[#1a2943]">
                           {/* Question Header */}
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
@@ -1450,7 +1450,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                               </span>
                               {/* Optional Part Indicator for sub-questions */}
                               {questionId.includes('.') && (
-                                <span className="text-blue-400 text-xs bg-blue-900/20 px-2 py-1 rounded">
+                                <span className="text-[#43ead6] text-xs bg-[#43ead6]/10/20 px-2 py-1 rounded">
                                   Selected Part
                                 </span>
                               )}
@@ -1483,12 +1483,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                           : 'Possible AI-Generated Content'}
                                       </p>
                                       {feedback.ai_flag.original_score && feedback.ai_flag.penalized_score && (
-                                        <p className="text-sm text-gray-300 mb-2">
+                                        <p className="text-sm text-slate-300 mb-2">
                                           Original: <span className="line-through">{feedback.ai_flag.original_score.toFixed(1)}</span> → 
                                           Penalized: <span className="font-bold text-red-300">{feedback.ai_flag.penalized_score.toFixed(1)}</span>
                                         </p>
                                       )}
-                                      <p className="text-xs text-gray-400">
+                                      <p className="text-xs text-slate-400">
                                         Confidence: {(feedback.ai_flag.confidence * 100).toFixed(1)}%
                                       </p>
                                     </div>
@@ -1503,7 +1503,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                       });
                                       setOverrideModalOpen(true);
                                     }}
-                                    className="ml-3 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
+                                    className="ml-3 px-3 py-1 bg-white/[0.08] hover:bg-white/10 text-white text-xs font-medium rounded transition-colors whitespace-nowrap"
                                   >
                                     Override
                                   </button>
@@ -1512,9 +1512,9 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                             )}
                             
                             {feedback.breakdown && (
-                              <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
-                                <p className="text-gray-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
-                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
+                              <div className="bg-[#0d1f38] rounded-lg p-4 border border-white/20">
+                                <p className="text-slate-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
+                                <p className="text-slate-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
                               </div>
                             )}
                             
@@ -1524,7 +1524,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                   <CheckCircle size={16} className="mr-2" />
                                   Strengths:
                                 </p>
-                                <p className="text-gray-200 text-sm">{feedback.strengths}</p>
+                                <p className="text-slate-200 text-sm">{feedback.strengths}</p>
                               </div>
                             )}
                             
@@ -1534,7 +1534,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                                   <AlertCircle size={16} className="mr-2" />
                                   Areas for Improvement:
                                 </p>
-                                <p className="text-gray-200 text-sm">{feedback.areas_for_improvement}</p>
+                                <p className="text-slate-200 text-sm">{feedback.areas_for_improvement}</p>
                               </div>
                             )}
                           </div>
@@ -1556,17 +1556,17 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842] max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
           <div className="mb-6">
             <div className="flex items-start space-x-3 mb-4">
               <AlertCircle className={flagInfo.flag.flag_level === 'hard' ? 'text-red-400' : 'text-yellow-400'} size={24} />
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-white mb-2">Override AI Flag</h2>
-                <p className="text-gray-400">
+                <p className="text-slate-400">
                   Question {flagInfo.questionNumber} - {flagInfo.flag.flag_level === 'hard' ? 'Hard Flag (Penalized)' : 'Soft Flag (Warning)'}
                 </p>
               </div>
-              <button onClick={onClose} className="text-gray-400 hover:text-white">
+              <button onClick={onClose} className="text-slate-400 hover:text-white">
                 <X size={24} />
               </button>
             </div>
@@ -1576,11 +1576,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 ? 'bg-red-900/20 border-red-500/50'
                 : 'bg-yellow-900/20 border-yellow-500/50'
             }`}>
-              <p className="text-sm text-gray-300 mb-2">
+              <p className="text-sm text-slate-300 mb-2">
                 <span className="font-medium">Confidence:</span> {(flagInfo.flag.confidence * 100).toFixed(1)}%
               </p>
               {flagInfo.flag.reasons && flagInfo.flag.reasons.length > 0 && (
-                <div className="text-sm text-gray-300">
+                <div className="text-sm text-slate-300">
                   <p className="font-medium mb-1">Detection Reasons:</p>
                   <ul className="list-disc list-inside space-y-1">
                     {flagInfo.flag.reasons.map((reason, idx) => (
@@ -1593,7 +1593,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               Reason for Override (Optional)
             </label>
             <textarea
@@ -1601,21 +1601,21 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               onChange={(e) => setOverrideReason(e.target.value)}
               placeholder="Explain why you're overriding this flag..."
               rows={3}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm text-gray-400 mb-3">Choose an action:</p>
+            <p className="text-sm text-slate-400 mb-3">Choose an action:</p>
             
             <button
               onClick={() => onOverride('dismiss')}
               disabled={loading}
-              className="w-full px-4 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors text-left flex items-center justify-between disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white/[0.08] text-white font-medium rounded-lg hover:bg-white/10 transition-colors text-left flex items-center justify-between disabled:opacity-50"
             >
               <span>
                 <span className="font-bold">Dismiss Flag</span>
-                <span className="block text-sm text-gray-400 mt-1">
+                <span className="block text-sm text-slate-400 mt-1">
                   Remove AI flag completely {flagInfo.flag.flag_level === 'hard' && '(restore original score)'}
                 </span>
               </span>
@@ -1657,7 +1657,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
             <button
               onClick={onClose}
               disabled={loading}
-              className="w-full px-4 py-3 bg-gray-800 text-gray-300 font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="w-full px-4 py-3 bg-white/5 text-slate-300 font-medium rounded-lg hover:bg-white/[0.08] transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -1673,20 +1673,20 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 max-w-md w-full">
+        <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842] max-w-md w-full">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-[#43ead6]/40 to-[#43ead6]/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Brain size={32} className="text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">AI Grading</h2>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Send {count} submission{count !== 1 ? 's' : ''} for AI-powered grading?
             </p>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-4 mb-6">
+          <div className="bg-white/5 rounded-lg p-4 mb-6">
             <h3 className="text-white font-medium mb-2">What will happen:</h3>
-            <ul className="text-gray-400 text-sm space-y-1">
+            <ul className="text-slate-400 text-sm space-y-1">
               <li>• AI will analyze each submission</li>
               <li>• Scores will be generated based on rubrics</li>
               <li>• Detailed feedback will be provided</li>
@@ -1697,13 +1697,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
           <div className="flex space-x-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors"
+              className="flex-1 px-4 py-3 bg-white/[0.08] text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+              className="flex-1 px-4 py-3 bg-[#43ead6] text-[#051224] font-medium rounded-lg hover:bg-[#43ead6]/80 transition-all duration-300"
             >
               Start AI Grading
             </button>
@@ -1714,31 +1714,31 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-[#071224]">
       {/* Top Navigation */}
       <TopBar onNavigateToHome={onNavigateToHome} />
       
       {/* Page Header */}
-      <div className="bg-gray-900 border-b border-gray-800">
+      <div className="bg-[#0d1f38] border-b border-[#182842]">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center space-x-4 min-w-0 flex-1">
               <button
                 onClick={onBack}
-                className="p-2 text-gray-400 hover:text-white transition-colors flex-shrink-0"
+                className="p-2 text-slate-400 hover:text-white transition-colors flex-shrink-0"
               >
                 <ArrowLeft size={24} />
               </button>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-3xl font-bold text-white truncate">{assignment.title}</h1>
-                <p className="text-gray-400 mt-2">Assignment Submissions</p>
+                <p className="text-slate-400 mt-2">Assignment Submissions</p>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
               <button
                 onClick={loadSubmissions}
                 disabled={loading}
-                className="inline-flex items-center justify-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors border border-gray-700 whitespace-nowrap"
+                className="inline-flex items-center justify-center px-4 py-2 bg-white/5 hover:bg-white/[0.08] text-white font-medium rounded-lg transition-colors border border-[#1a2943] whitespace-nowrap"
                 title="Refresh submissions"
               >
                 <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -1759,7 +1759,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               {selectedForGrading.length > 0 && (
                 <button
                   onClick={handleSendForAIGrading}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 whitespace-nowrap"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-[#43ead6] text-[#051224] font-medium rounded-lg hover:bg-[#43ead6]/80 transition-all duration-300 whitespace-nowrap"
                 >
                   <Brain size={18} className="mr-2" />
                   <span className="hidden sm:inline">Grade with AI ({selectedForGrading.length})</span>
@@ -1774,27 +1774,27 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
       {/* Main Content */}
       <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-8">
         {/* Filters and Search */}
-        <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800 mb-6">
+        <div className="bg-[#0d1f38] rounded-xl p-4 sm:p-6 border border-[#182842] mb-6">
           <div className="flex flex-col gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by student name or email..."
-                  className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
             </div>
             
             <div className="flex items-center space-x-2">
-              <Filter size={20} className="text-gray-400 flex-shrink-0" />
+              <Filter size={20} className="text-slate-400 flex-shrink-0" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Submissions</option>
                 <option value="processing">Processing</option>
@@ -1809,19 +1809,19 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
+          <div className="bg-[#0d1f38] rounded-xl p-4 sm:p-6 border border-[#182842]">
             <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-[#43ead6]/40 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <FileText size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                 <p className="text-xl sm:text-2xl font-bold text-white">{submissions.length}</p>
-                <p className="text-gray-400 text-sm sm:text-base">Total Submissions</p>
+                <p className="text-slate-400 text-sm sm:text-base">Total Submissions</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
+          <div className="bg-[#0d1f38] rounded-xl p-4 sm:p-6 border border-[#182842]">
             <div className="flex items-center">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <CheckCircle size={20} className="text-white sm:w-6 sm:h-6" />
@@ -1830,12 +1830,12 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 <p className="text-xl sm:text-2xl font-bold text-white">
                   {submissions.filter(s => s.status === 'graded').length}
                 </p>
-                <p className="text-gray-400 text-sm sm:text-base">Graded</p>
+                <p className="text-slate-400 text-sm sm:text-base">Graded</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
+          <div className="bg-[#0d1f38] rounded-xl p-4 sm:p-6 border border-[#182842]">
             <div className="flex items-center">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Clock size={20} className="text-white sm:w-6 sm:h-6" />
@@ -1844,14 +1844,14 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                 <p className="text-xl sm:text-2xl font-bold text-white">
                   {submissions.filter(s => s.status === 'processing').length}
                 </p>
-                <p className="text-gray-400 text-sm sm:text-base">Processing</p>
+                <p className="text-slate-400 text-sm sm:text-base">Processing</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-800">
+          <div className="bg-[#0d1f38] rounded-xl p-4 sm:p-6 border border-[#182842]">
             <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-[#43ead6]/40 to-[#43ead6]/20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Brain size={20} className="text-white sm:w-6 sm:h-6" />
               </div>
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1867,7 +1867,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     })()
                   }
                 </p>
-                <p className="text-gray-400 text-sm sm:text-base">Avg Score</p>
+                <p className="text-slate-400 text-sm sm:text-base">Avg Score</p>
               </div>
             </div>
           </div>
@@ -1877,7 +1877,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         {loading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 size={32} className="text-teal-500 animate-spin" />
-            <span className="ml-3 text-gray-300">Loading submissions...</span>
+            <span className="ml-3 text-slate-300">Loading submissions...</span>
           </div>
         )}
 
@@ -1898,22 +1898,22 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
         {/* Empty State */}
         {!loading && !error && submissions.length === 0 && (
           <div className="text-center py-12">
-            <FileText size={48} className="text-gray-600 mx-auto mb-4" />
+            <FileText size={48} className="text-slate-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">No Submissions Yet</h3>
-            <p className="text-gray-400 mb-6">Students haven't submitted this assignment yet.</p>
+            <p className="text-slate-400 mb-6">Students haven't submitted this assignment yet.</p>
           </div>
         )}
 
         {/* Submissions List */}
         {!loading && !error && submissions.length > 0 && (
-          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-            <div className="p-6 border-b border-gray-800">
+          <div className="bg-[#0d1f38] rounded-xl border border-[#182842] overflow-hidden">
+            <div className="p-6 border-b border-[#182842]">
               <h2 className="text-xl font-bold text-white">Submissions</h2>
             </div>
             
             <div className="overflow-x-auto">
             <table className="w-full min-w-[800px]">
-              <thead className="bg-gray-800">
+              <thead className="bg-white/5">
                 <tr>
                   <th className="px-3 sm:px-6 py-4 text-left">
                     <input
@@ -1928,32 +1928,32 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                       className="text-teal-500 focus:ring-teal-500"
                     />
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider">
                     Student
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider hidden sm:table-cell">
                     Submitted
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden md:table-cell">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider hidden md:table-cell">
                     Type
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider hidden sm:table-cell">
                     Score
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider hidden md:table-cell">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider hidden md:table-cell">
                     AI Flag
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-4 text-left text-sm font-medium text-slate-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {filteredSubmissions.map((submission) => (
-                  <tr key={submission.id} className="hover:bg-gray-800/50 transition-colors">
+                  <tr key={submission.id} className="hover:bg-white/5/50 transition-colors">
                     <td className="px-3 sm:px-6 py-4">
                       <input
                         type="checkbox"
@@ -1971,17 +1971,17 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                             : (userDetails[submission.user_id]?.displayName || userDetails[submission.user_id]?.email || submission.user_id || 'Unknown User')
                           }
                         </p>
-                        <p className="text-gray-400 text-sm truncate">
+                        <p className="text-slate-400 text-sm truncate">
                           {submission.submission_method === 'on-behalf' ?  userDetails[submission.submitted_by_user_id]?.email : userDetails[submission.user_id]?.email || 'No email available'}
                         </p>
                       </div>
                     </td>
-                    <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
+                    <td className="px-3 sm:px-6 py-4 text-slate-300 text-sm hidden sm:table-cell">
                       {submission.submitted_at ? formatDate(submission.submitted_at) : 'Not submitted'}
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="flex items-center">
-                        <span className="text-gray-300 text-sm capitalize">
+                        <span className="text-slate-300 text-sm capitalize">
                           {submission.submission_method === 'on-behalf' && submission.user_id.startsWith('bulk_')
                             ? 'bulk upload'
                             : submission.submission_method === 'pdf'
@@ -1998,10 +1998,10 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                           : submission.status === 'grading'
                           ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
                           : submission.status === 'processing'
-                          ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                          ? 'bg-[#43ead6]/15 text-[#43ead6] border-[#43ead6]/30'
                           : submission.status === 'submitted'
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                          : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                          : 'bg-white/10 text-slate-400 border-white/25/30'
                       }`}>
                         {submission.status === 'processing' && (
                           <Loader2 size={12} className="animate-spin mr-1" />
@@ -2009,13 +2009,13 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                         {submission.status}
                       </span>
                     </td>
-                    <td className="px-3 sm:px-6 py-4 text-gray-300 text-sm hidden sm:table-cell">
+                    <td className="px-3 sm:px-6 py-4 text-slate-300 text-sm hidden sm:table-cell">
                       {submission.score ? `${submission.score}${submission.percentage ? ` (${submission.percentage}%)` : ''}` : '-'}
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       {(() => {
                         const aiFlagSummary = getAIFlagSummary(submission);
-                        if (!aiFlagSummary) return <span className="text-gray-500 text-xs">-</span>;
+                        if (!aiFlagSummary) return <span className="text-slate-500 text-xs">-</span>;
                         return (
                           <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
                             aiFlagSummary.level === 'hard'
@@ -2032,7 +2032,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
                     <td className="px-3 sm:px-6 py-4">
                       <button
                         onClick={() => handleViewSubmission(submission)}
-                        className="inline-flex items-center px-2 py-1 bg-gray-700 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
+                        className="inline-flex items-center px-2 py-1 bg-white/[0.08] text-white text-xs font-medium rounded hover:bg-white/10 transition-colors"
                       >
                         <Eye size={12} className="mr-1" />
                         <span className="hidden sm:inline">View</span>
@@ -2046,11 +2046,11 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
 
           {filteredSubmissions.length === 0 && (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText size={32} className="text-gray-400" />
+              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText size={32} className="text-slate-400" />
               </div>
               <h3 className="text-lg font-medium text-white mb-2">No Submissions Found</h3>
-              <p className="text-gray-400">No submissions match your current filters.</p>
+              <p className="text-slate-400">No submissions match your current filters.</p>
             </div>
           )}
         </div>

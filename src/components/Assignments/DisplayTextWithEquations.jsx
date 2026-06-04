@@ -22,7 +22,7 @@ const DisplayTextWithEquations = ({
   placeholder = '',
 }) => {
   if (!text && placeholder) {
-    return <span className={`text-gray-400 ${className}`}>{placeholder}</span>;
+    return <span className={`text-slate-400 ${className}`}>{placeholder}</span>;
   }
 
   if (!text) {

@@ -1,9 +1,9 @@
 // src/components/Assignments/QuestionCard.jsx
 import { useState, useEffect } from 'react';
-import { 
-  GripVertical, 
-  Trash2, 
-  ChevronUp, 
+import {
+  GripVertical,
+  Trash2,
+  ChevronUp,
   ChevronDown,
   Plus,
   X,
@@ -16,7 +16,8 @@ import {
   Zap,
   Upload,
   Loader2,
-  Eye
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 import { assignmentApi } from './assignmentApi';
 import EditableTextWithEquations from './EditableTextWithEquations';
@@ -36,7 +37,10 @@ const QuestionCard = ({
   const [uploadError, setUploadError] = useState(null);
   const [previewModal, setPreviewModal] = useState({ open: false, diagramData: null, field: '', subIndex: null });
   const [imageUrls, setImageUrls] = useState({}); // Cache for presigned URLs
-  
+  const [correctionPrompts, setCorrectionPrompts] = useState({});
+  const [regeneratingDiagram, setRegeneratingDiagram] = useState({});
+  const [regenerateErrors, setRegenerateErrors] = useState({});
+
   // Helper function to calculate points for multipart questions with optional parts support
   const calculateMultipartPoints = (subquestions, optionalParts = false, requiredPartsCount = 0) => {
     if (!subquestions || subquestions.length === 0) return 0;
@@ -623,6 +627,37 @@ const QuestionCard = ({
     }
   };
 
+  const handleSubquestionDiagramRegenerate = async (subIndex) => {
+    const subq = question.subquestions?.[subIndex];
+    const diagramData = subq?.subDiagram || subq?.diagram;
+    const fieldKey = `subDiagram_${subIndex}`;
+    const prompt = (correctionPrompts[fieldKey] || '').trim();
+    if (!prompt || !diagramData || !assignmentId) return;
+
+    setRegeneratingDiagram(prev => ({ ...prev, [fieldKey]: true }));
+    setRegenerateErrors(prev => ({ ...prev, [fieldKey]: null }));
+    try {
+      const newDiagram = await assignmentApi.regenerateDiagram(assignmentId, {
+        question_text: subq.question || question.question || '',
+        domain: diagramData.domain || '',
+        diagram_type: diagramData.diagram_type || '',
+        original_description: diagramData.description || '',
+        user_prompt: prompt,
+        current_s3_key: diagramData.s3_key || null,
+        review_error: diagramData.review_error || null,
+        tool_name: diagramData.tool_name || null,
+      });
+      const newSubquestions = [...(question.subquestions || [])];
+      newSubquestions[subIndex] = { ...newSubquestions[subIndex], subDiagram: newDiagram };
+      onUpdate({ subquestions: newSubquestions });
+      setCorrectionPrompts(prev => ({ ...prev, [fieldKey]: '' }));
+    } catch (err) {
+      setRegenerateErrors(prev => ({ ...prev, [fieldKey]: 'Regeneration failed. Please try again.' }));
+    } finally {
+      setRegeneratingDiagram(prev => ({ ...prev, [fieldKey]: false }));
+    }
+  };
+
   // Component for handling diagram images with URL fetching
   const DiagramImage = ({ diagramData, displayName, onError }) => {
     const [imageUrl, setImageUrl] = useState(null);
@@ -797,6 +832,73 @@ const QuestionCard = ({
           onError && onError();
         }}
       />
+    );
+  };
+
+  const handleDiagramRegenerate = async (field = 'diagram') => {
+    const diagramData = question[field] || question.diagram;
+    const prompt = (correctionPrompts[field] || '').trim();
+    if (!prompt || !diagramData || !assignmentId) return;
+
+    setRegeneratingDiagram(prev => ({ ...prev, [field]: true }));
+    setRegenerateErrors(prev => ({ ...prev, [field]: null }));
+    try {
+      const newDiagram = await assignmentApi.regenerateDiagram(assignmentId, {
+        question_text: question.question || '',
+        domain: diagramData.domain || '',
+        diagram_type: diagramData.diagram_type || '',
+        original_description: diagramData.description || '',
+        user_prompt: prompt,
+        current_s3_key: diagramData.s3_key || null,
+        review_error: diagramData.review_error || null,
+        tool_name: diagramData.tool_name || null,
+      });
+      onUpdate({ [field]: newDiagram, hasDiagram: true });
+      setCorrectionPrompts(prev => ({ ...prev, [field]: '' }));
+    } catch (err) {
+      setRegenerateErrors(prev => ({ ...prev, [field]: 'Regeneration failed. Please try again.' }));
+    } finally {
+      setRegeneratingDiagram(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  const renderCorrectionWidget = (diagramData, field = 'diagram') => {
+    if (!diagramData || !assignmentId) return null;
+    const isRegenerating = regeneratingDiagram[field];
+    const error = regenerateErrors[field];
+    const prompt = correctionPrompts[field] || '';
+
+    return (
+      <div className="mt-2 space-y-1">
+        {diagramData.review_error && (
+          <p className="text-xs text-amber-400">
+            ⚠ Auto-review noted: {diagramData.review_error}
+          </p>
+        )}
+        <div className="flex gap-2 items-end">
+          <textarea
+            rows={2}
+            placeholder="Describe what's wrong with this diagram to regenerate it..."
+            value={prompt}
+            onChange={e => setCorrectionPrompts(prev => ({ ...prev, [field]: e.target.value }))}
+            disabled={isRegenerating}
+            className="flex-1 bg-gray-700 text-gray-200 text-sm rounded px-2 py-1 border border-gray-600 focus:border-orange-400 focus:outline-none resize-none disabled:opacity-50"
+          />
+          <button
+            onClick={() => handleDiagramRegenerate(field)}
+            disabled={isRegenerating || !prompt.trim()}
+            title="Regenerate diagram with your correction"
+            className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap"
+          >
+            {isRegenerating ? (
+              <><Loader2 size={12} className="animate-spin" /> Regenerating...</>
+            ) : (
+              <><RefreshCw size={12} /> Regenerate</>
+            )}
+          </button>
+        </div>
+        {error && <p className="text-xs text-red-400">{error}</p>}
+      </div>
     );
   };
 
@@ -1137,12 +1239,13 @@ const QuestionCard = ({
                       {/* Show upload progress or diagram */}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.diagram, 
-                        false, 
+                        question.diagram,
+                        false,
                         () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
+                      {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
                     </div>
                   </div>
                 )}
@@ -1328,12 +1431,13 @@ const QuestionCard = ({
                       {/* Show upload progress or diagram */}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.diagram, 
-                        false, 
+                        question.diagram,
+                        false,
                         () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
+                      {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
                     </div>
                   </div>
                 )}
@@ -1479,12 +1583,13 @@ const QuestionCard = ({
                       {/* Show upload progress or diagram */}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.diagram, 
-                        false, 
+                        question.diagram,
+                        false,
                         () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
+                      {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
                     </div>
                   </div>
                 )}
@@ -1617,12 +1722,13 @@ const QuestionCard = ({
                       {/* Show upload progress or diagram */}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.diagram, 
-                        false, 
+                        question.diagram,
+                        false,
                         () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
+                      {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
                     </div>
                   </div>
                 )}
@@ -1761,12 +1867,13 @@ const QuestionCard = ({
                       {/* Show upload progress or diagram */}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
                       {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                        question.diagram, 
-                        false, 
+                        question.diagram,
+                        false,
                         () => handleDiagramDelete('diagram', true),
                         (file) => handleDiagramReplace(file, 'diagram'),
                         'diagram'
                       )}
+                      {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
                     </div>
                   </div>
                 )}
@@ -1921,12 +2028,13 @@ const QuestionCard = ({
                 )}
                 {uploadingDiagram && renderDiagramDisplay(null, true)}
                 {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                  question.diagram, 
-                  false, 
+                  question.diagram,
+                  false,
                   () => handleDiagramDelete('diagram'),
                   (file) => handleDiagramReplace(file, 'diagram'),
                   'diagram'
                 )}
+                {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
               </div>
             </div>
             
@@ -2035,12 +2143,13 @@ const QuestionCard = ({
                 )}
                 {uploadingDiagram && renderDiagramDisplay(null, true)}
                 {question.diagram && !uploadingDiagram && renderDiagramDisplay(
-                  question.diagram, 
-                  false, 
+                  question.diagram,
+                  false,
                   () => handleDiagramDelete('diagram'),
                   (file) => handleDiagramReplace(file, 'diagram'),
                   'diagram'
                 )}
+                {question.diagram && !uploadingDiagram && renderCorrectionWidget(question.diagram, 'diagram')}
               </div>
             </div>
 
@@ -2261,12 +2370,13 @@ const QuestionCard = ({
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
                       {/* Show diagram, prioritizing mainDiagram over diagram */}
                       {(question.mainDiagram || question.diagram) && !uploadingDiagram && renderDiagramDisplay(
-                        question.mainDiagram || question.diagram, 
-                        false, 
+                        question.mainDiagram || question.diagram,
+                        false,
                         () => handleDiagramDelete('mainDiagram', true),
                         (file) => handleDiagramReplace(file, 'mainDiagram'),
                         'mainDiagram'
                       )}
+                      {(question.mainDiagram || question.diagram) && !uploadingDiagram && renderCorrectionWidget(question.mainDiagram || question.diagram, 'mainDiagram')}
                     </div>
                   </div>
                 )}
@@ -2459,13 +2569,46 @@ const QuestionCard = ({
                             {(subq.subDiagram || subq.diagram) && !uploadingDiagram && (
                               <div className="mt-2">
                                 {renderDiagramDisplay(
-                                  subq.subDiagram || subq.diagram, 
-                                  false, 
+                                  subq.subDiagram || subq.diagram,
+                                  false,
                                   () => handleSubquestionDiagramDelete(subIndex, true),
                                   (file) => handleSubquestionDiagramReplace(file, subIndex),
                                   'subDiagram',
                                   subIndex
                                 )}
+                                {(() => {
+                                  const subDiagramData = subq.subDiagram || subq.diagram;
+                                  const fieldKey = `subDiagram_${subIndex}`;
+                                  const isRegenerating = regeneratingDiagram[fieldKey];
+                                  const error = regenerateErrors[fieldKey];
+                                  const prompt = correctionPrompts[fieldKey] || '';
+                                  if (!subDiagramData || !assignmentId) return null;
+                                  return (
+                                    <div className="mt-2 space-y-1">
+                                      {subDiagramData.review_error && (
+                                        <p className="text-xs text-amber-400">⚠ Auto-review noted: {subDiagramData.review_error}</p>
+                                      )}
+                                      <div className="flex gap-2 items-end">
+                                        <textarea
+                                          rows={2}
+                                          placeholder="Describe what's wrong with this diagram to regenerate it..."
+                                          value={prompt}
+                                          onChange={e => setCorrectionPrompts(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+                                          disabled={isRegenerating}
+                                          className="flex-1 bg-gray-700 text-gray-200 text-xs rounded px-2 py-1 border border-gray-600 focus:border-orange-400 focus:outline-none resize-none disabled:opacity-50"
+                                        />
+                                        <button
+                                          onClick={() => handleSubquestionDiagramRegenerate(subIndex)}
+                                          disabled={isRegenerating || !prompt.trim()}
+                                          className="px-2 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap"
+                                        >
+                                          {isRegenerating ? <><Loader2 size={11} className="animate-spin" /> Regenerating...</> : <><RefreshCw size={11} /> Regenerate</>}
+                                        </button>
+                                      </div>
+                                      {error && <p className="text-xs text-red-400">{error}</p>}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             )}
                           </div>

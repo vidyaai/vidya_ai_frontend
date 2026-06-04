@@ -682,9 +682,9 @@ const QuestionCard = ({
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center h-32 bg-gray-800 rounded">
+        <div className="flex items-center justify-center h-32 bg-white/5 rounded">
           <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
-          <span className="text-gray-300">Loading image...</span>
+          <span className="text-slate-300">Loading image...</span>
         </div>
       );
     }
@@ -692,9 +692,9 @@ const QuestionCard = ({
     if (error || !imageUrl) {
       return (
         <div className="p-4 text-center">
-          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-          <p className="text-gray-400 text-sm">Failed to load image</p>
-          <p className="text-gray-500 text-xs">{displayName}</p>
+          <ImageIcon size={32} className="text-slate-500 mx-auto mb-2" />
+          <p className="text-slate-400 text-sm">Failed to load image</p>
+          <p className="text-slate-500 text-xs">{displayName}</p>
         </div>
       );
     }
@@ -703,7 +703,7 @@ const QuestionCard = ({
       <img 
         src={imageUrl} 
         alt={displayName}
-        className="w-full max-h-64 object-contain bg-gray-900"
+        className="w-full max-h-64 object-contain bg-[#0d1f38]"
         onError={(e) => {
           console.error('Failed to load diagram:', imageUrl);
           onError && onError();
@@ -770,9 +770,9 @@ const QuestionCard = ({
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center h-32 bg-gray-800 rounded">
+        <div className="flex items-center justify-center h-32 bg-white/5 rounded">
           <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
-          <span className="text-gray-300">Loading image...</span>
+          <span className="text-slate-300">Loading image...</span>
         </div>
       );
     }
@@ -780,9 +780,9 @@ const QuestionCard = ({
     if (error || !imageUrl) {
       return (
         <div className="p-4 text-center">
-          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-          <p className="text-gray-400 text-sm">Failed to load image</p>
-          <p className="text-gray-500 text-xs">{displayName}</p>
+          <ImageIcon size={32} className="text-slate-500 mx-auto mb-2" />
+          <p className="text-slate-400 text-sm">Failed to load image</p>
+          <p className="text-slate-500 text-xs">{displayName}</p>
         </div>
       );
     }
@@ -791,7 +791,7 @@ const QuestionCard = ({
       <img 
         src={imageUrl} 
         alt={displayName}
-        className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-gray-900 mx-auto block"
+        className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-[#0d1f38] mx-auto block"
         onError={(e) => {
           console.error('Failed to load diagram:', imageUrl);
           onError && onError();
@@ -804,18 +804,18 @@ const QuestionCard = ({
   const renderDiagramDisplay = (diagramData, isUploading = false, onDelete = null, onReplace = null, field = 'diagram', subIndex = null) => {
     if (isUploading) {
       return (
-        <div className="flex items-center justify-center p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="flex items-center justify-center p-4 bg-white/5 rounded-lg border border-[#1a2943]">
           <Loader2 className="animate-spin text-orange-400 mr-2" size={20} />
-          <span className="text-gray-300">Uploading diagram...</span>
+          <span className="text-slate-300">Uploading diagram...</span>
         </div>
       );
     }
 
     if (deletingDiagram) {
       return (
-        <div className="flex items-center justify-center p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="flex items-center justify-center p-4 bg-white/5 rounded-lg border border-[#1a2943]">
           <Loader2 className="animate-spin text-red-400 mr-2" size={20} />
-          <span className="text-gray-300">Deleting diagram...</span>
+          <span className="text-slate-300">Deleting diagram...</span>
         </div>
       );
     }
@@ -828,7 +828,7 @@ const QuestionCard = ({
 
     return (
       <div className="mt-3">
-        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+        <div className="bg-white/5 rounded-lg border border-[#1a2943] overflow-hidden">
           {diagramData ? (
             // Show actual image for uploaded diagrams
             <div className="relative">
@@ -866,7 +866,7 @@ const QuestionCard = ({
                     />
                     <label
                       htmlFor={`replace-${field}-${question.id}`}
-                      className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors cursor-pointer"
+                      className="p-1 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded-full transition-colors cursor-pointer"
                       title="Replace diagram"
                     >
                       <Upload size={16} />
@@ -887,18 +887,18 @@ const QuestionCard = ({
           ) : (
             // Fallback for old blob URLs or missing images
             <div className="p-4 text-center">
-              <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-              <p className="text-gray-400 text-sm">{displayName}</p>
+              <ImageIcon size={32} className="text-slate-500 mx-auto mb-2" />
+              <p className="text-slate-400 text-sm">{displayName}</p>
               {diagramData.url && (
-                <p className="text-gray-500 text-xs mt-1">Preview not available</p>
+                <p className="text-slate-500 text-xs mt-1">Preview not available</p>
               )}
             </div>
           )}
-          <div className="px-3 py-2 bg-gray-700 border-t border-gray-600">
+          <div className="px-3 py-2 bg-white/[0.08] border-t border-white/20">
             <div className="flex items-center justify-between">
               <span className="text-orange-400 text-xs">📎 {displayName}</span>
               {diagramData.size && (
-                <span className="text-gray-500 text-xs">
+                <span className="text-slate-500 text-xs">
                   {(diagramData.size / 1024).toFixed(1)} KB
                 </span>
               )}
@@ -920,12 +920,12 @@ const QuestionCard = ({
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null })}>
-        <div className="bg-gray-900 rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-[#0d1f38] rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
           {/* Modal Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-[#1a2943]">
             <div>
               <h3 className="text-lg font-semibold text-white">{displayName}</h3>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-slate-400">
                 {diagramData.content_type} • {diagramData.size ? `${(diagramData.size / 1024).toFixed(1)} KB` : 'Unknown size'}
               </p>
             </div>
@@ -950,7 +950,7 @@ const QuestionCard = ({
               />
               <label
                 htmlFor={`modal-replace-${field}-${question.id}`}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm cursor-pointer"
+                className="px-3 py-1 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded text-sm cursor-pointer"
               >
                 Replace
               </label>
@@ -971,7 +971,7 @@ const QuestionCard = ({
               {/* Close Button */}
               <button
                 onClick={() => setPreviewModal({ open: false, diagramData: null, field: '', subIndex: null })}
-                className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+                className="px-3 py-1 bg-white/10 hover:bg-white/[0.08] text-white rounded text-sm"
               >
                 Close
               </button>
@@ -980,7 +980,7 @@ const QuestionCard = ({
           
           {/* Modal Content */}
           <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
-            <div className="bg-gray-800 rounded">
+            <div className="bg-white/5 rounded">
               <PreviewDiagramImage 
                 diagramData={diagramData}
                 displayName={displayName}
@@ -1020,7 +1020,7 @@ const QuestionCard = ({
       case 'diagram-required-in-answer':
         return <Edit3 size={18} className="text-green-400" />;
       case 'multi-part':
-        return <Layers size={18} className="text-blue-400" />;
+        return <Layers size={18} className="text-[#43ead6]" />;
       default:
         return <span className="text-lg">?</span>;
     }
@@ -1032,7 +1032,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question
               </label>
               <EditableTextWithEquations 
@@ -1046,16 +1046,16 @@ const QuestionCard = ({
             </div>
 
             {/* Enhanced options for multiple choice */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg border border-[#1a2943]">
               <div>
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={question.hasCode || false}
                     onChange={(e) => onUpdate({ hasCode: e.target.checked })}
-                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                    className="text-purple-600 bg-white/[0.08] border-white/20 rounded focus:ring-purple-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Code
                   </span>
                 </label>
@@ -1064,7 +1064,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1080,7 +1080,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -1101,15 +1101,15 @@ const QuestionCard = ({
                         onUpdate({ hasDiagram: true });
                       }
                     }}
-                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                    className="text-orange-600 bg-white/[0.08] border-white/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Diagram
                   </span>
                 </label>
                 {question.hasDiagram && (
                   <div className="mt-3">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center hover:border-white/25 transition-colors">
                       <input
                         type="file"
                         accept="image/*,.pdf,.svg"
@@ -1129,9 +1129,9 @@ const QuestionCard = ({
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
                       >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <ImageIcon size={24} className="text-slate-500 mb-2" />
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
                       )}
                       {/* Show upload progress or diagram */}
@@ -1151,7 +1151,7 @@ const QuestionCard = ({
             
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-300">
+                <label className="block text-sm font-medium text-slate-300">
                   Options
                 </label>
                 <label className="flex items-center space-x-2">
@@ -1161,7 +1161,7 @@ const QuestionCard = ({
                     onChange={handleMultipleCorrectToggle}
                     className="text-teal-500 focus:ring-teal-500"
                   />
-                  <span className="text-sm text-gray-300">Allow multiple correct answers</span>
+                  <span className="text-sm text-slate-300">Allow multiple correct answers</span>
                 </label>
               </div>
               <div className="space-y-2">
@@ -1223,7 +1223,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question
               </label>
               <EditableTextWithEquations 
@@ -1237,16 +1237,16 @@ const QuestionCard = ({
             </div>
 
             {/* Enhanced options for true/false */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg border border-[#1a2943]">
               <div>
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={question.hasCode || false}
                     onChange={(e) => onUpdate({ hasCode: e.target.checked })}
-                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                    className="text-purple-600 bg-white/[0.08] border-white/20 rounded focus:ring-purple-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Code
                   </span>
                 </label>
@@ -1255,7 +1255,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1271,7 +1271,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -1292,15 +1292,15 @@ const QuestionCard = ({
                         onUpdate({ hasDiagram: true });
                       }
                     }}
-                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                    className="text-orange-600 bg-white/[0.08] border-white/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Diagram
                   </span>
                 </label>
                 {question.hasDiagram && (
                   <div className="mt-3">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center hover:border-white/25 transition-colors">
                       <input
                         type="file"
                         accept="image/*,.pdf,.svg"
@@ -1320,9 +1320,9 @@ const QuestionCard = ({
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
                       >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <ImageIcon size={24} className="text-slate-500 mb-2" />
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
                       )}
                       {/* Show upload progress or diagram */}
@@ -1341,7 +1341,7 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Correct Answer
               </label>
               <div className="flex space-x-4">
@@ -1374,7 +1374,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question with Blanks
               </label>
               <EditableTextWithEquations 
@@ -1388,16 +1388,16 @@ const QuestionCard = ({
             </div>
 
             {/* Enhanced options for fill-blank */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg border border-[#1a2943]">
               <div>
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={question.hasCode || false}
                     onChange={(e) => onUpdate({ hasCode: e.target.checked })}
-                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                    className="text-purple-600 bg-white/[0.08] border-white/20 rounded focus:ring-purple-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Code
                   </span>
                 </label>
@@ -1406,7 +1406,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1422,7 +1422,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -1443,15 +1443,15 @@ const QuestionCard = ({
                         onUpdate({ hasDiagram: true });
                       }
                     }}
-                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                    className="text-orange-600 bg-white/[0.08] border-white/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Diagram
                   </span>
                 </label>
                 {question.hasDiagram && (
                   <div className="mt-3">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center hover:border-white/25 transition-colors">
                       <input
                         type="file"
                         accept="image/*,.pdf,.svg"
@@ -1471,9 +1471,9 @@ const QuestionCard = ({
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
                       >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <ImageIcon size={24} className="text-slate-500 mb-2" />
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
                       )}
                       {/* Show upload progress or diagram */}
@@ -1492,7 +1492,7 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Correct Answers (one per line)
               </label>
               <EditableTextWithEquations 
@@ -1512,7 +1512,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question
               </label>
               <EditableTextWithEquations 
@@ -1526,16 +1526,16 @@ const QuestionCard = ({
             </div>
 
             {/* Enhanced options for numerical */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg border border-[#1a2943]">
               <div>
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={question.hasCode || false}
                     onChange={(e) => onUpdate({ hasCode: e.target.checked })}
-                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                    className="text-purple-600 bg-white/[0.08] border-white/20 rounded focus:ring-purple-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Code
                   </span>
                 </label>
@@ -1544,7 +1544,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1560,7 +1560,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -1581,15 +1581,15 @@ const QuestionCard = ({
                         onUpdate({ hasDiagram: true });
                       }
                     }}
-                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                    className="text-orange-600 bg-white/[0.08] border-white/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Diagram
                   </span>
                 </label>
                 {question.hasDiagram && (
                   <div className="mt-3">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center hover:border-white/25 transition-colors">
                       <input
                         type="file"
                         accept="image/*,.pdf,.svg"
@@ -1609,9 +1609,9 @@ const QuestionCard = ({
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
                       >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <ImageIcon size={24} className="text-slate-500 mb-2" />
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
                       )}
                       {/* Show upload progress or diagram */}
@@ -1630,7 +1630,7 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Solution & Derivation
               </label>
               <EditableTextWithEquations 
@@ -1656,7 +1656,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question
               </label>
               <EditableTextWithEquations 
@@ -1670,16 +1670,16 @@ const QuestionCard = ({
             </div>
 
             {/* Enhanced options for basic questions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg border border-[#1a2943]">
               <div>
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={question.hasCode || false}
                     onChange={(e) => onUpdate({ hasCode: e.target.checked })}
-                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                    className="text-purple-600 bg-white/[0.08] border-white/20 rounded focus:ring-purple-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Code
                   </span>
                 </label>
@@ -1688,7 +1688,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1704,7 +1704,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ code: e.target.value })}
                       placeholder="// Enter code for this question..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -1725,15 +1725,15 @@ const QuestionCard = ({
                         onUpdate({ hasDiagram: true });
                       }
                     }}
-                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                    className="text-orange-600 bg-white/[0.08] border-white/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Diagram
                   </span>
                 </label>
                 {question.hasDiagram && (
                   <div className="mt-3">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center hover:border-white/25 transition-colors">
                       <input
                         type="file"
                         accept="image/*,.pdf,.svg"
@@ -1753,9 +1753,9 @@ const QuestionCard = ({
                         htmlFor={`diagram-upload-${question.id}`}
                         className="cursor-pointer flex flex-col items-center"
                       >
-                        <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        <ImageIcon size={24} className="text-slate-500 mb-2" />
                         <p className="text-white font-medium text-sm mb-1">Upload Diagram</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                        <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                       </label>
                       )}
                       {/* Show upload progress or diagram */}
@@ -1774,7 +1774,7 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Sample Answer (Required)
               </label>
               <EditableTextWithEquations 
@@ -1793,7 +1793,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Programming Question
               </label>
               <EditableTextWithEquations 
@@ -1808,13 +1808,13 @@ const QuestionCard = ({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Programming Language
                 </label>
                 <select
                   value={question.codeLanguage || 'python'}
                   onChange={(e) => handleCodeLanguageChange(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="python">Python</option>
                   <option value="java">Java</option>
@@ -1828,13 +1828,13 @@ const QuestionCard = ({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Expected Output Type
                 </label>
                 <select
                   value={question.outputType || 'code'}
                   onChange={(e) => onUpdate({ outputType: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="code">Complete Code</option>
                   <option value="function">Function Only</option>
@@ -1845,7 +1845,7 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Starter Code (Optional)
               </label>
               <textarea
@@ -1853,12 +1853,12 @@ const QuestionCard = ({
                 onChange={(e) => onUpdate({ code: e.target.value })}
                 placeholder="// Provide starter code or template here..."
                 rows={6}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                className="w-full px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Sample Solution (Required)
               </label>
               <EditableTextWithEquations 
@@ -1878,7 +1878,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question
               </label>
               <EditableTextWithEquations 
@@ -1892,10 +1892,10 @@ const QuestionCard = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Diagram/Image Upload
               </label>
-              <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-600 transition-colors">
+              <div className="border-2 border-dashed border-[#1a2943] rounded-lg p-6 text-center hover:border-white/20 transition-colors">
                 <input
                   type="file"
                   accept="image/*,.pdf,.svg"
@@ -1914,9 +1914,9 @@ const QuestionCard = ({
                   htmlFor={`diagram-upload-${question.id}`}
                   className="cursor-pointer flex flex-col items-center"
                 >
-                    <ImageIcon size={32} className="text-gray-400 mb-2" />
+                    <ImageIcon size={32} className="text-slate-400 mb-2" />
                     <p className="text-white font-medium mb-1">Upload Diagram</p>
-                    <p className="text-gray-400 text-sm">PNG, JPG, SVG, PDF supported</p>
+                    <p className="text-slate-400 text-sm">PNG, JPG, SVG, PDF supported</p>
                 </label>
                 )}
                 {uploadingDiagram && renderDiagramDisplay(null, true)}
@@ -1932,7 +1932,7 @@ const QuestionCard = ({
             
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Sample Answer (Required)
               </label>
               <EditableTextWithEquations 
@@ -1950,7 +1950,7 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-green-400 mb-2">
                 Sample Answer Diagram (Instructor Only)
               </label>
-              <p className="text-gray-400 text-xs mb-2">
+              <p className="text-slate-400 text-xs mb-2">
                 Upload a diagram showing the complete sample answer if required (e.g., completed waveform, filled truth table). Only visible to instructors.
               </p>
               <div className="border-2 border-dashed border-green-700/50 rounded-lg p-4 text-center hover:border-green-600/50 transition-colors bg-green-900/10">
@@ -1973,7 +1973,7 @@ const QuestionCard = ({
                   >
                     <ImageIcon size={24} className="text-green-500 mb-2" />
                     <p className="text-green-400 font-medium text-sm mb-1">Upload Answer Diagram</p>
-                    <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF supported</p>
+                    <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF supported</p>
                   </label>
                 )}
                 {question.correctAnswerDiagram && !uploadingDiagram && renderDiagramDisplay(
@@ -1992,7 +1992,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question
               </label>
               <EditableTextWithEquations 
@@ -2007,10 +2007,10 @@ const QuestionCard = ({
 
             {/* Optional question diagram */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Question Diagram (Optional)
               </label>
-              <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-600 transition-colors">
+              <div className="border-2 border-dashed border-[#1a2943] rounded-lg p-6 text-center hover:border-white/20 transition-colors">
                 <input
                   type="file"
                   accept="image/*,.pdf,.svg"
@@ -2028,9 +2028,9 @@ const QuestionCard = ({
                   htmlFor={`diagram-upload-${question.id}`}
                   className="cursor-pointer flex flex-col items-center"
                 >
-                    <ImageIcon size={32} className="text-gray-400 mb-2" />
+                    <ImageIcon size={32} className="text-slate-400 mb-2" />
                     <p className="text-white font-medium mb-1">Upload Diagram</p>
-                    <p className="text-gray-400 text-sm">PNG, JPG, SVG, PDF supported</p>
+                    <p className="text-slate-400 text-sm">PNG, JPG, SVG, PDF supported</p>
                 </label>
                 )}
                 {uploadingDiagram && renderDiagramDisplay(null, true)}
@@ -2045,7 +2045,7 @@ const QuestionCard = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Sample Answer (Required)
               </label>
               <EditableTextWithEquations 
@@ -2063,7 +2063,7 @@ const QuestionCard = ({
               <label className="block text-sm font-medium text-green-400 mb-2">
                 Correct Answer Diagram (Required for DRA)
               </label>
-              <p className="text-gray-400 text-xs mb-2">
+              <p className="text-slate-400 text-xs mb-2">
                 Upload a diagram showing the complete correct answer. Students must draw/sketch a diagram for this question. Only visible to instructors.
               </p>
               <div className="border-2 border-dashed border-green-700/50 rounded-lg p-4 text-center hover:border-green-600/50 transition-colors bg-green-900/10">
@@ -2086,7 +2086,7 @@ const QuestionCard = ({
                   >
                     <ImageIcon size={24} className="text-green-500 mb-2" />
                     <p className="text-green-400 font-medium text-sm mb-1">Upload Answer Diagram</p>
-                    <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF supported</p>
+                    <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF supported</p>
                   </label>
                 )}
                 {question.correctAnswerDiagram && !uploadingDiagram && renderDiagramDisplay(
@@ -2105,7 +2105,7 @@ const QuestionCard = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Main Question
               </label>
               <EditableTextWithEquations 
@@ -2120,7 +2120,7 @@ const QuestionCard = ({
 
 
             {/* Optional Parts Configuration */}
-            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+            <div className="p-4 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg">
               <label className="flex items-center space-x-3">
                 <input
                   type="checkbox"
@@ -2135,9 +2135,9 @@ const QuestionCard = ({
                       onUpdate({ optionalParts: false, requiredPartsCount: 0 });
                     }
                   }}
-                  className="text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                  className="text-[#43ead6] bg-white/[0.08] border-white/20 rounded focus:ring-[#43ead6]/50 focus:ring-2"
                 />
-                <span className="text-sm font-medium text-blue-300">
+                <span className="text-sm font-medium text-[#43ead6]">
                   Allow Optional Parts (Students select which parts to answer)
                 </span>
               </label>
@@ -2158,13 +2158,13 @@ const QuestionCard = ({
                         const validValue = Math.max(1, Math.min(value, maxParts));
                         onUpdate({ requiredPartsCount: validValue });
                       }}
-                      className="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-20 px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
                     />
                     <span className="text-sm text-blue-200">
                       of {(question.subquestions || []).length} total parts
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-blue-300">
+                  <p className="mt-2 text-xs text-[#43ead6]">
                     Example: "Answer any 2 of the following 3 parts"
                   </p>
                 </div>
@@ -2172,16 +2172,16 @@ const QuestionCard = ({
             </div>
 
             {/* Main Question Enhancements */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-lg border border-[#1a2943]">
               <div>
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={question.hasMainCode || question.hasCode || false}
                     onChange={(e) => onUpdate({ hasMainCode: e.target.checked, hasCode: e.target.checked })}
-                    className="text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                    className="text-purple-600 bg-white/[0.08] border-white/20 rounded focus:ring-purple-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Code in Main Question
                   </span>
                 </label>
@@ -2190,7 +2190,7 @@ const QuestionCard = ({
                     <select
                       value={question.mainCodeLanguage || question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ mainCodeLanguage: e.target.value, codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -2204,7 +2204,7 @@ const QuestionCard = ({
                       onChange={(e) => onUpdate({ mainCode: e.target.value, code: e.target.value })}
                       placeholder="// Main question code here..."
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                     />
                   </div>
                 )}
@@ -2225,15 +2225,15 @@ const QuestionCard = ({
                         onUpdate({ hasMainDiagram: true });
                       }
                     }}
-                    className="text-orange-600 bg-gray-700 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                    className="text-orange-600 bg-white/[0.08] border-white/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-slate-300">
                     Include Diagram in Main Question
                   </span>
                 </label>
                 {(question.hasMainDiagram || question.mainDiagram || question.diagram) && (
                   <div className="mt-3">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-gray-500 transition-colors">
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center hover:border-white/25 transition-colors">
                       <input
                         type="file"
                         accept="image/*,.pdf,.svg"
@@ -2253,9 +2253,9 @@ const QuestionCard = ({
                           htmlFor={`main-diagram-upload-${question.id}`}
                           className="cursor-pointer flex flex-col items-center"
                         >
-                          <ImageIcon size={24} className="text-gray-500 mb-2" />
+                          <ImageIcon size={24} className="text-slate-500 mb-2" />
                           <p className="text-white font-medium text-sm mb-1">Upload Main Diagram</p>
-                          <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                          <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                         </label>
                       )}
                       {uploadingDiagram && renderDiagramDisplay(null, true)}
@@ -2275,12 +2275,12 @@ const QuestionCard = ({
             
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-300">
+                <label className="block text-sm font-medium text-slate-300">
                   Sub-questions
                 </label>
                 <button
                   onClick={addSubquestion}
-                  className="inline-flex items-center px-3 py-1 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  className="inline-flex items-center px-3 py-1 text-sm text-[#43ead6] hover:text-[#43ead6] transition-colors"
                 >
                   <Plus size={16} className="mr-1" />
                   Add Part
@@ -2289,9 +2289,9 @@ const QuestionCard = ({
               
               <div className="space-y-3">
                 {(question.subquestions || []).map((subq, subIndex) => (
-                  <div key={subq.id || subIndex} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <div key={subq.id || subIndex} className="bg-white/[0.08] rounded-lg p-4 border border-white/20">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-blue-300 font-medium text-sm">Part {subIndex + 1}</span>
+                      <span className="text-[#43ead6] font-medium text-sm">Part {subIndex + 1}</span>
                       <div className="flex items-center space-x-2">
                         <input
                           type="number"
@@ -2303,11 +2303,11 @@ const QuestionCard = ({
                           min="0.5"
                           step="0.5"
                           disabled={subq.type === 'multi-part'}
-                          className="w-16 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-16 px-2 py-1 bg-white/10 border border-white/25 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
-                        <span className="text-gray-400 text-sm">pts</span>
+                        <span className="text-slate-400 text-sm">pts</span>
                         {subq.type === 'multi-part' && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-slate-500">
                             (auto{subq.optionalParts ? `, best ${subq.requiredPartsCount}` : ''})
                           </span>
                         )}
@@ -2343,7 +2343,7 @@ const QuestionCard = ({
                         <select
                           value={subq.type || 'short-answer'}
                           onChange={(e) => handleSubquestionChange(subIndex, 'type', e.target.value)}
-                          className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="px-3 py-2 bg-white/10 border border-white/25 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 focus:border-transparent"
                         >
                           <option value="short-answer">Short Answer</option>
                           <option value="multiple-choice">Multiple Choice</option>
@@ -2359,7 +2359,7 @@ const QuestionCard = ({
                           <select
                             value={subq.codeLanguage || 'python'}
                             onChange={(e) => handleSubquestionChange(subIndex, 'codeLanguage', e.target.value)}
-                            className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="px-3 py-2 bg-white/10 border border-white/25 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           >
                             <option value="python">Python</option>
                             <option value="java">Java</option>
@@ -2381,9 +2381,9 @@ const QuestionCard = ({
                               handleSubquestionChange(subIndex, 'hasSubCode', e.target.checked);
                               handleSubquestionChange(subIndex, 'hasCode', e.target.checked);
                             }}
-                            className="text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
+                            className="text-purple-600 bg-white/10 border-white/25 rounded focus:ring-purple-500 focus:ring-2"
                           />
-                          <span className="text-sm text-gray-300">Include Code</span>
+                          <span className="text-sm text-slate-300">Include Code</span>
                         </label>
                         
                         <label className="flex items-center space-x-2">
@@ -2400,9 +2400,9 @@ const QuestionCard = ({
                                 handleSubquestionChange(subIndex, 'hasDiagram', true);
                               }
                             }}
-                            className="text-orange-600 bg-gray-600 border-gray-500 rounded focus:ring-orange-500 focus:ring-2"
+                            className="text-orange-600 bg-white/10 border-white/25 rounded focus:ring-orange-500 focus:ring-2"
                           />
-                          <span className="text-sm text-gray-300">Include Diagram</span>
+                          <span className="text-sm text-slate-300">Include Diagram</span>
                         </label>
                       </div>
 
@@ -2420,7 +2420,7 @@ const QuestionCard = ({
                             }}
                             placeholder="// Enter starter code for this sub-question..."
                             rows={4}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
+                            className="w-full px-3 py-2 bg-white/10 border border-white/25 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical font-mono text-sm"
                           />
                         </div>
                       )}
@@ -2431,7 +2431,7 @@ const QuestionCard = ({
                           <label className="block text-xs font-medium text-orange-300 mb-2">
                             Sub-question Diagram
                           </label>
-                          <div className="border-2 border-dashed border-gray-600 rounded-lg p-3 text-center hover:border-gray-500 transition-colors">
+                          <div className="border-2 border-dashed border-white/20 rounded-lg p-3 text-center hover:border-white/25 transition-colors">
                             <input
                               type="file"
                               accept="image/*,.pdf,.svg"
@@ -2451,9 +2451,9 @@ const QuestionCard = ({
                               htmlFor={`subq-diagram-upload-${question.id}-${subIndex}`}
                               className="cursor-pointer flex flex-col items-center"
                             >
-                              <ImageIcon size={20} className="text-gray-500 mb-1" />
+                              <ImageIcon size={20} className="text-slate-500 mb-1" />
                               <p className="text-white font-medium text-xs mb-1">Upload Diagram</p>
-                              <p className="text-gray-400 text-xs">PNG, JPG, SVG, PDF</p>
+                              <p className="text-slate-400 text-xs">PNG, JPG, SVG, PDF</p>
                             </label>
                             )}
                             {(subq.subDiagram || subq.diagram) && !uploadingDiagram && (
@@ -2486,7 +2486,7 @@ const QuestionCard = ({
                                 onChange={() => handleSubquestionMultipleCorrectToggle(subIndex)}
                                 className="text-teal-500 focus:ring-teal-500"
                               />
-                              <span className="text-xs text-gray-300">Multiple correct</span>
+                              <span className="text-xs text-slate-300">Multiple correct</span>
                             </label>
                           </div>
                           <div className="space-y-2">
@@ -2616,7 +2616,7 @@ const QuestionCard = ({
                       {/* Sub-question rubric */}
                       {subq.type !== 'multi-part' && (
                         <div className="mt-3">
-                          <label className="block text-xs font-medium text-blue-300 mb-2">
+                          <label className="block text-xs font-medium text-[#43ead6] mb-2">
                             Rubric for Part {subIndex + 1}
                           </label>
                           <EditableTextWithEquations
@@ -2640,10 +2640,10 @@ const QuestionCard = ({
 
                       {/* Nested multi-part sub-questions */}
                       {subq.type === 'multi-part' && (
-                        <div className="mt-3 border-l-2 border-blue-400/30 pl-4 ml-2">
+                        <div className="mt-3 border-l-2 border-[#43ead6]/30 pl-4 ml-2">
 
                           {/* Optional Parts Configuration for Nested Multi-part */}
-                          <div className="mb-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                          <div className="mb-3 p-3 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg">
                             <label className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
@@ -2667,9 +2667,9 @@ const QuestionCard = ({
                                   }
                                   onUpdate({ subquestions: newSubquestions });
                                 }}
-                                className="text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                                className="text-[#43ead6] bg-white/[0.08] border-white/20 rounded focus:ring-[#43ead6]/50 focus:ring-2"
                               />
-                              <span className="text-xs font-medium text-blue-300">
+                              <span className="text-xs font-medium text-[#43ead6]">
                                 Allow Optional Parts
                               </span>
                             </label>
@@ -2695,7 +2695,7 @@ const QuestionCard = ({
                                       };
                                       onUpdate({ subquestions: newSubquestions });
                                     }}
-                                    className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-16 px-2 py-1 bg-white/[0.08] border border-white/20 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50"
                                   />
                                   <span className="text-xs text-blue-200">
                                     of {(subq.subquestions || []).length}
@@ -2706,7 +2706,7 @@ const QuestionCard = ({
                           </div>
 
                           <div className="flex items-center justify-between mb-2">
-                            <label className="block text-xs font-medium text-blue-300">
+                            <label className="block text-xs font-medium text-[#43ead6]">
                               Sub-sub-questions
                             </label>
                             <button
@@ -2725,7 +2725,7 @@ const QuestionCard = ({
                                 }];
                                 handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                               }}
-                              className="inline-flex items-center px-2 py-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                              className="inline-flex items-center px-2 py-1 text-xs text-[#43ead6] hover:text-[#43ead6] transition-colors"
                             >
                               <Plus size={12} className="mr-1" />
                               Add Sub-part
@@ -2734,7 +2734,7 @@ const QuestionCard = ({
                           
                           <div className="space-y-2">
                             {(subq.subquestions || []).map((subSubq, subSubIndex) => (
-                              <div key={subSubq.id || subSubIndex} className="bg-gray-600 rounded-lg p-3 border border-gray-500">
+                              <div key={subSubq.id || subSubIndex} className="bg-white/10 rounded-lg p-3 border border-white/25">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-blue-200 text-xs font-medium">Part {subIndex + 1}.{subSubIndex + 1}</span>
                                   <div className="flex items-center space-x-2">
@@ -2748,9 +2748,9 @@ const QuestionCard = ({
                                       }}
                                       min="0.5"
                                       step="0.5"
-                                      className="w-12 px-1 py-1 bg-gray-500 border border-gray-400 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                      className="w-12 px-1 py-1 bg-white/10 border border-white/20 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50"
                                     />
-                                    <span className="text-gray-300 text-xs">pts</span>
+                                    <span className="text-slate-300 text-xs">pts</span>
                                     <button
                                       onClick={() => {
                                         const newSubSubquestions = (subq.subquestions || []).filter((_, i) => i !== subSubIndex);
@@ -2786,7 +2786,7 @@ const QuestionCard = ({
                                     newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], type: e.target.value };
                                     handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                   }}
-                                  className="w-full px-2 py-1 bg-gray-500 border border-gray-400 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50"
                                 >
                                   <option value="short-answer">Short Answer</option>
                                   <option value="multiple-choice">Multiple Choice</option>
@@ -2801,7 +2801,7 @@ const QuestionCard = ({
                                 {subSubq.type === 'multiple-choice' && (
                                   <div className="mt-2">
                                     <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-gray-400">Options</span>
+                                      <span className="text-xs text-slate-400">Options</span>
                                       <label className="flex items-center space-x-1">
                                         <input
                                           type="checkbox"
@@ -2809,7 +2809,7 @@ const QuestionCard = ({
                                           onChange={() => handleNestedSubquestionMultipleCorrectToggle(subIndex, subSubIndex)}
                                           className="text-teal-500 focus:ring-teal-500"
                                         />
-                                        <span className="text-xs text-gray-400">Multiple</span>
+                                        <span className="text-xs text-slate-400">Multiple</span>
                                       </label>
                                     </div>
                                     <div className="space-y-1">
@@ -2951,7 +2951,7 @@ const QuestionCard = ({
                                 {/* Sub-sub-question rubric */}
                                 {subSubq.type !== 'multi-part' && (
                                   <div className="mt-2">
-                                    <label className="block text-xs font-medium text-blue-300 mb-1">
+                                    <label className="block text-xs font-medium text-[#43ead6] mb-1">
                                       Rubric for Part {subIndex + 1}.{subSubIndex + 1}
                                     </label>
                                     <EditableTextWithEquations
@@ -2982,7 +2982,7 @@ const QuestionCard = ({
                 ))}
                 
                 {(!question.subquestions || question.subquestions.length === 0) && (
-                  <div className="text-center py-6 text-gray-400">
+                  <div className="text-center py-6 text-slate-400">
                     <Layers size={24} className="mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No sub-questions yet. Click "Add Part" to create parts.</p>
                   </div>
@@ -2996,7 +2996,7 @@ const QuestionCard = ({
       default:
         return (
           <div>
-            <p className="text-gray-400">Unknown question type</p>
+            <p className="text-slate-400">Unknown question type</p>
           </div>
         );
     }
@@ -3004,19 +3004,19 @@ const QuestionCard = ({
 
   return (
     <>
-    <div className="bg-gray-800 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
+    <div className="bg-white/5 rounded-lg border border-[#1a2943] hover:border-white/20 transition-colors">
       {/* Question Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-[#1a2943]">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-gray-700 rounded-lg">
-            <GripVertical size={16} className="text-gray-400" />
+          <div className="p-2 bg-white/[0.08] rounded-lg">
+            <GripVertical size={16} className="text-slate-400" />
           </div>
           <div className="flex items-center space-x-2">
             {renderQuestionTypeIcon()}
             <span className="text-white font-medium">
               Question {index + 1}
             </span>
-            <span className="text-gray-400 text-sm">
+            <span className="text-slate-400 text-sm">
               ({question.type.replace('-', ' ')})
             </span>
           </div>
@@ -3035,19 +3035,19 @@ const QuestionCard = ({
               max="100"
               step="0.5"
               disabled={question.type === 'multi-part'}
-              className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-16 px-2 py-1 bg-white/[0.08] border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <span className="text-gray-400 text-sm">pts</span>
+            <span className="text-slate-400 text-sm">pts</span>
           </div>
           {question.type === 'multi-part' && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-slate-500">
               (auto-calculated{question.optionalParts ? `, best ${question.requiredPartsCount} of ${(question.subquestions || []).length}` : ''})
             </span>
           )}
           
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 text-gray-400 hover:text-white transition-colors"
+            className="p-1 text-slate-400 hover:text-white transition-colors"
           >
             <Edit3 size={16} />
           </button>
@@ -3055,7 +3055,7 @@ const QuestionCard = ({
           {onMoveUp && (
             <button
               onClick={onMoveUp}
-              className="p-1 text-gray-400 hover:text-white transition-colors"
+              className="p-1 text-slate-400 hover:text-white transition-colors"
             >
               <ChevronUp size={16} />
             </button>
@@ -3064,7 +3064,7 @@ const QuestionCard = ({
           {onMoveDown && (
             <button
               onClick={onMoveDown}
-              className="p-1 text-gray-400 hover:text-white transition-colors"
+              className="p-1 text-slate-400 hover:text-white transition-colors"
             >
               <ChevronDown size={16} />
             </button>
@@ -3087,7 +3087,7 @@ const QuestionCard = ({
           {/* Rubric Section - Only show for non-multi-part questions */}
           {question.type !== 'multi-part' && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Rubric (Required)
               </label>
               <EditableTextWithEquations

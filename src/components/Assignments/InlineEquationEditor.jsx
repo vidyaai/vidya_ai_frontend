@@ -95,7 +95,7 @@ const InlineEquationEditor = ({ equation, onSave, onTypeChange, editable = false
   if (!isEditing) {
     return (
       <span
-        className={`inline-equation ${editable ? 'cursor-pointer hover:bg-blue-50 hover:outline hover:outline-1 hover:outline-blue-300 rounded px-1' : ''} ${className}`}
+        className={`inline-equation ${editable ? 'cursor-pointer hover:bg-[#43ead6]/10 hover:outline hover:outline-1 hover:outline-[#43ead6]/50 rounded px-1' : ''} ${className}`}
         onClick={handleEdit}
         title={editable ? 'Click to edit equation' : ''}
       >
@@ -106,7 +106,7 @@ const InlineEquationEditor = ({ equation, onSave, onTypeChange, editable = false
 
   // Edit mode - LaTeX input with preview
   return (
-    <div className={`inline-equation-editor border border-blue-400 rounded p-3 my-2 bg-blue-50 ${className}`}>
+    <div className={`inline-equation-editor border border-[#43ead6] rounded p-3 my-2 bg-[#43ead6]/10 ${className}`}>
       <div className="mb-2">
         <div className="flex items-center justify-between mb-1">
           <label className="block text-sm font-medium text-gray-700">
@@ -130,11 +130,11 @@ const InlineEquationEditor = ({ equation, onSave, onTypeChange, editable = false
           value={latexInput}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm text-black"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 font-mono text-sm text-black"
           placeholder="Enter LaTeX equation..."
           autoFocus
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Press Ctrl+Enter to save, Esc to cancel
         </p>
       </div>
@@ -148,7 +148,7 @@ const InlineEquationEditor = ({ equation, onSave, onTypeChange, editable = false
           {latexInput ? (
             renderEquation(latexInput, equation.type)
           ) : (
-            <span className="text-gray-400 text-sm">Preview will appear here...</span>
+            <span className="text-slate-400 text-sm">Preview will appear here...</span>
           )}
         </div>
       </div>
@@ -164,27 +164,27 @@ const InlineEquationEditor = ({ equation, onSave, onTypeChange, editable = false
       <div className="flex gap-2">
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+          className="px-4 py-2 bg-[#43ead6] text-[#051224] rounded-md hover:bg-[#43ead6]/90 focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 text-sm font-medium"
         >
           Save
         </button>
         <button
           onClick={handleCancel}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm font-medium"
+          className="px-4 py-2 bg-white/10 text-slate-300 rounded-md hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/20 text-sm font-medium"
         >
           Cancel
         </button>
       </div>
 
       {/* Helper text */}
-      <div className="mt-3 text-xs text-gray-600">
+      <div className="mt-3 text-xs text-slate-500">
         <p className="font-medium mb-1">LaTeX Tips:</p>
         <ul className="list-disc list-inside space-y-0.5 ml-2">
-          <li>Fractions: <code className="bg-gray-100 px-1 rounded">\frac{'{'}numerator{'}'}{'{'}denominator{'}'}</code></li>
-          <li>Superscript: <code className="bg-gray-100 px-1 rounded">x^{'{'}2{'}'}</code></li>
-          <li>Subscript: <code className="bg-gray-100 px-1 rounded">x_{'{'}i{'}'}</code></li>
-          <li>Square root: <code className="bg-gray-100 px-1 rounded">\sqrt{'{'}x{'}'}</code></li>
-          <li>Greek letters: <code className="bg-gray-100 px-1 rounded">\alpha, \beta, \theta</code></li>
+          <li>Fractions: <code className="bg-white/10 px-1 rounded">\frac{'{'}numerator{'}'}{'{'}denominator{'}'}</code></li>
+          <li>Superscript: <code className="bg-white/10 px-1 rounded">x^{'{'}2{'}'}</code></li>
+          <li>Subscript: <code className="bg-white/10 px-1 rounded">x_{'{'}i{'}'}</code></li>
+          <li>Square root: <code className="bg-white/10 px-1 rounded">\sqrt{'{'}x{'}'}</code></li>
+          <li>Greek letters: <code className="bg-white/10 px-1 rounded">\alpha, \beta, \theta</code></li>
         </ul>
       </div>
     </div>

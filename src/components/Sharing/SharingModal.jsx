@@ -102,10 +102,10 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
       }, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
-      
-      // Filter out already selected users
-      const filtered = response.data.filter(user => 
-        !selectedUsers.some(selected => selected.uid === user.uid)
+
+      // Filter out already selected users (skip pending entries which have no uid)
+      const filtered = response.data.filter(user =>
+        !selectedUsers.some(selected => selected.uid && selected.uid === user.uid)
       );
       setSearchResults(filtered);
     } catch (error) {
@@ -114,6 +114,28 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  // Validate email shape — used to decide whether to surface "Invite by email"
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const trimmedQuery = emailQuery.trim().toLowerCase();
+  const isEmailLike = EMAIL_RE.test(trimmedQuery);
+  const alreadyInvited = (email) =>
+    selectedUsers.some(
+      (u) => (u.email && u.email.toLowerCase() === email) ||
+             (u.pendingEmail && u.pendingEmail === email)
+    ) ||
+    existingUsers.some((u) => u.email && u.email.toLowerCase() === email);
+  const canInviteByEmail =
+    isEmailLike && !searchLoading && searchResults.length === 0 && !alreadyInvited(trimmedQuery);
+
+  const addPendingEmail = (email) => {
+    setSelectedUsers((prev) => [
+      ...prev,
+      { pendingEmail: email, displayName: email, email },
+    ]);
+    setEmailQuery('');
+    setSearchResults([]);
   };
 
   // Debounced search
@@ -130,8 +152,10 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
     setSearchResults([]);
   };
 
-  const removeUser = (userId) => {
-    setSelectedUsers(prev => prev.filter(user => user.uid !== userId));
+  const removeUser = (key) => {
+    setSelectedUsers((prev) =>
+      prev.filter((user) => (user.uid || user.pendingEmail) !== key)
+    );
   };
 
   const removeExistingUser = async (userId) => {
@@ -168,8 +192,11 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
 
         // Add new users if any
         if (selectedUsers.length > 0) {
+          const user_ids = selectedUsers.filter((u) => u.uid && !u.pendingEmail).map((u) => u.uid);
+          const emails = selectedUsers.filter((u) => u.pendingEmail).map((u) => u.pendingEmail);
           await api.post(`/api/sharing/links/${existingLinkId}/users`, {
-            user_ids: selectedUsers.map(user => user.uid),
+            user_ids,
+            emails,
             permission: 'view'
           }, {
             headers: { 'ngrok-skip-browser-warning': 'true' }
@@ -186,7 +213,8 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
           is_public: isPublic,
           title: title.trim() || null,
           description: description.trim() || null,
-          invited_users: selectedUsers.map(user => user.uid)
+          invited_users: selectedUsers.filter((u) => u.uid && !u.pendingEmail).map((u) => u.uid),
+          invited_emails: selectedUsers.filter((u) => u.pendingEmail).map((u) => u.pendingEmail)
         };
 
         if (shareType === 'folder') {
@@ -391,20 +419,30 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
                       New Users to Invite
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {selectedUsers.map(user => (
-                        <div
-                          key={user.uid}
-                          className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1 rounded-full text-sm"
-                        >
-                          <span>{user.displayName || user.email}</span>
-                          <button
-                            onClick={() => removeUser(user.uid)}
-                            className="text-indigo-200 hover:text-white"
+                      {selectedUsers.map(user => {
+                        const key = user.uid || user.pendingEmail;
+                        const isPending = !!user.pendingEmail;
+                        return (
+                          <div
+                            key={key}
+                            className={`flex items-center gap-2 text-white px-3 py-1 rounded-full text-sm ${
+                              isPending ? 'bg-amber-600' : 'bg-indigo-600'
+                            }`}
+                            title={isPending ? 'This email has no account yet — they\'ll get an invitation to sign up' : ''}
                           >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
+                            <span>{user.displayName || user.email}</span>
+                            {isPending && (
+                              <span className="text-amber-200 text-xs uppercase tracking-wide">pending</span>
+                            )}
+                            <button
+                              onClick={() => removeUser(key)}
+                              className={isPending ? 'text-amber-200 hover:text-white' : 'text-indigo-200 hover:text-white'}
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -442,6 +480,20 @@ const SharingModal = ({ isOpen, onClose, shareType, resourceId, resourceData = n
                       </button>
                     ))}
                   </div>
+                )}
+
+                {/* Invite by email — shown when the query is a valid email with no Firebase match */}
+                {canInviteByEmail && (
+                  <button
+                    onClick={() => addPendingEmail(trimmedQuery)}
+                    className="mt-2 w-full px-3 py-2 text-left bg-gray-700 hover:bg-gray-600 border border-amber-600/40 rounded-lg flex items-center gap-2"
+                  >
+                    <Mail size={16} className="text-amber-400" />
+                    <div>
+                      <div className="text-white text-sm">Invite <span className="font-medium">{trimmedQuery}</span> by email</div>
+                      <div className="text-gray-400 text-xs">They'll get an email with a sign-up + accept link</div>
+                    </div>
+                  </button>
                 )}
               </div>
             )}

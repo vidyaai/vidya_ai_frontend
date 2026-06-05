@@ -142,7 +142,7 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
     <>
       <button
         onClick={handleUploadClick}
-        className="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 shadow-lg flex items-center justify-center"
+        className="px-6 py-4 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#43ead6] focus:ring-offset-2 focus:ring-offset-[#071224] transition-all duration-200 shadow-lg flex items-center justify-center"
         disabled={!canUse || isUploading}
         title={canUse ? 'Upload video' : 'Login required'}
       >
@@ -168,7 +168,7 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
       
       {/* Upload Progress UI */}
       {(isUploading || serverStatus || (currentUploadId && !hasCalledOnUploadComplete)) && (
-        <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg p-3 z-50 min-w-[300px] shadow-xl">
+        <div className="absolute top-full right-0 mt-2 bg-[#0d1f38] border border-[#182842] rounded-lg p-3 z-50 min-w-[300px] shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <div className="text-white text-sm font-semibold">Upload Progress</div>
             {(isUploading || (currentUploadId && !hasCalledOnUploadComplete)) && <SimpleSpinner size={16} />}
@@ -176,9 +176,9 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
           <div className="space-y-2">
             <div>
               <div className="text-gray-300 text-xs mb-1">Client upload to server</div>
-              <div className="w-full h-2 bg-gray-700 rounded">
+              <div className="w-full h-2 bg-white/[0.08] rounded">
                 <div
-                  className="h-2 bg-indigo-500 rounded"
+                  className="h-2 bg-[#43ead6] rounded"
                   style={{ width: `${clientUploadProgress}%` }}
                 />
               </div>
@@ -192,7 +192,7 @@ const VideoUploader = ({ onUploadComplete, onUploadSuccess }) => {
                     {serverStatus?.progress !== undefined ? `${serverStatus.progress}%` : 'Waiting...'}
                   </div>
                 </div>
-                <div className="w-full h-2 bg-gray-700 rounded">
+                <div className="w-full h-2 bg-white/[0.08] rounded">
                   <div
                     className="h-2 bg-green-500 rounded transition-all duration-300"
                     style={{ width: `${serverStatus?.progress ?? 0}%` }}

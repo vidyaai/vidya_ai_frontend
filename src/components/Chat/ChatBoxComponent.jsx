@@ -474,16 +474,16 @@ const ChatBoxComponent = ({
   };
 
   return (
-    <div className={`w-full bg-zinc-900 overflow-hidden flex flex-col ${
-      isEmbedded ? 'h-[650px]' : 'h-[750px] rounded-lg border border-zinc-800'
+    <div className={`w-full bg-[#0d1f38] overflow-hidden flex flex-col ${
+      isEmbedded ? 'h-[650px]' : 'h-[750px] rounded-lg border border-[#182842]'
     }`}>
       <div className={`px-4 py-3 flex items-center justify-between ${
-        !isEmbedded ? 'border-b border-zinc-800' : ''
+        !isEmbedded ? 'border-b border-[#182842]' : ''
       }`}>
         <div className="flex items-center gap-2">
           <button
             onClick={onAddSession}
-            className="p-2 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 hover:bg-[#0d1f38] text-slate-400 hover:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="New chat"
             disabled={!currentVideo.videoId}
           >
@@ -495,7 +495,7 @@ const ChatBoxComponent = ({
               setShowSharedHistory(false);
             }}
             className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              showHistory ? 'bg-emerald-600 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
+              showHistory ? 'bg-[#43ead6] text-[#051224]' : 'hover:bg-[#0d1f38] text-slate-400 hover:text-white'
             }`}
             title="History"
             disabled={!currentVideo.videoId}
@@ -506,7 +506,7 @@ const ChatBoxComponent = ({
             <button
               onClick={handleSharedHistoryClick}
               className={`p-2 rounded-lg transition-colors ${
-                showSharedHistory ? 'bg-emerald-600 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
+                showSharedHistory ? 'bg-[#43ead6] text-[#051224]' : 'hover:bg-[#0d1f38] text-slate-400 hover:text-white'
               }`}
               title="Shared chats"
             >
@@ -514,19 +514,19 @@ const ChatBoxComponent = ({
             </button>
           )}
         </div>
-        <span className="text-xs text-zinc-600">{formatTime(currentTime || 0)}</span>
+        <span className="text-xs text-slate-500">{formatTime(currentTime || 0)}</span>
       </div>
       
       <div className="flex-grow overflow-hidden">
         {showHistory ? (
-          <div className="h-full overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+          <div className="h-full overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-[#1a2943] scrollbar-track-transparent">
             {(!historyList || historyList.length === 0) ? (
-              <div className="text-zinc-500 text-sm p-8 text-center">No history</div>
+              <div className="text-slate-400 text-sm p-8 text-center">No history</div>
             ) : (
               historyList.map((s) => (
                 <div
                   key={s.id}
-                  className={`w-full px-3 py-2.5 rounded-lg mb-2 text-sm transition-colors ${s.id === activeSessionId ? 'bg-emerald-950 border border-emerald-900 text-white' : 'bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-700'}`}
+                  className={`w-full px-3 py-2.5 rounded-lg mb-2 text-sm transition-colors ${s.id === activeSessionId ? 'bg-[#071224] border border-[#43ead6]/20 text-white' : 'bg-[#0d1f38] hover:bg-white/[0.06] text-slate-300 border border-[#182842]'}`}
                 >
                   {editingSessionId === s.id ? (
                     <form
@@ -545,7 +545,7 @@ const ChatBoxComponent = ({
                         autoFocus
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
-                        className="flex-1 bg-gray-900/60 text-white px-3 py-2 rounded-lg border border-gray-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                        className="flex-1 bg-[#071224]/60 text-white px-3 py-2 rounded-lg border border-[#182842] focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 focus:border-[#43ead6]/30 transition-all"
                         placeholder="Conversation name"
                       />
                       <button type="submit" className="text-green-400 hover:text-green-300 transition-colors p-1 hover:bg-green-400/10 rounded-lg" title="Save">
@@ -554,7 +554,7 @@ const ChatBoxComponent = ({
                       <button
                         type="button"
                         onClick={() => { setEditingSessionId(null); setEditingTitle(''); }}
-                        className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-gray-700/50 rounded-lg"
+                        className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/[0.05] rounded-lg"
                         title="Cancel"
                       >
                         <X size={16} />
@@ -568,14 +568,14 @@ const ChatBoxComponent = ({
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => openChatSharing(s.id)}
-                          className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-gray-700/50 rounded-lg"
+                          className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-white/[0.05] rounded-lg"
                           title="Share chat"
                         >
                           <Share2 size={15} />
                         </button>
                         <button
                           onClick={() => { setEditingSessionId(s.id); setEditingTitle(s.title || ''); }}
-                          className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-gray-700/50 rounded-lg"
+                          className="text-gray-400 hover:text-white transition-all p-1.5 hover:bg-white/[0.05] rounded-lg"
                           title="Rename"
                         >
                           <Pencil size={15} />
@@ -592,22 +592,22 @@ const ChatBoxComponent = ({
           <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700/50 scrollbar-track-transparent">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white font-semibold text-base flex items-center gap-2">
-                <Share2 size={18} className="text-indigo-400" />
+                <Share2 size={18} className="text-[#43ead6]" />
                 Chats Shared with Me
               </h3>
               <button
                 onClick={() => setShowSharedHistory(false)}
-                className="w-7 h-7 rounded-full bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-gray-200 text-sm flex items-center justify-center transition-all duration-200"
+                className="w-7 h-7 rounded-full bg-white/[0.05] hover:bg-white/[0.08] text-gray-400 hover:text-gray-200 text-sm flex items-center justify-center transition-all duration-200"
               >
                 ✕
               </button>
             </div>
-            <div className="text-xs text-gray-500 mb-4 text-center py-2 px-3 bg-gray-800/30 rounded-lg border border-gray-800/50">
+            <div className="text-xs text-gray-500 mb-4 text-center py-2 px-3 bg-white/[0.03] rounded-lg border border-[#12213a]">
               💡 Click on any chat card to load it into the chatbox
             </div>
             {sharedHistoryLoading ? (
               <div className="text-center text-gray-500 my-12 flex flex-col items-center">
-                <div className="w-14 h-14 rounded-2xl bg-gray-800/50 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-white/[0.05] flex items-center justify-center mb-4">
                   <SimpleSpinner size={28} className="text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-400">Loading shared chats...</p>
@@ -626,7 +626,7 @@ const ChatBoxComponent = ({
                 <div
                   key={session.session_id}
                   onClick={() => !isLoadingSharedChat && handleSharedChatClick(session)}
-                  className={`w-full px-4 py-4 rounded-xl mb-2.5 text-sm bg-gray-800/40 hover:bg-gray-800/70 border border-gray-700/50 hover:border-indigo-500/50 text-gray-200 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:scale-[1.01] active:scale-[0.99] ${
+                  className={`w-full px-4 py-4 rounded-xl mb-2.5 text-sm bg-white/[0.04] hover:bg-white/[0.08] border border-[#182842] hover:border-[#43ead6]/30 text-gray-200 transition-all duration-300 hover:shadow-xl hover:shadow-[#43ead6]/10 hover:scale-[1.01] active:scale-[0.99] ${
                     isLoadingSharedChat ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
                   }`}
                 >
@@ -638,11 +638,11 @@ const ChatBoxComponent = ({
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         isLoadingSharedChat 
                           ? 'text-yellow-400 bg-yellow-900 bg-opacity-50' 
-                          : 'text-indigo-400 bg-indigo-900 bg-opacity-50'
+                          : 'text-[#43ead6] bg-[#43ead6]/10'
                       }`}>
                         {isLoadingSharedChat ? 'Loading...' : 'Click to load'}
                       </span>
-                      <Share2 size={14} className="text-indigo-400" />
+                      <Share2 size={14} className="text-[#43ead6]" />
                     </div>
                   </div>
                   
@@ -653,7 +653,7 @@ const ChatBoxComponent = ({
                   </div>
                   
                   {session.share_title && (
-                    <div className="text-indigo-400 text-xs mb-2">
+                    <div className="text-[#43ead6] text-xs mb-2">
                       "{session.share_title}"
                     </div>
                   )}
@@ -675,10 +675,10 @@ const ChatBoxComponent = ({
         ) : (
         <div
           ref={chatContainerRef}
-          className="h-full overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
+          className="h-full overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin scrollbar-thumb-[#1a2943] scrollbar-track-transparent"
         >
         {chatMessages.length === 0 ? (
-          <div className="text-center text-zinc-500 my-20">
+          <div className="text-center text-slate-400 my-20">
             <p className="text-sm">No messages yet</p>
           </div>
         ) : (
@@ -687,44 +687,44 @@ const ChatBoxComponent = ({
               key={message.id}
               className={`${
                 message.sender === 'user'
-                  ? 'ml-12 bg-emerald-950 border border-emerald-900'
+                  ? 'ml-12 bg-[#071224] border border-[#43ead6]/20'
                   : message.sender === 'system'
-                    ? message.isSuccess ? 'bg-green-950 border border-green-900' : 'bg-zinc-800 border border-zinc-700'
-                    : 'mr-12 bg-zinc-800 border border-zinc-700'
+                    ? message.isSuccess ? 'bg-green-950 border border-green-900' : 'bg-[#0d1f38] border border-[#182842]'
+                    : 'mr-12 bg-[#0d1f38] border border-[#182842]'
               } rounded-lg p-3 ${message.isError ? 'border-red-900' : ''}`}
             >
               <div className="flex items-center mb-2">
                 <span className={`text-xs font-medium ${
-                  message.sender === 'user' ? 'text-emerald-400' :
-                  message.sender === 'system' ? 'text-yellow-400' : 'text-zinc-400'
+                  message.sender === 'user' ? 'text-[#43ead6]' :
+                  message.sender === 'system' ? 'text-yellow-400' : 'text-slate-400'
                 }`}>
                   {message.sender === 'user' ? 'You' :
                    message.sender === 'system' ? 'System' : 'AI'}
                 </span>
                 {message.timestamp !== null && (
-                  <span className="text-zinc-600 text-xs ml-2">
+                  <span className="text-slate-500 text-xs ml-2">
                     {formatTime(message.timestamp)}
                   </span>
                 )}
               </div>
-              <div className="text-zinc-200 break-words overflow-wrap-anywhere leading-relaxed text-sm">
+              <div className="text-slate-200 break-words overflow-wrap-anywhere leading-relaxed text-sm">
                 {message.sender === 'ai' ? (
                   parseMarkdownWithMath(message.text, onSeekToTime)
                 ) : (
                   parseMarkdown(message.text, onSeekToTime)
                 )}
                 {message.isStreaming && (
-                  <span className="inline-block ml-1 w-1.5 h-4 bg-emerald-500 animate-pulse"></span>
+                  <span className="inline-block ml-1 w-1.5 h-4 bg-[#43ead6] animate-pulse"></span>
                 )}
               </div>
             </div>
           ))
         )}
         {isProcessingQuery && (
-          <div className="mr-12 bg-zinc-800 border border-zinc-700 rounded-lg p-3">
+          <div className="mr-12 bg-[#0d1f38] border border-[#182842] rounded-lg p-3">
             <div className="flex items-center">
               <SimpleSpinner size={16} className="mr-2" />
-              <span className="text-sm text-zinc-400">Thinking...</span>
+              <span className="text-sm text-slate-400">Thinking...</span>
             </div>
           </div>
         )}
@@ -734,7 +734,7 @@ const ChatBoxComponent = ({
       
       {/* Download Progress Bar */}
       {downloadProgress && (downloadProgress.status === 'preparing' || downloadProgress.status === 'buffering' || downloadProgress.status === 'downloading') && (
-        <div className="px-5 py-4 border-t border-gray-800/50 bg-gray-900/60 backdrop-blur-sm">
+        <div className="px-5 py-4 border-t border-[#12213a] bg-[#071224]/60 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -756,12 +756,12 @@ const ChatBoxComponent = ({
                   // Download animation
                   <>
                     <div className="animate-spin">
-                      <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-[#43ead6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                     </div>
                     <div className="absolute inset-0 animate-pulse">
-                      <svg className="w-5 h-5 text-indigo-300 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-[#43ead6]/70 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                       </svg>
                     </div>
@@ -782,7 +782,7 @@ const ChatBoxComponent = ({
             <div className="flex flex-col items-end">
               {downloadProgress.status === 'downloading' ? (
                 <>
-                  <span className="text-lg text-indigo-400 font-bold">
+                  <span className="text-lg text-[#43ead6] font-bold">
                     {downloadProgress.progress || 0}%
                   </span>
                   {downloadProgress.downloaded_bytes && downloadProgress.total_bytes && (
@@ -808,7 +808,7 @@ const ChatBoxComponent = ({
           
           {/* Progress bar with percentage markers */}
           <div className="relative">
-            <div className="w-full bg-gray-800/80 rounded-full h-2.5 overflow-hidden shadow-inner border border-gray-700/50">
+            <div className="w-full bg-white/[0.08] rounded-full h-2.5 overflow-hidden shadow-inner border border-[#182842]">
               {downloadProgress.status === 'preparing' ? (
                 // Indeterminate progress bar for preparing
                 <div className="h-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full relative overflow-hidden">
@@ -849,7 +849,7 @@ const ChatBoxComponent = ({
               ) : (
                 // Determinate progress bar for downloading
                 <div 
-                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500 ease-out relative"
+                  className="bg-gradient-to-r from-[#43ead6] via-[#43ead6]/80 to-[#43ead6]/60 h-3 rounded-full transition-all duration-500 ease-out relative"
                   style={{ width: `${downloadProgress.progress || 0}%` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
@@ -867,9 +867,9 @@ const ChatBoxComponent = ({
             {/* Percentage markers */}
             {(downloadProgress.status === 'downloading' || (downloadProgress.status === 'buffering' && downloadProgress.progress > 0)) && (
               <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
-                <span className={downloadProgress.progress >= 25 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-indigo-400') : ''}>25%</span>
-                <span className={downloadProgress.progress >= 50 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-indigo-400') : ''}>50%</span>
-                <span className={downloadProgress.progress >= 75 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-indigo-400') : ''}>75%</span>
+                <span className={downloadProgress.progress >= 25 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-[#43ead6]') : ''}>25%</span>
+                <span className={downloadProgress.progress >= 50 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-[#43ead6]') : ''}>50%</span>
+                <span className={downloadProgress.progress >= 75 ? (downloadProgress.status === 'buffering' ? 'text-yellow-400' : 'text-[#43ead6]') : ''}>75%</span>
                 <span className={downloadProgress.progress >= 100 ? 'text-green-400' : ''}>100%</span>
               </div>
             )}
@@ -903,7 +903,7 @@ const ChatBoxComponent = ({
       `}</style>
       
       {!showHistory && (
-      <div className="px-4 py-3 border-t border-zinc-800">
+      <div className="px-4 py-3 border-t border-[#182842]">
         {currentVideo?.sourceType !== 'youtube' && (
           <div className="flex gap-4 mb-3">
             <label className="flex items-center cursor-pointer">
@@ -915,7 +915,7 @@ const ChatBoxComponent = ({
                 onChange={() => setQueryType('video')}
                 className="mr-2 accent-emerald-500"
               />
-              <span className="text-xs text-zinc-400">Video</span>
+              <span className="text-xs text-slate-400">Video</span>
             </label>
             <label className="flex items-center cursor-pointer">
               <input
@@ -926,7 +926,7 @@ const ChatBoxComponent = ({
                 onChange={() => setQueryType('frame')}
                 className="mr-2 accent-emerald-500"
               />
-              <span className="text-xs text-zinc-400">Frame</span>
+              <span className="text-xs text-slate-400">Frame</span>
             </label>
           </div>
         )}
@@ -936,12 +936,12 @@ const ChatBoxComponent = ({
             value={userQuestion}
             onChange={(e) => setUserQuestion(e.target.value)}
             placeholder="Ask a question..."
-            className="flex-grow px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500 text-white placeholder-zinc-500 text-sm transition-colors"
+            className="flex-grow px-3 py-2 bg-[#0d1f38] border border-[#182842] rounded-lg focus:outline-none focus:border-[#43ead6] text-white placeholder-slate-500 text-sm transition-colors"
             disabled={!currentVideo.videoId || isProcessingQuery}
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="px-4 py-2 bg-[#43ead6] hover:bg-[#43ead6]/90 rounded-lg transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             disabled={!userQuestion.trim() || !currentVideo.videoId || isProcessingQuery}
           >
             <Send size={16} />

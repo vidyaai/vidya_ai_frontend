@@ -44,7 +44,7 @@ const TranscriptComponent = ({
           <div key={`timestamp-${index}`} className="mb-2">
             <button
               onClick={() => handleTimestampClick(totalSeconds)}
-              className="text-emerald-400 hover:text-emerald-300 font-mono text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+              className="text-[#43ead6] hover:text-[#43ead6]/80 font-mono text-xs bg-[#0d1f38] hover:bg-white/[0.08] border border-[#182842] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               title={`Jump to ${startTime}`}
             >
               {trimmedLine}
@@ -233,8 +233,8 @@ const TranscriptComponent = ({
             onClick={() => setShowTimestampedVersion(false)}
             className={`text-xs px-3 py-2 rounded-lg transition-colors font-medium ${
               !showTimestampedVersion
-                ? 'bg-emerald-600 text-white'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border border-zinc-700'
+                ? 'bg-[#43ead6] text-[#051224]'
+                : 'bg-[#0d1f38] hover:bg-white/[0.08] text-slate-400 border border-[#182842]'
             }`}
             disabled={!transcript}
           >
@@ -251,8 +251,8 @@ const TranscriptComponent = ({
             }}
             className={`text-xs px-3 py-2 rounded-lg transition-colors flex items-center font-medium ${
               showTimestampedVersion
-                ? 'bg-emerald-600 text-white'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border border-zinc-700'
+                ? 'bg-[#43ead6] text-[#051224]'
+                : 'bg-[#0d1f38] hover:bg-white/[0.08] text-slate-400 border border-[#182842]'
             } ${!currentVideo.videoId ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!currentVideo.videoId || isLoadingTimestampedTranscript}
           >
@@ -266,7 +266,7 @@ const TranscriptComponent = ({
         {(transcript || timestampedTranscript) && (
           <button
             onClick={copyTranscript}
-            className="text-xs flex items-center px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+            className="text-xs flex items-center px-3 py-2 bg-[#0d1f38] hover:bg-white/[0.08] border border-[#182842] rounded-lg text-slate-400 hover:text-white transition-colors"
           >
             <Copy size={12} className="mr-1" />
             {isCopied ? "Copied" : "Copy"}
@@ -275,14 +275,14 @@ const TranscriptComponent = ({
       </div>
 
       {isLoadingTimestampedTranscript && formattingProgress.progress > 0 && (
-        <div className="mb-3 p-3 bg-zinc-900 rounded-lg border border-zinc-800">
-          <div className="flex justify-between text-xs text-zinc-500 mb-2">
+        <div className="mb-3 p-3 bg-[#0d1f38] rounded-lg border border-[#182842]">
+          <div className="flex justify-between text-xs text-slate-400 mb-2">
             <span>Processing</span>
             <span>{formattingProgress.progress}%</span>
           </div>
-          <div className="w-full bg-zinc-800 rounded-full h-1.5">
+          <div className="w-full bg-[#0d1f38] rounded-full h-1.5">
             <div
-              className="bg-emerald-500 h-1.5 rounded-full transition-all"
+              className="bg-[#43ead6] h-1.5 rounded-full transition-all"
               style={{ width: `${formattingProgress.progress}%` }}
             ></div>
           </div>
@@ -290,7 +290,7 @@ const TranscriptComponent = ({
       )}
 
       <div
-        className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-64 overflow-y-auto text-zinc-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
+        className="bg-[#0d1f38] border border-[#182842] rounded-lg p-4 h-64 overflow-y-auto text-slate-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-[#1a2943] scrollbar-track-transparent"
       >
         {showTimestampedVersion ? (
           timestampedTranscript ? (
@@ -314,16 +314,16 @@ const TranscriptComponent = ({
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <SimpleSpinner size={24} className="mb-2 mx-auto" />
-              <p className="text-zinc-500 text-sm">Loading...</p>
+              <p className="text-slate-400 text-sm">Loading...</p>
             </div>
           </div>
         ) : transcriptError ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <p className="text-zinc-400 text-sm mb-4">No transcript available</p>
+            <p className="text-slate-400 text-sm mb-4">No transcript available</p>
             {onRetryTranscript && (
               <button
                 onClick={onRetryTranscript}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg transition-colors"
+                className="px-4 py-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] text-xs rounded-lg transition-colors"
               >
                 Retry
               </button>
@@ -331,13 +331,13 @@ const TranscriptComponent = ({
           </div>
         ) : transcript ? (
           transcript.split('\n').map((line, index) => (
-            <p key={index} className="mb-2 text-zinc-300 leading-relaxed">
+            <p key={index} className="mb-2 text-slate-300 leading-relaxed">
               {line}
             </p>
           ))
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p className="text-zinc-600 text-sm">Load a video to view transcript</p>
+            <p className="text-slate-500 text-sm">Load a video to view transcript</p>
           </div>
         )}
       </div>

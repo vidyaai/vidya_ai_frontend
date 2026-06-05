@@ -1,36 +1,17 @@
 // src/components/Courses/VideoPlayerContent.jsx
-// Dedicated video player page component with course sidebar navigation
-import { useState, useEffect } from 'react';
+// Full-page viewer for a course-video CourseMaterial. PlayerComponent
+// (uploaded MP4) sits on the left, MaterialChatBox on the right; chat
+// timestamps are clickable and seek the player via window.playerSeekTo.
+// No course sidebar — the side-by-side layout owns the page below the
+// global TopBar.
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  ArrowLeft,
-  Loader2,
-  FileText,
-  BookOpen,
-  Info,
-  Video,
-  GraduationCap,
-  Users,
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import TopBar from '../generic/TopBar';
 import { courseApi } from './courseApi';
-
-const PROFESSOR_SECTIONS = [
-  { key: 'overview', label: 'Course Overview', icon: Info },
-  { key: 'students', label: 'Enrolled Students', icon: Users },
-  { key: 'lecture-notes', label: 'Lecture Notes', icon: FileText },
-  { key: 'videos', label: 'Videos', icon: Video },
-  { key: 'assignments', label: 'Assignments', icon: BookOpen },
-  { key: 'tas', label: 'Teaching Assistants', icon: GraduationCap },
-];
-
-const STUDENT_SECTIONS = [
-  { key: 'overview', label: 'Course Overview', icon: Info },
-  { key: 'lecture-notes', label: 'Lecture Notes', icon: FileText },
-  { key: 'videos', label: 'Videos', icon: Video },
-  { key: 'assignments', label: 'Assignments', icon: BookOpen },
-  { key: 'tas', label: 'Teaching Assistants', icon: GraduationCap },
-];
+import PlayerComponent from '../Chat/PlayerComponent';
+import MaterialChatBox from './MaterialChatBox';
+import MaterialTranscriptPanel from './MaterialTranscriptPanel';
 
 const VideoPlayerContent = () => {
   const router = useRouter();
@@ -41,27 +22,31 @@ const VideoPlayerContent = () => {
   const videoTitle = searchParams.get('title') || '';
 
   const [course, setCourse] = useState(null);
+  const [material, setMaterial] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
+  const [, setCurrentTime] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const SECTIONS = role === 'professor' ? PROFESSOR_SECTIONS : STUDENT_SECTIONS;
 
   useEffect(() => {
     if (courseId && materialId) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, materialId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [courseData, downloadData] = await Promise.all([
+      const [courseData, downloadData, videoList] = await Promise.all([
         courseApi.getCourse(courseId),
         courseApi.downloadMaterial(courseId, materialId),
+        courseApi.listVideos(courseId),
       ]);
       setCourse(courseData);
       setVideoUrl(downloadData.download_url);
+      const found = (videoList || []).find((m) => m.id === materialId);
+      setMaterial(found || { id: materialId, title: decodeURIComponent(videoTitle), material_type: 'video' });
     } catch (err) {
       setError('Failed to load video.');
     } finally {
@@ -69,22 +54,26 @@ const VideoPlayerContent = () => {
     }
   };
 
-  const getBackUrl = () => {
-    const view = role === 'professor' ? 'my-assignments' : 'assigned-to-me';
-    return `/assignments?view=${view}&courseId=${courseId}&section=videos`;
-  };
-
   const handleBack = () => {
-    router.push(getBackUrl());
-  };
-
-  const handleSidebarClick = (sectionKey) => {
     const view = role === 'professor' ? 'my-assignments' : 'assigned-to-me';
-    router.push(`/assignments?view=${view}&courseId=${courseId}&section=${sectionKey}`);
+    router.push(`/assignments?view=${view}&courseId=${courseId}&section=videos`);
   };
 
   const handleNavigateToHome = () => {
     router.push('/home');
+  };
+
+  const handleSeekToTime = (seconds) => {
+    if (typeof window !== 'undefined' && typeof window.playerSeekTo === 'function') {
+      window.playerSeekTo(seconds);
+    }
+  };
+
+  const handleCaptureFrame = () => {
+    if (typeof window !== 'undefined' && typeof window.captureCurrentFrame === 'function') {
+      return window.captureCurrentFrame();
+    }
+    return null;
   };
 
   if (loading) {
@@ -112,23 +101,34 @@ const VideoPlayerContent = () => {
     );
   }
 
+  const currentVideo = {
+    videoId: material?.id || materialId,
+    sourceType: 'uploaded',
+    videoUrl,
+    title: decodeURIComponent(videoTitle) || material?.title || 'Video',
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
       <TopBar onNavigateToHome={handleNavigateToHome} />
 
-      {/* HEADER */}
+      {/* HEADER — back + title */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-5">
-          <div className="flex items-center space-x-4">
-            <button onClick={handleBack} className="p-2 text-gray-400 hover:text-white transition-colors">
-              <ArrowLeft size={24} />
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleBack}
+              className="p-2 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-gray-800"
+              title="Back"
+            >
+              <ArrowLeft size={20} />
             </button>
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                {decodeURIComponent(videoTitle) || 'Video Player'}
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-xl font-bold text-white truncate">
+                {decodeURIComponent(videoTitle) || material?.title || 'Video'}
               </h1>
               {course && (
-                <p className="text-gray-500 text-sm mt-0.5">
+                <p className="text-gray-500 text-xs md:text-sm mt-0.5 truncate">
                   {course.course_code ? `${course.course_code} — ` : ''}{course.title}
                 </p>
               )}
@@ -137,46 +137,38 @@ const VideoPlayerContent = () => {
         </div>
       </div>
 
-      {/* BODY: sidebar + video */}
-      <div className="flex-1 flex max-w-full mx-auto w-full">
-        {/* LEFT SIDEBAR */}
-        <aside className="w-64 flex-shrink-0 border-r border-gray-800 bg-gray-950">
-          <nav className="py-4">
-            {SECTIONS.map((s) => {
-              const Icon = s.icon;
-              const isActive = s.key === 'videos';
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => handleSidebarClick(s.key)}
-                  className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-gray-800/70 text-teal-400 border-l-2 border-teal-400'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800/40 border-l-2 border-transparent'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span>{s.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* RIGHT CONTENT AREA - Video Player */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-          <div className="max-w-4xl">
-            <div className="bg-black rounded-xl overflow-hidden shadow-2xl">
-              <video
-                src={videoUrl}
-                controls
-                autoPlay
-                className="w-full max-h-[70vh]"
-                controlsList="nodownload"
+      {/* BODY: player + transcript on the left, chat on the right.
+          PlayerComponent renders its own aspect-video container plus a
+          controls bar as a sibling div; if we wrap it in overflow-hidden
+          + fixed flex-basis the controls get clipped, so the player gets
+          natural height and the transcript flex-1's the remainder. */}
+      <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 md:gap-6 h-[calc(100vh-160px)] min-h-[720px]">
+          {/* Left column: video player on top, transcript underneath */}
+          <div className="flex flex-col gap-4 md:gap-5 min-h-0">
+            <div className="flex-shrink-0">
+              <PlayerComponent
+                currentVideo={currentVideo}
+                onTimeUpdate={(s) => setCurrentTime(s)}
+              />
+            </div>
+            <div className="flex-1 min-h-0">
+              <MaterialTranscriptPanel
+                materialId={material?.id}
+                onSeekToTime={handleSeekToTime}
               />
             </div>
           </div>
-        </main>
+
+          {/* Right column: chat */}
+          <div className="min-h-0">
+            <MaterialChatBox
+              material={material}
+              onSeekToTime={handleSeekToTime}
+              onCaptureFrame={handleCaptureFrame}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

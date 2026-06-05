@@ -4,11 +4,11 @@ import { parseMarkdown, formatTime, api } from '../generic/utils.jsx';
 import { useAuth } from '../../context/AuthContext';
 import PlayerComponent from '../Chat/PlayerComponent';
 
-const SharedChatPage = () => {
+const SharedChatPage = ({ initialData } = {}) => {
   // Extract share token from URL path
   const [shareToken, setShareToken] = useState(null);
   const { currentUser, loading: authLoading } = useAuth();
-  
+
   // Extract share token when component mounts or URL changes
   useEffect(() => {
     const path = window.location.pathname;
@@ -16,8 +16,11 @@ const SharedChatPage = () => {
     // Remove trailing slash from token if it exists
     setShareToken(token ? token.replace(/\/$/, '') : null);
   }, []);
-  const [sharedData, setSharedData] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  // When initialData is provided (embedded inside SharedResourceViewer), use it
+  // directly and skip the redundant fetch + auth cycle.
+  const [sharedData, setSharedData] = useState(initialData || null);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState(null);
   const [requiresAuth, setRequiresAuth] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -27,6 +30,7 @@ const SharedChatPage = () => {
 
 
   useEffect(() => {
+    if (initialData) return; // data already provided — skip fetch
     if (shareToken && !authLoading) {
       fetchSharedResource();
       setPresignedUrlFetched(false); // Reset flag when share token changes
@@ -168,7 +172,7 @@ const SharedChatPage = () => {
     }
   };
 
-  if (!shareToken) {
+  if (!initialData && !shareToken) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center">
@@ -179,7 +183,7 @@ const SharedChatPage = () => {
     );
   }
 
-  if (authLoading) {
+  if (!initialData && authLoading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center">
@@ -190,7 +194,7 @@ const SharedChatPage = () => {
     );
   }
 
-  if (loading) {
+  if (!initialData && loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center">
@@ -201,7 +205,7 @@ const SharedChatPage = () => {
     );
   }
 
-  if (error) {
+  if (!initialData && error) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">

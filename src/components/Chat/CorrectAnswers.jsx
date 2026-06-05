@@ -11,7 +11,7 @@ const CorrectAnswers = ({ quiz, userAnswers }) => {
         const userAnswer = userAnswers?.[q.id];
         const isCorrect = userAnswer === q.answer;
         return (
-          <div key={q.id || idx} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div key={q.id || idx} className="bg-[#0d1f38] rounded-lg p-4 border border-[#182842]">
             <div className="flex items-start justify-between mb-2">
               <h4 className="text-white font-semibold">Q{idx + 1}. {q.question}</h4>
               <span className={`text-xs px-2 py-1 rounded ${isCorrect ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>

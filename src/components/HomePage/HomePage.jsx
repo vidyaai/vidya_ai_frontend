@@ -1,15 +1,6 @@
 // src/components/HomePage/HomePage.jsx
 import { useState, useEffect } from 'react';
-import {
-  MessageSquare,
-  Globe,
-  Video,
-  Award,
-  BookOpen,
-  Lightbulb,
-  ArrowRight,
-  ClipboardList
-} from 'lucide-react';
+import { MessageSquare, Video, Award, BookOpen, Lightbulb, ArrowRight, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import TopBar from '../generic/TopBar';
 
@@ -17,9 +8,6 @@ const HomePage = ({ onNavigateToChat, onNavigateToGallery, onNavigateToAssignmen
   const { currentUser, userType } = useAuth();
   const [navigatingTo, setNavigatingTo] = useState(null);
 
-  // Fire navigation AFTER React has committed the overlay to the DOM.
-  // useEffect always runs after the browser has painted, so the loader
-  // is guaranteed to be visible before the page switch happens.
   useEffect(() => {
     if (!navigatingTo) return;
     if (navigatingTo === 'chat') onNavigateToChat(null);
@@ -32,97 +20,90 @@ const HomePage = ({ onNavigateToChat, onNavigateToGallery, onNavigateToAssignmen
   const assignmentFeature = userType === 'student'
     ? {
         icon: ClipboardList,
-        title: "Submit & View Assignments",
-        description: "Access assignments shared with you, submit your work, track due dates, and view grades and feedback from your professor.",
-        action: "View Assignments",
+        title: 'Submit & View Assignments',
+        description: 'Access assignments shared with you, submit your work, track due dates, and view grades and feedback from your professor.',
+        action: 'View Assignments',
         onClick: () => setNavigatingTo('assignments'),
-        gradient: "from-teal-500 to-cyan-500"
       }
     : {
         icon: ClipboardList,
-        title: "Create & Manage Assignments",
-        description: "Create assignments manually or with AI-powered generation. Share with students, review submissions, and provide grades and feedback.",
-        action: "Manage Assignments",
+        title: 'Create & Manage Assignments',
+        description: 'Create assignments manually or with AI-powered generation. Share with students, review submissions, and provide grades and feedback.',
+        action: 'Manage Assignments',
         onClick: () => setNavigatingTo('assignments'),
-        gradient: "from-teal-500 to-cyan-500"
       };
 
   const features = [
     {
       icon: MessageSquare,
-      title: "Chat with Videos",
-      description: "Upload YouTube videos and have intelligent conversations about the content. Ask questions, get summaries, and understand complex topics better.",
-      action: "Start Video Chat",
+      title: 'Chat with Videos',
+      description: 'Upload YouTube videos and have intelligent conversations about the content. Ask questions, get summaries, and understand complex topics better.',
+      action: 'Start Video Chat',
       onClick: () => setNavigatingTo('chat'),
-      gradient: "from-blue-500 to-cyan-500"
     },
     assignmentFeature,
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      {/* Page transition loader overlay */}
+    <div className="min-h-screen bg-[#071224]">
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[34rem] bg-[radial-gradient(circle_at_top,rgba(67,234,214,0.10),transparent_45%)]" />
+      <div className="pointer-events-none fixed right-[-10rem] top-[18rem] h-[24rem] w-[24rem] rounded-full bg-[#43ead6]/5 blur-3xl" />
+
+      {/* Page transition overlay */}
       {navigatingTo && (
-        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
-              <defs>
-                <mask id="crescent-mask-home">
-                  <circle cx="40" cy="40" r="36" fill="white" />
-                  <circle cx="43" cy="40" r="37" fill="black" />
-                </mask>
-              </defs>
-              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-home)" />
-            </svg>
-          </div>
+        <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
+          <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+            <defs>
+              <mask id="crescent-mask-home">
+                <circle cx="40" cy="40" r="36" fill="white" />
+                <circle cx="43" cy="40" r="37" fill="black" />
+              </mask>
+            </defs>
+            <circle cx="40" cy="40" r="36" fill="#43ead6" mask="url(#crescent-mask-home)" />
+          </svg>
         </div>
       )}
-      {/* Header */}
+
       <TopBar />
 
-      {/* Main Content */}
-      <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-12">
-        {/* Welcome Section */}
+      <main className="relative mx-auto max-w-6xl px-5 sm:px-6 py-16">
+        {/* Hero */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Welcome to Your AI Learning Hub
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#43ead6] mb-4">
+            Your AI Learning Hub
+          </p>
+          <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-white mb-4">
+            Welcome back{currentUser?.displayName ? `, ${currentUser.displayName.split(' ')[0]}` : ''}
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Unlock the power of AI-driven education. Chat with videos, solve doubts instantly, 
-            and take adaptive quizzes with less friction.
+          <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+            Unlock the power of AI-driven education. Chat with videos, solve doubts instantly,
+            and manage assignments with ease.
           </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        {/* Feature cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
           {features.map((feature, index) => {
-            const IconComponent = feature.icon;
+            const Icon = feature.icon;
             return (
               <div
                 key={index}
-                className="group bg-gray-900 rounded-2xl p-8 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10 flex flex-col h-full"
+                className="group rounded-[28px] border border-[#182842] bg-white/[0.04] p-8 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col h-full hover:border-[#43ead6]/30 transition-colors duration-300"
               >
                 <div className="flex-1">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <IconComponent size={28} className="text-white" />
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#43ead6]/12 text-[#43ead6] group-hover:bg-[#43ead6]/20 transition-colors">
+                    <Icon className="h-6 w-6" />
                   </div>
-                  
-                  <h3 className="text-2xl font-bold text-white mb-4">
-                    {feature.title}
-                  </h3>
-                  
-                  <p className="text-gray-400 leading-relaxed">
-                    {feature.description}
-                  </p>
+                  <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
+                  <p className="text-sm leading-6 text-slate-300">{feature.description}</p>
                 </div>
-                
                 <div className="mt-6">
                   <button
                     onClick={feature.onClick}
-                    className={`group/btn inline-flex items-center px-6 py-3 bg-gradient-to-r ${feature.gradient} text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105`}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#43ead6] px-5 py-2.5 text-sm font-medium text-[#051224] hover:bg-[#43ead6]/90 transition"
                   >
                     {feature.action}
-                    <ArrowRight size={18} className="ml-2 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                    <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </div>
               </div>
@@ -130,80 +111,57 @@ const HomePage = ({ onNavigateToChat, onNavigateToGallery, onNavigateToAssignmen
           })}
         </div>
 
-        {/* Stats Section */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-8 border border-gray-700">
+        {/* Stats */}
+        <div className="rounded-[28px] border border-[#182842] bg-white/[0.04] p-8 mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Video size={32} className="text-white" />
+            {[
+              { icon: Video, value: '1,000+', label: 'Videos Analyzed' },
+              { icon: Lightbulb, value: '5,000+', label: 'Doubts Solved' },
+              { icon: BookOpen, value: '10,000+', label: 'Quiz Questions' },
+            ].map(({ icon: Icon, value, label }) => (
+              <div key={label} className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#43ead6]/12 flex items-center justify-center mx-auto mb-4 text-[#43ead6]">
+                  <Icon size={26} />
+                </div>
+                <h3 className="text-3xl font-semibold text-white mb-1">{value}</h3>
+                <p className="text-sm text-slate-400">{label}</p>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-2">1000+</h3>
-              <p className="text-gray-400">Videos Analyzed</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lightbulb size={32} className="text-white" />
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-2">5000+</h3>
-              <p className="text-gray-400">Doubts Solved</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen size={32} className="text-white" />
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-2">10000+</h3>
-              <p className="text-gray-400">Quiz Questions</p>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Quick Start Section */}
-        <div className="mt-16 text-center">
-          <h3 className="text-3xl font-bold text-white mb-8">Ready to Start Learning?</h3>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {/* Quick start */}
+        <div className="text-center">
+          <h3 className="text-2xl font-semibold text-white mb-8">Ready to start?</h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
             <button
               onClick={() => setNavigatingTo('chat')}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg"
+              className="inline-flex items-center gap-2 rounded-full bg-[#43ead6] px-6 py-3 text-sm font-medium text-[#051224] hover:bg-[#43ead6]/90 transition"
             >
-              <MessageSquare size={20} className="mr-2" />
+              <MessageSquare size={17} />
               Chat with a Video
             </button>
-            {userType === 'student' ? (
-              <button
-                onClick={() => setNavigatingTo('assignments')}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
-              >
-                <ClipboardList size={20} className="mr-2" />
-                View Assignments
-              </button>
-            ) : (
-              <button
-                onClick={() => setNavigatingTo('assignments:ai-generator')}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:scale-105 shadow-lg"
-              >
-                <ClipboardList size={20} className="mr-2" />
-                Generate Assignment
-              </button>
-            )}
+            <button
+              onClick={() => setNavigatingTo(userType === 'student' ? 'assignments' : 'assignments:ai-generator')}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition"
+            >
+              <ClipboardList size={17} />
+              {userType === 'student' ? 'View Assignments' : 'Generate Assignment'}
+            </button>
             <button
               onClick={() => setNavigatingTo('pricing')}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all duration-300 hover:scale-105 shadow-lg"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition"
             >
-              <Award size={20} className="mr-2" />
+              <Award size={17} />
               View Pricing
             </button>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 border-t border-gray-800 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-400">
-            <p>&copy; 2024 VidyaAI. Empowering education through artificial intelligence.</p>
-          </div>
+      <footer className="relative border-t border-[#12213a] mt-20">
+        <div className="mx-auto max-w-6xl px-5 sm:px-6 py-8 text-center text-slate-400 text-sm">
+          <p>© 2024 VidyaAI. Empowering education through artificial intelligence.</p>
         </div>
       </footer>
     </div>

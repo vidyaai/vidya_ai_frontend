@@ -195,7 +195,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
 
       {isFetchingQuiz ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mr-3"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#43ead6] mr-3"></div>
           <span className="text-gray-300">Loading quiz questions...</span>
         </div>
       ) : quizData.length === 0 ? (
@@ -208,7 +208,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
       ) : !quizComplete ? (
         <div className="space-y-4">
           {/* Progress bar */}
-          <div className="w-full bg-zinc-700 rounded-full h-2">
+          <div className="w-full bg-white/[0.08] rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentQuestionIndex + 1) / quizData.length) * 100}%` }}
@@ -220,7 +220,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
               Question {currentQuestionIndex + 1} of {quizData.length}
             </h4>
             {currentQuestion?.difficulty && (
-              <span className="text-xs px-2 py-1 rounded-full bg-zinc-700 text-gray-300 capitalize">
+              <span className="text-xs px-2 py-1 rounded-full bg-white/[0.08] text-gray-300 capitalize">
                 {currentQuestion.difficulty}
               </span>
             )}
@@ -238,14 +238,14 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
                   key={i} 
                   className={`flex items-start p-4 rounded-lg cursor-pointer border transition-all duration-200 ${
                     checked 
-                      ? 'border-emerald-500 bg-emerald-900 bg-opacity-40 shadow-lg' 
-                      : 'border-gray-700 hover:bg-zinc-800 hover:border-gray-600'
+                      ? 'border-[#43ead6] bg-[#43ead6]/10 shadow-lg' 
+                      : 'border-[#182842] hover:bg-white/5 hover:border-[#1a2943]'
                   }`}
                 >
                   <input
                     type="radio"
                     name={`q-${currentQuestion.id}`}
-                    className="mt-1 mr-3 text-emerald-500 focus:ring-emerald-500"
+                    className="mt-1 mr-3 text-[#43ead6] focus:ring-[#43ead6]"
                     checked={checked}
                     onChange={() => handleSelectAnswer(opt)}
                   />
@@ -258,7 +258,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
           <div className="flex justify-between items-center mt-6">
             <button
               onClick={handleRestartQuiz}
-              className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors text-sm"
+              className="px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg transition-colors text-sm"
             >
               Restart Quiz
             </button>
@@ -293,7 +293,7 @@ const QuizPanel = ({ isOpen, videoId, onClose, onSystemMessage }) => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => setShowCorrectAnswers(!showCorrectAnswers)}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-[#0d1f38] hover:bg-white/[0.08] text-white rounded-lg transition-colors"
             >
               {showCorrectAnswers ? 'Hide Answers' : 'Show Correct Answers'}
             </button>

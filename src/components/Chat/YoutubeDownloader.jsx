@@ -138,7 +138,7 @@ const YoutubeDownloader = ({ videoId, videoTitle }) => {
         disabled={isDownloading || !videoId}
         className={`flex items-center px-5 py-3 rounded-2xl transition-all duration-200 font-medium shadow-lg ${
           isDownloading
-            ? 'bg-gray-700/60 text-gray-400 cursor-not-allowed border border-gray-600/50'
+            ? 'bg-white/[0.06] text-gray-400 cursor-not-allowed border border-[#1a2943]'
             : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white hover:scale-105 active:scale-95 hover:shadow-blue-500/30'
         }`}
       >
@@ -147,12 +147,12 @@ const YoutubeDownloader = ({ videoId, videoTitle }) => {
       </button>
 
       {isDownloading && (
-        <div className="mt-3 p-3 bg-gray-800/40 rounded-xl border border-gray-700/50">
+        <div className="mt-3 p-3 bg-white/[0.04] rounded-xl border border-[#182842]">
           <div className="flex justify-between text-xs text-gray-400 mb-2">
             <span className="font-medium">Download Progress</span>
             <span className="font-bold text-blue-400">{downloadProgress}%</span>
           </div>
-          <div className="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden border border-gray-700/50">
+          <div className="w-full bg-white/[0.05] rounded-full h-2.5 overflow-hidden border border-[#182842]">
             <div
               className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full transition-all duration-300"
               style={{ width: `${downloadProgress}%` }}

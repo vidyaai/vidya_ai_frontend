@@ -99,12 +99,12 @@ const SummarizeVideoButton = ({ currentVideo, transcript }) => {
   };
 
   return (
-    <div className="w-full p-4 bg-gray-800 rounded-xl shadow-lg">
+    <div className="w-full p-4 bg-[#0d1f38] rounded-xl shadow-lg">
       {/* Default state */}
       {!isGenerating && !success && !error && (
         <button
           onClick={handleSummarize}
-          className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white rounded-xl font-semibold shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+          className="w-full px-6 py-4 bg-gradient-to-r from-[#43ead6] to-[#43ead6]/80 hover:from-[#43ead6]/90 hover:to-[#43ead6]/70 text-[#051224] rounded-xl font-semibold shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
         >
           <FileText size={20} />
           Summarize Video
@@ -116,14 +116,14 @@ const SummarizeVideoButton = ({ currentVideo, transcript }) => {
         <div className="space-y-3">
           <button
             disabled
-            className="w-full px-6 py-4 bg-gray-700 text-white rounded-xl font-semibold flex items-center justify-center gap-3 opacity-75 cursor-not-allowed"
+            className="w-full px-6 py-4 bg-white/[0.08] text-white rounded-xl font-semibold flex items-center justify-center gap-3 opacity-75 cursor-not-allowed"
           >
             <Loader className="animate-spin" size={20} />
             {stage}
           </button>
-          <div className="w-full bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-white/[0.08] rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-[#43ead6] to-[#43ead6]/80 h-2 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>

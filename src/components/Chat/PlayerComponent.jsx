@@ -763,7 +763,7 @@ const PlayerComponent = ({
 
   return (
     <div className="w-full">
-      <div className="relative overflow-hidden rounded-lg bg-black aspect-video border border-zinc-800">
+      <div className="relative overflow-hidden rounded-lg bg-black aspect-video border border-[#182842]">
         {isHtml5 ? (
           <video
             key={`uploaded-${currentVideo?.videoId || 'no-video'}`}
@@ -777,8 +777,8 @@ const PlayerComponent = ({
         ) : currentVideo?.videoId ? (
           <div ref={playerContainerRef} className="absolute top-0 left-0 w-full h-full"></div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
-            <p className="text-zinc-600 text-sm">Load a video</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#071224]">
+            <p className="text-slate-500 text-sm">Load a video</p>
           </div>
         )}
 
@@ -792,7 +792,7 @@ const PlayerComponent = ({
         )}
 
         {showUploadNotification && (
-          <div className="absolute top-4 right-4 bg-emerald-600 text-white p-4 rounded-lg max-w-sm z-20">
+          <div className="absolute top-4 right-4 bg-[#43ead6] text-[#051224] p-4 rounded-lg max-w-sm z-20">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="font-medium text-sm mb-1">Video Ready</p>
@@ -809,11 +809,11 @@ const PlayerComponent = ({
         )}
       </div>
 
-      <div className="mt-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
+      <div className="mt-3 p-3 bg-[#0d1f38] border border-[#182842] rounded-lg">
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
-            className="p-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white transition-colors disabled:opacity-50"
+            className="p-2 bg-[#43ead6] hover:bg-[#43ead6]/90 rounded-lg text-[#051224] transition-colors disabled:opacity-50"
             disabled={!currentVideo?.videoId}
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
@@ -821,7 +821,7 @@ const PlayerComponent = ({
 
           <button
             onClick={toggleMute}
-            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-[#0d1f38] rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
             disabled={!currentVideo?.videoId}
           >
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -836,13 +836,13 @@ const PlayerComponent = ({
               onChange={handleSliderChange}
               onMouseUp={handleSliderRelease}
               onTouchEnd={handleSliderRelease}
-              className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer"
+              className="w-full h-1 bg-[#0d1f38] rounded-full appearance-none cursor-pointer"
               disabled={!currentVideo?.videoId}
               style={{
-                background: `linear-gradient(to right, rgb(5, 150, 105) 0%, rgb(5, 150, 105) ${(sliderPosition / (duration || 1)) * 100}%, rgb(39, 39, 42) ${(sliderPosition / (duration || 1)) * 100}%, rgb(39, 39, 42) 100%)`
+                background: `linear-gradient(to right, #43ead6 0%, #43ead6 ${(sliderPosition / (duration || 1)) * 100}%, #12213a ${(sliderPosition / (duration || 1)) * 100}%, #12213a 100%)`
               }}
             />
-            <div className="flex justify-between text-xs text-zinc-600 mt-1">
+            <div className="flex justify-between text-xs text-slate-500 mt-1">
               <span>{formatTime(currentTime || 0)}</span>
               <span>{formatTime(duration || 0)}</span>
             </div>
@@ -850,7 +850,7 @@ const PlayerComponent = ({
 
           <button
             onClick={skipBackward}
-            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-[#0d1f38] rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
             disabled={!currentVideo?.videoId}
           >
             <Rewind size={16} />
@@ -858,7 +858,7 @@ const PlayerComponent = ({
 
           <button
             onClick={skipForward}
-            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-[#0d1f38] rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
             disabled={!currentVideo?.videoId}
           >
             <FastForward size={16} />

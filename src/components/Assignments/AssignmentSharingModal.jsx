@@ -357,7 +357,7 @@ const AssignmentSharingModal = ({ assignment, onClose, onRefresh }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white/5 border border-[#1a2943] rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#1a2943] border border-[#1a2943] rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div className="flex items-center gap-2 min-w-0 flex-1">

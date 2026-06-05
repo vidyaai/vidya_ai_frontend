@@ -184,6 +184,47 @@ export const courseApi = {
     );
     return response.data;
   },
+
+  // ── Class Performance ─────────────────────────────────────────────────
+
+  async getClassPerformance(courseId, assignmentIds = []) {
+    const params = new URLSearchParams();
+    if (assignmentIds.length) params.append('assignment_ids', assignmentIds.join(','));
+    const response = await api.get(
+      `/api/courses/${courseId}/performance?${params.toString()}`,
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
+
+  async exportClassPerformance(courseId, assignmentIds, weightages) {
+    const response = await api.post(
+      `/api/courses/${courseId}/performance/export`,
+      { assignment_ids: assignmentIds, weightages },
+      { headers: HEADERS, responseType: 'blob' }
+    );
+    return response;
+  },
+
+  // ── Invitation acceptance ─────────────────────────────────────────────
+
+  async acceptEnrollmentInvite(token) {
+    const response = await api.post(
+      '/api/enrollments/accept',
+      { token },
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
+
+  async acceptShareInvite(token) {
+    const response = await api.post(
+      '/api/sharing/accept',
+      { token },
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
 };
 
 export default courseApi;

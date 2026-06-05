@@ -66,16 +66,16 @@ const AssignmentManager = ({ onNavigateToHome }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-[#071224]">
       {/* Top Navigation */}
       <TopBar onNavigateToHome={onNavigateToHome} />
       
       {/* Page Header */}
-      <div className="bg-gray-900 border-b border-gray-800">
+      <div className="bg-[#0d1f38] border-b border-[#182842]">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-10">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-white">AI Assignment Manager</h1>
-            <p className="text-gray-400 mt-3 text-lg">Choose how you'd like to use assignments</p>
+            <p className="text-slate-400 mt-3 text-lg">Choose how you'd like to use assignments</p>
           </div>
         </div>
       </div>
@@ -87,7 +87,7 @@ const AssignmentManager = ({ onNavigateToHome }) => {
           {/* Instructor Card */}
           <div
             onClick={handleNavigateToMyAssignments}
-            className="group relative bg-gray-900 rounded-2xl border border-gray-800 hover:border-teal-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/10 cursor-pointer overflow-hidden"
+            className="group relative bg-[#0d1f38] rounded-2xl border border-[#182842] hover:border-teal-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/10 cursor-pointer overflow-hidden"
           >
             {/* Gradient accent bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-cyan-500 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
@@ -107,7 +107,7 @@ const AssignmentManager = ({ onNavigateToHome }) => {
                 Create & Manage Assignments
               </h3>
               
-              <p className="text-gray-400 leading-relaxed mb-6 text-[15px]">
+              <p className="text-slate-400 leading-relaxed mb-6 text-[15px]">
                 Build assignments manually or generate them with AI from videos, PDFs, or custom prompts. 
                 Share with students, review submissions, and grade — all in one place.
               </p>
@@ -122,19 +122,19 @@ const AssignmentManager = ({ onNavigateToHome }) => {
           {/* Student Card */}
           <div
             onClick={handleNavigateToAssignedToMe}
-            className="group relative bg-gray-900 rounded-2xl border border-gray-800 hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer overflow-hidden"
+            className="group relative bg-[#0d1f38] rounded-2xl border border-[#182842] hover:border-[#43ead6]/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer overflow-hidden"
           >
             {/* Gradient accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#43ead6]/40 to-[#43ead6]/20 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
             
             <div className="p-8 pt-9">
               {/* Role badge */}
-              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
-                <BookOpen size={14} className="text-blue-400 mr-1.5" />
-                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">For Students</span>
+              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#43ead6]/10 border border-[#43ead6]/20 mb-6">
+                <BookOpen size={14} className="text-[#43ead6] mr-1.5" />
+                <span className="text-xs font-semibold text-[#43ead6] uppercase tracking-wide">For Students</span>
               </div>
               
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/20">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#43ead6]/40 to-[#43ead6]/20 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-[#43ead6]/10">
                 <Send size={26} className="text-white" />
               </div>
               
@@ -142,12 +142,12 @@ const AssignmentManager = ({ onNavigateToHome }) => {
                 Submit & View Assignments
               </h3>
               
-              <p className="text-gray-400 leading-relaxed mb-6 text-[15px]">
+              <p className="text-slate-400 leading-relaxed mb-6 text-[15px]">
                 Access assignments shared with you, complete them in-app or upload your work. 
                 Track due dates, check your submission status, and view grades and feedback.
               </p>
               
-              <div className="flex items-center text-blue-400 font-medium group-hover:translate-x-1 transition-transform duration-300">
+              <div className="flex items-center text-[#43ead6] font-medium group-hover:translate-x-1 transition-transform duration-300">
                 <span>View Assignments</span>
                 <ArrowRight size={18} className="ml-2" />
               </div>

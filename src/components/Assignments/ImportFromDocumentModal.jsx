@@ -143,16 +143,16 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-xl border border-gray-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#0d1f38] rounded-xl border border-[#182842] w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-[#182842]">
           <div>
             <h2 className="text-2xl font-bold text-white">Import from Document</h2>
-            <p className="text-gray-400 mt-1">Upload an assignment document to extract and import existing questions</p>
+            <p className="text-slate-400 mt-1">Upload an assignment document to extract and import existing questions</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
             <X size={24} />
           </button>
@@ -162,7 +162,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
         <div className="p-6">
           {/* File Upload Area */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-3">
+            <label className="block text-sm font-medium text-slate-300 mb-3">
               Upload Document
             </label>
             
@@ -170,7 +170,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
               className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                 dragActive 
                   ? 'border-teal-500 bg-teal-500/10' 
-                  : 'border-gray-700 hover:border-gray-600'
+                  : 'border-[#1a2943] hover:border-white/20'
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -192,7 +192,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
                   </div>
                   <div>
                     <p className="text-white font-medium">{selectedFile.name}</p>
-                    <p className="text-gray-400 text-sm">{formatFileSize(selectedFile.size)}</p>
+                    <p className="text-slate-400 text-sm">{formatFileSize(selectedFile.size)}</p>
                   </div>
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -203,17 +203,17 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center w-16 h-16 bg-gray-800 rounded-full mx-auto">
-                    <Upload size={32} className="text-gray-400" />
+                  <div className="flex items-center justify-center w-16 h-16 bg-white/5 rounded-full mx-auto">
+                    <Upload size={32} className="text-slate-400" />
                   </div>
                   <div>
                     <p className="text-white font-medium mb-2">
                       Drop your document here, or <span className="text-teal-400">browse</span>
                     </p>
-                    {/* <p className="text-gray-400 text-sm">
+                    {/* <p className="text-slate-400 text-sm">
                       Supports: PDF, Word, Text, Markdown, HTML, CSV, JSON (max 10MB)
                     </p> */}
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-slate-400 text-sm">
                       Supports: PDF (max 10MB)
                     </p>
                   </div>
@@ -235,12 +235,12 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
 
           {/* File Info */}
           {selectedFile && !error && (
-            <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+            <div className="mb-6 p-4 bg-white/5 rounded-lg">
               <div className="flex items-start space-x-3">
-                <File size={20} className="text-gray-400 flex-shrink-0 mt-1" />
+                <File size={20} className="text-slate-400 flex-shrink-0 mt-1" />
                 <div className="flex-1">
                   <h4 className="text-white font-medium">Ready to Import</h4>
-                  <p className="text-gray-400 text-sm mt-1">
+                  <p className="text-slate-400 text-sm mt-1">
                     Your document will be analyzed using AI to extract existing assignment questions and import them into the Assignment Builder.
                     This process may take a few moments.
                   </p>
@@ -250,12 +250,12 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
           )}
 
           {/* Supported Formats Info */}
-          {/* <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          {/* <div className="mb-6 p-4 bg-[#43ead6]/10 border border-[#43ead6]/20 rounded-lg">
             <div className="flex items-start space-x-3">
-              <FileText size={20} className="text-blue-400 flex-shrink-0 mt-1" />
+              <FileText size={20} className="text-[#43ead6] flex-shrink-0 mt-1" />
               <div>
-                <h4 className="text-blue-400 font-medium">Supported Formats</h4>
-                <p className="text-blue-300 text-sm mt-1">
+                <h4 className="text-[#43ead6] font-medium">Supported Formats</h4>
+                <p className="text-[#43ead6] text-sm mt-1">
                   PDF documents, Word files (.doc, .docx), plain text (.txt), Markdown (.md), 
                   HTML files, CSV data, and JSON files are supported.
                 </p>
@@ -265,10 +265,10 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-800">
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-[#182842]">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
             disabled={parsing}
           >
             Cancel
@@ -285,7 +285,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
           ) : parsing ? (
             <button
               disabled
-              className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-medium rounded-lg cursor-not-allowed"
+              className="inline-flex items-center px-6 py-2 bg-white/10 text-white font-medium rounded-lg cursor-not-allowed"
             >
               <Loader2 size={18} className="mr-2 animate-spin" />
               Importing Document...
@@ -293,7 +293,7 @@ const ImportFromDocumentModal = ({ onClose, onParsed }) => {
           ) : (
             <button
               onClick={handleParse}
-              className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+              className="inline-flex items-center px-6 py-2 bg-[#43ead6] text-[#051224] font-medium rounded-lg hover:bg-[#43ead6]/80 transition-all duration-300"
             >
               <FileText size={18} className="mr-2" />
               Import Document

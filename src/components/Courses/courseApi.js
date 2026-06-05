@@ -216,6 +216,15 @@ export const courseApi = {
     );
     return response.data;
   },
+
+  async acceptShareInvite(token) {
+    const response = await api.post(
+      '/api/sharing/accept',
+      { token },
+      { headers: HEADERS }
+    );
+    return response.data;
+  },
 };
 
 export default courseApi;

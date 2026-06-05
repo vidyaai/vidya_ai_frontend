@@ -814,7 +814,7 @@ const PlayerComponent = ({
           <button
             onClick={togglePlay}
             className="p-2 bg-[#43ead6] hover:bg-[#43ead6]/90 rounded-lg text-[#051224] transition-colors disabled:opacity-50"
-            disabled={!currentVideo?.videoId}
+            disabled={!playerReady}
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
           </button>
@@ -822,7 +822,7 @@ const PlayerComponent = ({
           <button
             onClick={toggleMute}
             className="p-2 hover:bg-[#0d1f38] rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-            disabled={!currentVideo?.videoId}
+            disabled={!playerReady}
           >
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
@@ -837,7 +837,7 @@ const PlayerComponent = ({
               onMouseUp={handleSliderRelease}
               onTouchEnd={handleSliderRelease}
               className="w-full h-1 bg-[#0d1f38] rounded-full appearance-none cursor-pointer"
-              disabled={!currentVideo?.videoId}
+              disabled={!playerReady}
               style={{
                 background: `linear-gradient(to right, #43ead6 0%, #43ead6 ${(sliderPosition / (duration || 1)) * 100}%, #12213a ${(sliderPosition / (duration || 1)) * 100}%, #12213a 100%)`
               }}
@@ -851,7 +851,7 @@ const PlayerComponent = ({
           <button
             onClick={skipBackward}
             className="p-2 hover:bg-[#0d1f38] rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-            disabled={!currentVideo?.videoId}
+            disabled={!playerReady}
           >
             <Rewind size={16} />
           </button>
@@ -859,7 +859,7 @@ const PlayerComponent = ({
           <button
             onClick={skipForward}
             className="p-2 hover:bg-[#0d1f38] rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-            disabled={!currentVideo?.videoId}
+            disabled={!playerReady}
           >
             <FastForward size={16} />
           </button>

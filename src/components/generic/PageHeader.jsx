@@ -60,25 +60,23 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
   return (
     <div className="flex items-center justify-between mb-6">
       {navigatingTo && (
-        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
-              <defs>
-                <mask id="crescent-mask-pageheader">
-                  <circle cx="40" cy="40" r="36" fill="white" />
-                  <circle cx="43" cy="40" r="37" fill="black" />
-                </mask>
-              </defs>
-              <circle cx="40" cy="40" r="36" fill="white" mask="url(#crescent-mask-pageheader)" />
-            </svg>
-          </div>
+        <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
+          <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
+            <defs>
+              <mask id="crescent-mask-pageheader">
+                <circle cx="40" cy="40" r="36" fill="white" />
+                <circle cx="43" cy="40" r="37" fill="black" />
+              </mask>
+            </defs>
+            <circle cx="40" cy="40" r="36" fill="#43ead6" mask="url(#crescent-mask-pageheader)" />
+          </svg>
         </div>
       )}
       <div className="flex items-center space-x-3">
-        <img 
-          src="/logo-new-2.png" 
-          alt="Vidya AI Logo" 
-          className="h-10 w-auto rounded-md"
+        <img
+          src="/images/vidya-ai-logo-1.png"
+          alt="Vidya AI Logo"
+          className="h-8 w-auto"
         />
         <h2 className="text-2xl font-bold text-white">{title}</h2>
       </div>
@@ -87,7 +85,7 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+          className="p-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors duration-200"
           aria-label="Navigation menu"
         >
           {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -95,7 +93,7 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
 
         {/* Dropdown Menu */}
         {isMenuOpen && (
-          <div className="absolute right-0 top-12 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-12 w-64 bg-[#0d1f38] border border-[#182842] rounded-xl shadow-2xl z-50 overflow-hidden">
             <div className="p-2">
               {navigationItems.map((item, index) => {
                 const IconComponent = item.icon;
@@ -108,8 +106,8 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
                     }}
                     className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors duration-200 ${
                       item.active
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                        ? 'bg-[#43ead6] text-[#051224]'
+                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
                     <IconComponent size={18} className="mr-3" />
@@ -119,7 +117,7 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
               })}
 
               {/* Divider */}
-              <div className="border-t border-gray-700 my-2"></div>
+              <div className="border-t border-[#182842] my-2"></div>
 
               {/* Home option */}
               <button
@@ -127,7 +125,7 @@ const PageHeader = ({ title, onNavigateToChat, onNavigateToGallery, onNavigateTo
                   setIsMenuOpen(false);
                   setNavigatingTo('home');
                 }}
-                className="w-full flex items-center px-4 py-3 text-left text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors duration-200"
+                className="w-full flex items-center px-4 py-3 text-left text-slate-300 hover:bg-white/5 hover:text-white rounded-lg transition-colors duration-200"
               >
                 <Home size={18} className="mr-3" />
                 <span className="font-medium">Home</span>

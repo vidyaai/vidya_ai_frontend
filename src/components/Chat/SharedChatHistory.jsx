@@ -51,10 +51,10 @@ const SharedChatHistory = ({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-0 mt-2 mr-2 z-40 w-96 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
-      <div className="px-4 py-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+    <div className="absolute right-0 top-0 mt-2 mr-2 z-40 w-96 bg-[#0d1f38] border border-[#182842] rounded-xl shadow-2xl overflow-hidden">
+      <div className="px-4 py-3 bg-[#0d1f38] border-b border-[#182842] flex items-center justify-between">
         <div className="text-white font-semibold text-sm flex items-center gap-2">
-          <Share2 size={16} className="text-indigo-400" />
+          <Share2 size={16} className="text-[#43ead6]" />
           Chats Shared with Me
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-sm">✕</button>
@@ -76,17 +76,17 @@ const SharedChatHistory = ({
           sharedSessions.map((session) => (
             <div
               key={session.session_id}
-              className="border-b border-gray-700 last:border-b-0"
+              className="border-b border-[#182842] last:border-b-0"
             >
               <button
                 onClick={() => onSelectSession?.(session)}
-                className="w-full text-left px-4 py-3 hover:bg-gray-800 transition-colors group cursor-pointer"
+                className="w-full text-left px-4 py-3 hover:bg-[#0d1f38] transition-colors group cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="text-white text-sm font-medium truncate flex-1">
                     {session.title || 'Shared Chat'}
                   </div>
-                  <Share2 size={14} className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Share2 size={14} className="text-[#43ead6] opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 
                 <div className="text-gray-400 text-xs mb-2 flex items-center gap-2">
@@ -97,7 +97,7 @@ const SharedChatHistory = ({
                 </div>
                 
                 {session.share_title && (
-                  <div className="text-indigo-400 text-xs mb-2">
+                  <div className="text-[#43ead6] text-xs mb-2">
                     "{session.share_title}"
                   </div>
                 )}

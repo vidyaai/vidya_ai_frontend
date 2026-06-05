@@ -133,6 +133,29 @@ export const assignmentApi = {
     return response.data;
   },
 
+  // Submit (or update) the creator's review of a generated assignment
+  async submitAssignmentReview(assignmentId, { rating, comment }) {
+    const response = await api.post(
+      `/api/assignments/${assignmentId}/review`,
+      { rating, comment: comment ?? null },
+      { headers: { 'ngrok-skip-browser-warning': 'true' } }
+    );
+    return response.data;
+  },
+
+  // Fetch the creator's existing review, or null if none exists
+  async getAssignmentReview(assignmentId) {
+    try {
+      const response = await api.get(`/api/assignments/${assignmentId}/review`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      return response.data;
+    } catch (err) {
+      if (err?.response?.status === 404) return null;
+      throw err;
+    }
+  },
+
   // Generate assignment with real-time SSE log streaming
   async generateAssignmentStream(generateData, onLogEvent) {
     const { auth } = await import('../../firebase/config');

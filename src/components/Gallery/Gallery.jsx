@@ -11,7 +11,7 @@ const SectionTabs = ({ section, setSection }) => {
         <button
           key={s}
           onClick={() => setSection(s)}
-          className={`px-3 py-2 rounded-lg text-sm ${section === s ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+          className={`px-3 py-2 rounded-lg text-sm ${section === s ? 'bg-[#43ead6] text-[#051224]' : 'bg-white/5 text-slate-300 hover:bg-white/[0.08]'}`}
         >
           {s === 'uploaded' ? 'Uploaded' : s === 'youtube' ? 'YouTube' : 'Shared to Me'}
         </button>
@@ -438,7 +438,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
   return (
     <div className="w-full">
       {navigatingTo && (
-        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
             <defs>
               <mask id="crescent-mask-gallery">
@@ -486,13 +486,13 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
         </div>
       </div>
 
-      <div className="w-full bg-gray-900 border border-gray-800 rounded-2xl p-4">
+      <div className="w-full bg-[#0d1f38] border border-[#182842] rounded-2xl p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           {currentFolderId && (
             <button
               onClick={() => setCurrentFolderId(folderMap.get(currentFolderId)?.parent_id || null)}
-              className="w-full sm:w-auto mb-4 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
+              className="w-full sm:w-auto mb-4 px-3 py-2 bg-white/5 hover:bg-white/[0.08] text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
             >
               <ArrowLeft size={16} />
               Up
@@ -510,7 +510,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                 refreshContentInfo();
               }
             }}
-            className="w-full sm:w-auto mb-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
+            className="w-full sm:w-auto mb-3 px-3 py-2 bg-white/5 hover:bg-white/[0.08] text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
             title="Refresh"
           >
             <RefreshCw size={16} />
@@ -522,12 +522,12 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="New folder name"
-              className="w-full sm:w-auto px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white"
+              className="w-full sm:w-auto px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-sm text-white"
             />
             <button
               onClick={handleCreateFolder}
               disabled={creating || !newFolderName.trim()}
-              className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
+              className="w-full sm:w-auto px-4 py-2 bg-[#43ead6] hover:bg-[#43ead6]/90 disabled:opacity-50 text-[#051224] rounded-lg text-sm flex items-center justify-center sm:justify-start gap-2"
             >
               <FolderPlus size={16} />
               Create
@@ -539,12 +539,12 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
       {error && <div className="text-red-400 text-sm mb-3">{error}</div>}
 
       {/* Breadcrumb */}
-      <div className="text-sm text-gray-400 mb-3">
-        <span className="text-gray-500">{section === 'uploaded' ? 'Uploaded' : section === 'youtube' ? 'YouTube' : 'Shared to Me'}</span>
+      <div className="text-sm text-slate-400 mb-3">
+        <span className="text-slate-500">{section === 'uploaded' ? 'Uploaded' : section === 'youtube' ? 'YouTube' : 'Shared to Me'}</span>
         {section !== 'shared' && breadcrumb.map((f) => (
           <span key={f.id}>
             {' / '}
-            <button className="text-indigo-400 hover:text-indigo-300" onClick={() => setCurrentFolderId(f.id)}>
+            <button className="text-[#43ead6] hover:text-[#43ead6]/80" onClick={() => setCurrentFolderId(f.id)}>
               {f.name}
             </button>
           </span>
@@ -557,22 +557,22 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
           {/* Shared Folders */}
           {sharedContent.folders.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-md font-medium text-gray-300 mb-3">Shared Folders</h4>
+              <h4 className="text-md font-medium text-slate-300 mb-3">Shared Folders</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {sharedContent.folders.map((item) => (
                   <div
                     key={item.folder.id}
                     onClick={() => handleSharedFolderClick(item)}
-                    className="group rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 bg-gray-700 text-left p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                    className="group rounded-xl overflow-hidden border border-[#1a2943] hover:border-white/20 bg-white/[0.08] text-left p-3 cursor-pointer hover:bg-white/10 transition-colors"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <FolderIcon size={18} className="text-yellow-400" />
                       <div className="text-white text-sm font-medium">{item.folder.name}</div>
                     </div>
-                    <div className="text-gray-400 text-xs mb-2">
+                    <div className="text-slate-400 text-xs mb-2">
                       Shared by: {item.shared_link.owner?.displayName || 'Unknown'}
                     </div>
-                    <div className="text-gray-400 text-xs">
+                    <div className="text-slate-400 text-xs">
                       {item.videos.length} video{item.videos.length !== 1 ? 's' : ''}
                     </div>
                   </div>
@@ -584,14 +584,14 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
           {/* Shared Videos */}
           {sharedContent.videos.length > 0 && (
             <div>
-              <h4 className="text-md font-medium text-gray-300 mb-3">Shared Videos</h4>
+              <h4 className="text-md font-medium text-slate-300 mb-3">Shared Videos</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {sharedContent.videos.map((item) => (
                   <div
                     key={item.video.id}
-                    className="group rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 bg-gray-700 text-left cursor-pointer hover:bg-gray-600 transition-colors"
+                    className="group rounded-xl overflow-hidden border border-[#1a2943] hover:border-white/20 bg-white/[0.08] text-left cursor-pointer hover:bg-white/10 transition-colors"
                   >
-                    <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-600 text-sm relative">
+                    <div className="aspect-video bg-[#0d1f38] flex items-center justify-center text-slate-500 text-sm relative">
                       {item.video.source_type === 'uploaded' ? 'Uploaded' : 'YouTube'}
                       {/* Chat button overlay */}
                       <div className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
@@ -601,7 +601,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                             handleVideoChat(item.video, true, item.shared_link);
                           }}
                           disabled={chatLoading === item.video.id}
-                          className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                          className="p-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-white rounded-lg disabled:opacity-50"
                           title="Chat with this video"
                         >
                           {chatLoading === item.video.id ? (
@@ -614,14 +614,14 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                     </div>
                     <div className="px-2 py-2">
                       <div className="text-white text-sm line-clamp-2">{item.video.title || 'Untitled'}</div>
-                      <div className="text-gray-400 text-xs mt-1">
+                      <div className="text-slate-400 text-xs mt-1">
                         Shared by: {item.shared_link.owner?.displayName || 'Unknown'}
                       </div>
                       {/* Chat button below title */}
                       <button
                         onClick={() => handleVideoChat(item.video, true, item.shared_link)}
                         disabled={chatLoading === item.video.id}
-                        className="mt-2 w-full px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                        className="mt-2 w-full px-2 py-1 bg-[#43ead6] hover:bg-[#43ead6]/90 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                       >
                         {chatLoading === item.video.id ? (
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
@@ -639,8 +639,8 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
           
           {sharedContent.folders.length === 0 && sharedContent.videos.length === 0 && (
             <div className="text-center py-6">
-              <Share2 size={48} className="text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">No content has been shared with you yet.</p>
+              <Share2 size={48} className="text-slate-500 mx-auto mb-4" />
+              <p className="text-slate-400">No content has been shared with you yet.</p>
             </div>
           )}
         </div>
@@ -654,7 +654,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
             <div
               onDragOver={allowDrop}
               onDrop={(e) => onDropFolder(e, null)}
-              className="rounded-xl border border-dashed border-gray-700 bg-gray-800 p-3 text-center text-gray-400"
+              className="rounded-xl border border-dashed border-[#1a2943] bg-white/5 p-3 text-center text-slate-400"
               title="Drop here to move to root"
             >
               Move to Root
@@ -669,7 +669,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                 key={f.id}
                 onDragOver={allowDrop}
                 onDrop={(e) => onDropFolder(e, f.id)}
-                className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left p-3 relative flex flex-row items-center justify-between"
+                className="group rounded-xl overflow-hidden border border-[#182842] hover:border-[#1a2943] bg-white/5 text-left p-3 relative flex flex-row items-center justify-between"
                 title={f.name}
               >
                 <button
@@ -679,7 +679,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                   <FolderIcon size={18} className="text-yellow-400 flex-shrink-0" />
                   <div className="text-white text-sm line-clamp-1 min-w-0 flex-1">{f.name}</div>
                   {isShared && (
-                    <div className="ml-2 px-2 py-1 bg-indigo-600 text-white text-xs rounded">
+                    <div className="ml-2 px-2 py-1 bg-[#43ead6] text-[#051224] text-xs rounded">
                       Shared
                     </div>
                   )}
@@ -690,7 +690,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                       e.stopPropagation();
                       openFolderSharing(f);
                     }}
-                    className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+                    className="p-1 bg-[#43ead6] hover:bg-[#43ead6]/90 text-white rounded"
                     title="Share folder"
                   >
                     <Share2 size={12} />
@@ -733,7 +733,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
       {/* Videos */}
       {section !== 'shared' && isLoading && (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#43ead6]"></div>
         </div>
       )}
       {section !== 'shared' && !isLoading && (
@@ -747,10 +747,10 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                 key={v.id}
                 draggable
                 onDragStart={(e) => onDragStartVideo(e, v)}
-                className="group rounded-xl overflow-hidden border border-gray-800 hover:border-gray-700 bg-gray-800 text-left"
+                className="group rounded-xl overflow-hidden border border-[#182842] hover:border-[#1a2943] bg-white/5 text-left"
                 title={v.title}
               >
-                <div className="aspect-video bg-gray-900 overflow-hidden flex items-center justify-center text-gray-600 text-sm relative">
+                <div className="aspect-video bg-[#0d1f38] overflow-hidden flex items-center justify-center text-slate-500 text-sm relative">
                   {v.thumbnailUrl ? (
                     <img 
                       src={v.thumbnailUrl} 
@@ -773,7 +773,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                         handleVideoChat(v);
                       }}
                       disabled={chatLoading === v.id}
-                      className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                      className="p-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-white rounded-lg disabled:opacity-50"
                       title="Chat with this video"
                     >
                       {chatLoading === v.id ? (
@@ -816,7 +816,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                   <div className="flex items-center justify-between mb-1">
                     <div className="text-white text-sm line-clamp-2 flex-1">{v.title || 'Untitled'}</div>
                     {isShared && (
-                      <div className="ml-2 px-2 py-1 bg-indigo-600 text-white text-xs rounded flex-shrink-0">
+                      <div className="ml-2 px-2 py-1 bg-[#43ead6] text-[#051224] text-xs rounded flex-shrink-0">
                         Shared
                       </div>
                     )}
@@ -825,7 +825,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                   <button
                     onClick={() => handleVideoChat(v)}
                     disabled={chatLoading === v.id}
-                    className="mt-2 w-full px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                    className="mt-2 w-full px-2 py-1 bg-[#43ead6] hover:bg-[#43ead6]/90 text-white rounded text-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                   >
                     {chatLoading === v.id ? (
                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
@@ -839,7 +839,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
             );
           })}
           {videos.length === 0 && (
-            <div className="col-span-full text-gray-500 text-sm py-6 text-center">
+            <div className="col-span-full text-slate-500 text-sm py-6 text-center">
               No videos in this folder
             </div>
           )}
@@ -849,18 +849,18 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
       {/* Delete Confirmation Dialog */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white/5 border border-[#1a2943] rounded-lg p-6 max-w-md w-full mx-4">
             {deleteConfirm.type === 'video' ? (
               <>
                 <h3 className="text-lg font-semibold text-white mb-4">Delete Video</h3>
-                <p className="text-gray-300 mb-6">
+                <p className="text-slate-300 mb-6">
                   Are you sure you want to delete "{deleteConfirm.data.video.title || 'Untitled'}"? 
                   This action cannot be undone.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                    className="px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg"
                   >
                     Cancel
                   </button>
@@ -878,7 +878,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                 <h3 className="text-lg font-semibold text-white mb-4">Delete Folder</h3>
                 {deleteConfirm.data.videoCount ? (
                   <>
-                    <p className="text-gray-300 mb-4">
+                    <p className="text-slate-300 mb-4">
                       The folder "{deleteConfirm.data.folder.name}" contains {deleteConfirm.data.videoCount} video(s).
                     </p>
                     <p className="text-yellow-400 mb-6">
@@ -887,7 +887,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                     <div className="flex gap-3 justify-end">
                       <button
                         onClick={() => setDeleteConfirm(null)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                        className="px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg"
                       >
                         Cancel
                       </button>
@@ -902,14 +902,14 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                   </>
                 ) : (
                   <>
-                    <p className="text-gray-300 mb-6">
+                    <p className="text-slate-300 mb-6">
                       Are you sure you want to delete the folder "{deleteConfirm.data.folder.name}"? 
                       This action cannot be undone.
                     </p>
                     <div className="flex gap-3 justify-end">
                       <button
                         onClick={() => setDeleteConfirm(null)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                        className="px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg"
                       >
                         Cancel
                       </button>
@@ -941,41 +941,41 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
       {/* Shared Content Error Modal */}
       {sharedContentError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white/5 border border-[#1a2943] rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-yellow-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-lg">⚠️</span>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Cannot Delete {sharedContentError.type === 'video' ? 'Video' : sharedContentError.type === 'folder' ? 'Folder' : 'Chat Session'}</h3>
-                <p className="text-gray-400 text-sm">This content is part of shared content</p>
+                <p className="text-slate-400 text-sm">This content is part of shared content</p>
               </div>
             </div>
             
-            <div className="bg-gray-700 rounded-lg p-4 mb-4">
-              <p className="text-gray-300 text-sm mb-3">
+            <div className="bg-white/[0.08] rounded-lg p-4 mb-4">
+              <p className="text-slate-300 text-sm mb-3">
                 {sharedContentError.message}
               </p>
               
               {sharedContentError.sharedLink && (
-                <div className="border-t border-gray-600 pt-3">
+                <div className="border-t border-white/20 pt-3">
                   <h4 className="text-white font-medium text-sm mb-2">Share Link Details:</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Title:</span>
+                      <span className="text-slate-400">Title:</span>
                       <span className="text-white">{sharedContentError.sharedLink.title}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Type:</span>
+                      <span className="text-slate-400">Type:</span>
                       <span className="text-white capitalize">{sharedContentError.sharedLink.share_type}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Visibility:</span>
+                      <span className="text-slate-400">Visibility:</span>
                       <span className="text-white">{sharedContentError.sharedLink.is_public ? 'Public' : 'Private'}</span>
                     </div>
                     {sharedContentError.sharedLink.created_at && (
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Created:</span>
+                        <span className="text-slate-400">Created:</span>
                         <span className="text-white text-xs">
                           {new Date(sharedContentError.sharedLink.created_at).toLocaleDateString()}
                         </span>
@@ -993,7 +993,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                   // Refresh content info in case sharing status changed
                   refreshContentInfo();
                 }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                className="px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg"
               >
                 Close
               </button>
@@ -1006,7 +1006,7 @@ const Gallery = ({ onNavigateToChat, onNavigateToHome }) => {
                   // Refresh content info after showing the alert
                   setTimeout(() => refreshContentInfo(), 1000);
                 }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                className="px-4 py-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-white rounded-lg"
               >
                 Manage Share Links
               </button>

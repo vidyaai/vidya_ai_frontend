@@ -101,16 +101,16 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-[#0d1f38] rounded-2xl border border-[#1a2943] w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+        <div className="p-6 border-b border-[#1a2943] flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-white">Bulk Upload PDF Submissions</h2>
-            <p className="text-gray-400 mt-1">Upload multiple PDF files as student submissions</p>
+            <p className="text-slate-400 mt-1">Upload multiple PDF files as student submissions</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
+            className="p-2 text-slate-400 hover:text-white transition-colors"
           >
             <X size={24} />
           </button>
@@ -126,7 +126,7 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors mb-6 ${
               dragActive 
                 ? 'border-teal-500 bg-teal-500/10' 
-                : 'border-gray-600 hover:border-gray-500'
+                : 'border-white/20 hover:border-white/25'
             }`}
           >
             <input
@@ -137,7 +137,7 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
               className="hidden"
               id="bulk-pdf-upload"
             />
-            <Upload size={48} className="mx-auto text-gray-400 mb-4" />
+            <Upload size={48} className="mx-auto text-slate-400 mb-4" />
             <h3 className="text-lg font-semibold text-white mb-2">
               Drop PDF files here or click to browse
             </h3>
@@ -151,7 +151,7 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
               <Upload size={20} className="mr-2" />
               Select PDF Files
             </label>
-            <p className="text-gray-500 text-sm mt-3">
+            <p className="text-slate-500 text-sm mt-3">
               Maximum file size: 10MB per PDF
             </p>
           </div>
@@ -162,17 +162,17 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
               <h3 className="text-lg font-semibold text-white mb-3">
                 Selected Files ({selectedFiles.length})
               </h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-700 rounded-lg">
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-[#1a2943] rounded-lg">
                 {selectedFiles.map((fileInfo) => (
                   <div
                     key={fileInfo.id}
-                    className="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+                    className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/6 transition-colors"
                   >
                     <div className="flex items-center space-x-3 min-w-0 flex-1">
                       <FileText size={20} className="text-teal-400 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-white font-medium truncate">{fileInfo.name}</p>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-400 text-sm">
                           Student: {fileInfo.studentName} • {formatFileSize(fileInfo.size)}
                         </p>
                       </div>
@@ -180,7 +180,7 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
                     {!uploading && (
                       <button
                         onClick={() => removeFile(fileInfo.id)}
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors ml-2"
+                        className="p-1 text-slate-400 hover:text-red-400 transition-colors ml-2"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -211,7 +211,7 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
                     Upload Complete
                   </span>
                 </div>
-                <p className="text-gray-300 text-sm mb-2">
+                <p className="text-slate-300 text-sm mb-2">
                   {uploadResults.successful_count} files uploaded successfully
                   {uploadResults.failed_count > 0 && `, ${uploadResults.failed_count} failed`}
                 </p>
@@ -228,8 +228,8 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
         </div>
 
         {/* Fixed Footer */}
-        <div className="p-6 border-t border-gray-700 flex justify-between items-center flex-shrink-0">
-          <div className="text-gray-400 text-sm">
+        <div className="p-6 border-t border-[#1a2943] flex justify-between items-center flex-shrink-0">
+          <div className="text-slate-400 text-sm">
             {selectedFiles.length > 0 && (
               <span>{selectedFiles.length} files ready to upload</span>
             )}
@@ -238,7 +238,7 @@ const BulkSubmissionModal = ({ assignment, isOpen, onClose, onUploadComplete }) 
             <button
               onClick={onClose}
               disabled={uploading}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
             >
               Cancel
             </button>

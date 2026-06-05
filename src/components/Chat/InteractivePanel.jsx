@@ -145,51 +145,51 @@ const InteractivePanel = ({
   // Main menu view
   if (activeView === 'menu') {
     return (
-      <div className="w-full h-[750px] bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border-b border-zinc-700/50 px-6 py-4">
+      <div className="w-full h-[750px] bg-[#0d1f38] rounded-lg border border-[#182842] overflow-hidden flex flex-col">
+        <div className="bg-gradient-to-br from-[#0d1f38] to-[#071224] border-b border-[#182842] px-6 py-4">
           <h2 className="text-white text-xl font-semibold tracking-tight">Interactive Panel</h2>
-          <p className="text-zinc-400 text-sm mt-1">Choose an option to get started</p>
+          <p className="text-slate-400 text-sm mt-1">Choose an option to get started</p>
         </div>
 
         <div className="flex-1 p-6 space-y-3 overflow-y-auto">
           <button
             onClick={() => handleViewChange('chat')}
-            className="group w-full p-5 bg-zinc-800/50 hover:bg-emerald-900/20 border border-zinc-700/50 hover:border-emerald-600/50 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-4"
+            className="group w-full p-5 bg-white/[0.04] hover:bg-[#43ead6]/10 border border-[#182842] hover:border-[#43ead6]/30 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-4"
           >
-            <div className="p-3 bg-emerald-600/10 group-hover:bg-emerald-600/20 rounded-lg transition-colors">
-              <MessageSquare size={24} className="text-emerald-500" />
+            <div className="p-3 bg-[#43ead6]/10 group-hover:bg-[#43ead6]/20 rounded-lg transition-colors">
+              <MessageSquare size={24} className="text-[#43ead6]" />
             </div>
             <div className="flex-1 text-left">
               <div className="font-semibold text-base">AI Video Assistant</div>
-              <div className="text-zinc-400 text-sm mt-0.5">Chat about the video content</div>
+              <div className="text-slate-400 text-sm mt-0.5">Chat about the video content</div>
             </div>
           </button>
 
           <button
             onClick={() => handleViewChange('quiz')}
             disabled={!currentVideo.videoId}
-            className="group w-full p-5 bg-zinc-800/50 hover:bg-emerald-900/20 border border-zinc-700/50 hover:border-emerald-600/50 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-zinc-800/50 disabled:hover:border-zinc-700/50"
+            className="group w-full p-5 bg-white/[0.04] hover:bg-[#43ead6]/10 border border-[#182842] hover:border-[#43ead6]/30 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/[0.04] disabled:hover:border-[#182842]"
           >
-            <div className="p-3 bg-emerald-600/10 group-hover:bg-emerald-600/20 rounded-lg transition-colors">
+            <div className="p-3 bg-[#43ead6]/10 group-hover:bg-[#43ead6]/20 rounded-lg transition-colors">
               <span className="text-2xl">🧠</span>
             </div>
             <div className="flex-1 text-left">
               <div className="font-semibold text-base">Take Quiz</div>
-              <div className="text-zinc-400 text-sm mt-0.5">Test your understanding</div>
+              <div className="text-slate-400 text-sm mt-0.5">Test your understanding</div>
             </div>
           </button>
 
           <button
             onClick={handleSummarize}
             disabled={!currentVideo.videoId || !transcript}
-            className="group w-full p-5 bg-zinc-800/50 hover:bg-emerald-900/20 border border-zinc-700/50 hover:border-emerald-600/50 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-zinc-800/50 disabled:hover:border-zinc-700/50"
+            className="group w-full p-5 bg-white/[0.04] hover:bg-[#43ead6]/10 border border-[#182842] hover:border-[#43ead6]/30 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/[0.04] disabled:hover:border-[#182842]"
           >
-            <div className="p-3 bg-emerald-600/10 group-hover:bg-emerald-600/20 rounded-lg transition-colors">
-              <FileText size={24} className="text-emerald-500" />
+            <div className="p-3 bg-[#43ead6]/10 group-hover:bg-[#43ead6]/20 rounded-lg transition-colors">
+              <FileText size={24} className="text-[#43ead6]" />
             </div>
             <div className="flex-1 text-left">
               <div className="font-semibold text-base">Summarize Video</div>
-              <div className="text-zinc-400 text-sm mt-0.5">Generate AI summary & notes</div>
+              <div className="text-slate-400 text-sm mt-0.5">Generate AI summary & notes</div>
             </div>
           </button>
         </div>
@@ -200,17 +200,17 @@ const InteractivePanel = ({
   // Chat view
   if (activeView === 'chat') {
     return (
-      <div className="w-full bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-        <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border-b border-zinc-700/50 px-4 py-3 flex items-center gap-3">
+      <div className="w-full bg-[#0d1f38] rounded-lg border border-[#182842] overflow-hidden">
+        <div className="bg-gradient-to-br from-[#0d1f38] to-[#071224] border-b border-[#182842] px-4 py-3 flex items-center gap-3">
           <button
             onClick={handleBackToMenu}
-            className="p-2 hover:bg-zinc-700/50 text-zinc-400 hover:text-white rounded-lg transition-colors"
+            className="p-2 hover:bg-white/[0.05] text-slate-400 hover:text-white rounded-lg transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-emerald-600/10 rounded-md">
-              <MessageSquare size={16} className="text-emerald-500" />
+            <div className="p-1.5 bg-[#43ead6]/10 rounded-md">
+              <MessageSquare size={16} className="text-[#43ead6]" />
             </div>
             <h2 className="text-white text-base font-semibold">AI Video Assistant</h2>
           </div>
@@ -237,16 +237,16 @@ const InteractivePanel = ({
   // Quiz view
   if (activeView === 'quiz') {
     return (
-      <div className="w-full bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-        <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border-b border-zinc-700/50 px-4 py-3 flex items-center gap-3">
+      <div className="w-full bg-[#0d1f38] rounded-lg border border-[#182842] overflow-hidden">
+        <div className="bg-gradient-to-br from-[#0d1f38] to-[#071224] border-b border-[#182842] px-4 py-3 flex items-center gap-3">
           <button
             onClick={handleBackToMenu}
-            className="p-2 hover:bg-zinc-700/50 text-zinc-400 hover:text-white rounded-lg transition-colors"
+            className="p-2 hover:bg-white/[0.05] text-slate-400 hover:text-white rounded-lg transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-emerald-600/10 rounded-md">
+            <div className="p-1.5 bg-[#43ead6]/10 rounded-md">
               <span className="text-xl">🧠</span>
             </div>
             <h2 className="text-white text-base font-semibold">Quiz</h2>
@@ -268,17 +268,17 @@ const InteractivePanel = ({
   // Summary view
   if (activeView === 'summary') {
     return (
-      <div className="w-full h-[750px] bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border-b border-zinc-700/50 px-4 py-3 flex items-center gap-3">
+      <div className="w-full h-[750px] bg-[#0d1f38] rounded-lg border border-[#182842] overflow-hidden flex flex-col">
+        <div className="bg-gradient-to-br from-[#0d1f38] to-[#071224] border-b border-[#182842] px-4 py-3 flex items-center gap-3">
           <button
             onClick={handleBackToMenu}
-            className="p-2 hover:bg-zinc-700/50 text-zinc-400 hover:text-white rounded-lg transition-colors"
+            className="p-2 hover:bg-white/[0.05] text-slate-400 hover:text-white rounded-lg transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-emerald-600/10 rounded-md">
-              <FileText size={16} className="text-emerald-500" />
+            <div className="p-1.5 bg-[#43ead6]/10 rounded-md">
+              <FileText size={16} className="text-[#43ead6]" />
             </div>
             <h2 className="text-white text-base font-semibold">Summarize Video</h2>
           </div>
@@ -288,15 +288,15 @@ const InteractivePanel = ({
           {isSummarizing ? (
             <div className="flex flex-col items-center justify-center h-full space-y-6">
               <div className="relative">
-                <Loader className="animate-spin text-emerald-500" size={48} />
+                <Loader className="animate-spin text-[#43ead6]" size={48} />
               </div>
               <div className="text-center space-y-2">
                 <p className="text-white font-medium">{summaryStage}</p>
-                <p className="text-zinc-400 text-sm">{summaryProgress}% complete</p>
+                <p className="text-slate-400 text-sm">{summaryProgress}% complete</p>
               </div>
-              <div className="w-full max-w-xs bg-zinc-800 rounded-full h-2">
+              <div className="w-full max-w-xs bg-[#0d1f38] rounded-full h-2">
                 <div
-                  className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-[#43ead6] h-2 rounded-full transition-all duration-500"
                   style={{ width: `${summaryProgress}%` }}
                 />
               </div>
@@ -306,7 +306,7 @@ const InteractivePanel = ({
               <p className="text-red-400 text-center">{summaryError}</p>
               <button
                 onClick={handleSummarize}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded-lg transition-colors"
               >
                 Retry
               </button>
@@ -314,15 +314,15 @@ const InteractivePanel = ({
           ) : summaryData ? (
             <div className="space-y-6">
               <div className="prose prose-invert max-w-none">
-                <div className="text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                <div className="text-slate-300 leading-relaxed whitespace-pre-wrap">
                   {summaryData.text}
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-zinc-800">
+              <div className="pt-4 border-t border-[#182842]">
                 <button
                   onClick={handleDownloadPDF}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <Download size={18} />
                   Download PDF
@@ -331,7 +331,7 @@ const InteractivePanel = ({
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-zinc-500">Loading summary...</p>
+              <p className="text-slate-400">Loading summary...</p>
             </div>
           )}
         </div>

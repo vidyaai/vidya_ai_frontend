@@ -199,10 +199,21 @@ const OverviewSection = ({ course }) => (
 
 // ─── SECTION: Lecture Notes (view + download only, no upload) ────────────
 const LectureNotesSection = ({ courseId }) => {
+  const router = useRouter();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadNotes(); }, [courseId]);
+
+  // Poll every 5s while any note is still being indexed for chat
+  useEffect(() => {
+    const hasPending = materials.some(
+      (m) => m.chunking_status === 'processing' || m.chunking_status === 'pending'
+    );
+    if (!hasPending) return;
+    const timer = setTimeout(() => loadNotes(), 5000);
+    return () => clearTimeout(timer);
+  }, [materials]);
 
   const loadNotes = async () => {
     try {
@@ -240,32 +251,48 @@ const LectureNotesSection = ({ courseId }) => {
         </div>
       ) : (
         <div className="space-y-2">
-          {materials.map((mat) => (
-            <div
-              key={mat.id}
-              className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 hover:border-gray-700 transition-colors"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <FileText size={18} className="text-blue-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{mat.title}</p>
-                  {mat.description && <p className="text-xs text-gray-500 truncate">{mat.description}</p>}
-                  {mat.folder && <p className="text-xs text-gray-600 mt-0.5">{mat.folder}</p>}
+          {materials.map((mat) => {
+            const indexing = mat.chunking_status === 'processing' || mat.chunking_status === 'pending';
+            const openViewer = () => {
+              const title = encodeURIComponent(mat.title || 'Notes');
+              router.push(
+                `/lecture_note_viewer?courseId=${courseId}&materialId=${mat.id}&role=student&title=${title}`
+              );
+            };
+            return (
+              <div
+                key={mat.id}
+                onClick={openViewer}
+                className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3 hover:border-teal-500/50 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText size={18} className="text-blue-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{mat.title}</p>
+                    {mat.description && <p className="text-xs text-gray-500 truncate">{mat.description}</p>}
+                    {mat.folder && <p className="text-xs text-gray-600 mt-0.5">{mat.folder}</p>}
+                    {indexing && (
+                      <p className="text-[11px] text-yellow-400/90 mt-0.5 flex items-center gap-1">
+                        <Loader2 size={10} className="animate-spin" />
+                        Indexing for chat…
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                  {mat.s3_key && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownload(mat); }}
+                      className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
+                      title="Download"
+                    >
+                      <Download size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                {mat.s3_key && (
-                  <button
-                    onClick={() => handleDownload(mat)}
-                    className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
-                    title="Download"
-                  >
-                    <Download size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

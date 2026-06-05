@@ -678,7 +678,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
   return (
     <div className="w-full">
       {navigatingTo && (
-        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
             <defs>
               <mask id="crescent-mask-chat">
@@ -696,20 +696,20 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+            className="p-3 bg-[#0d1f38] hover:bg-[#0d1f38] border border-[#182842] rounded-lg text-slate-400 hover:text-white transition-colors"
           >
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
           {/* Dropdown Menu */}
           {isMenuOpen && (
-            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
+            <div className="absolute top-full left-0 mt-2 w-64 bg-[#0d1f38] border border-[#182842] rounded-xl shadow-2xl overflow-hidden z-50">
               <button
                 onClick={handleNewVideo}
-                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-[#0d1f38] transition-colors border-b border-[#182842]"
               >
-                <div className="p-2 bg-emerald-600/10 rounded-lg">
-                  <MessageSquare size={18} className="text-emerald-500" />
+                <div className="p-2 bg-[#43ead6]/10 rounded-lg">
+                  <MessageSquare size={18} className="text-[#43ead6]" />
                 </div>
                 <span className="text-sm font-medium">Interact with a new video</span>
               </button>
@@ -719,10 +719,10 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
                   setIsMenuOpen(false);
                   setNavigatingTo('gallery');
                 }}
-                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-[#0d1f38] transition-colors border-b border-[#182842]"
               >
-                <div className="p-2 bg-emerald-600/10 rounded-lg">
-                  <FolderOpen size={18} className="text-emerald-500" />
+                <div className="p-2 bg-[#43ead6]/10 rounded-lg">
+                  <FolderOpen size={18} className="text-[#43ead6]" />
                 </div>
                 <span className="text-sm font-medium">My Gallery</span>
               </button>
@@ -732,10 +732,10 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
                   setIsMenuOpen(false);
                   setNavigatingTo('home');
                 }}
-                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-zinc-800 transition-colors"
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-[#0d1f38] transition-colors"
               >
-                <div className="p-2 bg-emerald-600/10 rounded-lg">
-                  <Home size={18} className="text-emerald-500" />
+                <div className="p-2 bg-[#43ead6]/10 rounded-lg">
+                  <Home size={18} className="text-[#43ead6]" />
                 </div>
                 <span className="text-sm font-medium">Home</span>
               </button>
@@ -747,7 +747,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
         {currentVideo.videoId && (
           <button
             onClick={() => setNavigatingTo('home')}
-            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+            className="p-3 bg-[#0d1f38] hover:bg-[#0d1f38] border border-[#182842] rounded-lg text-slate-400 hover:text-white transition-colors"
             title="Back to Home"
           >
             <ArrowLeft size={20} />
@@ -763,13 +763,13 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
               placeholder="Paste YouTube URL or upload video"
-              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg focus:outline-none focus:border-emerald-500 text-white placeholder-zinc-500 transition-colors"
+              className="w-full px-4 py-3 bg-[#0d1f38] border border-[#182842] rounded-lg focus:outline-none focus:border-[#43ead6] text-white placeholder-slate-500 transition-colors"
               disabled={isLoading}
             />
           </div>
           <button
             type="submit"
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !youtubeUrl.trim()}
           >
             {isLoading ? 'Loading...' : 'Load'}
@@ -782,7 +782,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
           )}
         </div>
         {errorMessage && (
-          <div className="mt-3 text-red-400 text-sm bg-zinc-900 border border-red-900 p-3 rounded-lg">
+          <div className="mt-3 text-red-400 text-sm bg-[#0d1f38] border border-red-900 p-3 rounded-lg">
             {errorMessage}
           </div>
         )}
@@ -791,7 +791,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
       <div className="flex flex-col xl:flex-row gap-4 w-full">
         <div className="w-full xl:w-3/5 space-y-4">
           {currentVideo.title && (
-            <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-xl px-6 py-4 shadow-lg shadow-black/20">
+            <div className="bg-gradient-to-br from-[#0d1f38] to-[#071224] border border-[#182842] rounded-xl px-6 py-4 shadow-lg shadow-black/20">
               <h1 className="text-white text-xl font-semibold leading-relaxed tracking-tight">{currentVideo.title}</h1>
             </div>
           )}

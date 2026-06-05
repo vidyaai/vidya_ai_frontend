@@ -215,9 +215,9 @@ const PricingPage = ({
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-2">
               <img
-                src="/logo-new-2.png"
+                src="/images/vidya-ai-logo-1.png"
                 alt="Vidya AI Logo"
-                className="h-12 w-auto"
+                className="h-8 w-auto"
               />
             </div>
 

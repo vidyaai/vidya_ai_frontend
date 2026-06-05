@@ -59,10 +59,10 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+      <div className="flex items-center justify-center h-48 bg-white/5 rounded">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto mb-2"></div>
-          <p className="text-gray-300 text-sm">Loading image...</p>
+          <p className="text-slate-300 text-sm">Loading image...</p>
         </div>
       </div>
     );
@@ -70,11 +70,11 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
 
   if (error || !imageUrl) {
     return (
-      <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+      <div className="flex items-center justify-center h-48 bg-white/5 rounded">
         <div className="text-center">
-          <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-          <p className="text-gray-400 text-sm">Failed to load image</p>
-          <p className="text-gray-500 text-xs">{displayName}</p>
+          <ImageIcon size={32} className="text-slate-500 mx-auto mb-2" />
+          <p className="text-slate-400 text-sm">Failed to load image</p>
+          <p className="text-slate-500 text-xs">{displayName}</p>
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ const DiagramImage = memo(({ diagramData, displayName }) => {
     <img 
       src={imageUrl} 
       alt={displayName}
-      className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-gray-900 mx-auto block"
+      className="max-h-[90vh] max-w-[50vw] w-auto h-auto object-contain bg-[#0d1f38] mx-auto block"
       onError={() => setError(true)}
     />
   );
@@ -364,15 +364,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     const displayName = diagramData.filename || diagramData.file || label;
 
     return (
-        <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+        <div className="bg-[#0d1f38] rounded-lg border border-[#1a2943] overflow-hidden">
           {isServerDiagram ? (
             <DiagramImage diagramData={diagramData} displayName={displayName} />
           ) : (
-            <div className="flex items-center justify-center h-48 bg-gray-800 rounded">
+            <div className="flex items-center justify-center h-48 bg-white/5 rounded">
               <div className="text-center">
-                <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-                <p className="text-gray-400 text-sm">{label}</p>
-                <p className="text-gray-500 text-xs">{displayName}</p>
+                <ImageIcon size={32} className="text-slate-500 mx-auto mb-2" />
+                <p className="text-slate-400 text-sm">{label}</p>
+                <p className="text-slate-500 text-xs">{displayName}</p>
               </div>
             </div>
           )}
@@ -649,7 +649,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -658,7 +658,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -670,7 +670,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             <div className="space-y-3">
               {question.allowMultipleCorrect && (
-                <div className="text-sm text-gray-400 mb-2">
+                <div className="text-sm text-slate-400 mb-2">
                   Select all correct answers
                 </div>
               )}
@@ -721,7 +721,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -730,7 +730,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -746,7 +746,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
               placeholder={!currentAnswer ? "Enter your answer here..." : ""}
               readOnly={isAlreadySubmitted}
-              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+              className={`w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
@@ -763,7 +763,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -772,7 +772,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -821,7 +821,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -830,7 +830,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -850,7 +850,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               placeholder={(typeof currentAnswer === 'string' ? !currentAnswer : !currentAnswer?.text) ? "Enter your answer here..." : ""}
               rows={4}
               readOnly={isAlreadySubmitted}
-              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
+              className={`w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
@@ -859,9 +859,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {!isAlreadySubmitted && (
               <div className="space-y-2">
                 {currentAnswer?.diagram ? (
-                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                  <div className="bg-white/5 p-3 rounded-lg border border-[#1a2943]">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <span className="text-sm text-slate-300">Attached Diagram:</span>
                       <button
                         onClick={() => handleRemoveDiagram(question.id)}
                         className="text-red-400 hover:text-red-300 text-sm"
@@ -886,7 +886,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     />
                     <label
                       htmlFor={`diagram-upload-${question.id}`}
-                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                      className="inline-flex items-center px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg cursor-pointer transition-colors"
                     >
                       <ImageIcon size={16} className="mr-2" />
                       Attach Diagram (Optional)
@@ -907,7 +907,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -916,7 +916,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -932,7 +932,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               onChange={(e) => !isAlreadySubmitted && handleAnswerChange(question.id, e.target.value)}
               placeholder={!currentAnswer ? "Enter your numerical answer..." : ""}
               readOnly={isAlreadySubmitted}
-              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+              className={`w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
@@ -951,7 +951,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -960,7 +960,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -980,7 +980,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               placeholder={(typeof currentAnswer === 'string' ? !currentAnswer : !currentAnswer?.text) ? "Enter your detailed answer here..." : ""}
               rows={8}
               readOnly={isAlreadySubmitted}
-              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
+              className={`w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
@@ -989,9 +989,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {!isAlreadySubmitted && (
               <div className="space-y-2">
                 {currentAnswer?.diagram ? (
-                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                  <div className="bg-white/5 p-3 rounded-lg border border-[#1a2943]">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <span className="text-sm text-slate-300">Attached Diagram:</span>
                       <button
                         onClick={() => handleRemoveDiagram(question.id)}
                         className="text-red-400 hover:text-red-300 text-sm"
@@ -1016,7 +1016,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     />
                     <label
                       htmlFor={`diagram-upload-${question.id}`}
-                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                      className="inline-flex items-center px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg cursor-pointer transition-colors"
                     >
                       <ImageIcon size={16} className="mr-2" />
                       Attach Diagram (Optional)
@@ -1038,7 +1038,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -1047,7 +1047,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show starter code template only (NOT the code field which may contain the solution) */}
             {question.starterCode && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.starterCode}
                 </pre>
@@ -1057,12 +1057,12 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {/* Show diagram if available */}
             {question.diagram && renderDiagram(question.diagram, "Diagram")}
             
-            <div className="bg-gray-800 rounded-lg p-3 border border-purple-500/30">
+            <div className="bg-white/5 rounded-lg p-3 border border-purple-500/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-purple-400 text-sm font-medium">
                   Language: {question.codeLanguage?.toUpperCase() || 'PYTHON'}
                 </span>
-                <span className="text-gray-400 text-sm">
+                <span className="text-slate-400 text-sm">
                   Expected: {question.outputType?.replace('-', ' ') || 'Complete Code'}
                 </span>
               </div>
@@ -1076,7 +1076,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 placeholder={isAlreadySubmitted ? "// Submitted code" : "// Write your code here..."}
                 rows={12}
                 readOnly={isAlreadySubmitted}
-                className={`w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm ${
+                className={`w-full px-4 py-3 bg-[#0d1f38] border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm ${
                   isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
                 }`}
               />
@@ -1092,11 +1092,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-orange-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            <p className="text-slate-300 text-lg">{question.question}</p>
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -1115,7 +1115,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               placeholder={isAlreadySubmitted ? "Submitted analysis" : "Enter your analysis here..."}
               rows={8}
               readOnly={isAlreadySubmitted}
-              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none ${
+              className={`w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
@@ -1124,9 +1124,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             {!isAlreadySubmitted && (
               <div className="space-y-2">
                 {currentAnswer?.diagram ? (
-                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                  <div className="bg-white/5 p-3 rounded-lg border border-[#1a2943]">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-300">Attached Diagram:</span>
+                      <span className="text-sm text-slate-300">Attached Diagram:</span>
                       <button
                         onClick={() => handleRemoveDiagram(question.id)}
                         className="text-red-400 hover:text-red-300 text-sm"
@@ -1151,7 +1151,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     />
                     <label
                       htmlFor={`diagram-upload-${question.id}`}
-                      className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg cursor-pointer transition-colors"
+                      className="inline-flex items-center px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg cursor-pointer transition-colors"
                     >
                       <ImageIcon size={16} className="mr-2" />
                       Attach Diagram (Optional)
@@ -1170,11 +1170,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
               <span className="text-green-400 text-sm font-medium">{question.points} points</span>
             </div>
-            <p className="text-gray-300 text-lg">{question.question}</p>
+            <p className="text-slate-300 text-lg">{question.question}</p>
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -1193,7 +1193,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               placeholder={isAlreadySubmitted ? "Submitted answer" : "Enter your answer here..."}
               rows={6}
               readOnly={isAlreadySubmitted}
-              className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none ${
+              className={`w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none ${
                 isAlreadySubmitted ? 'cursor-not-allowed opacity-75' : ''
               }`}
             />
@@ -1204,9 +1204,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               {!isAlreadySubmitted ? (
                 <div className="space-y-2">
                   {currentAnswer?.diagram ? (
-                    <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <div className="bg-white/5 p-3 rounded-lg border border-[#1a2943]">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-300">Attached Diagram:</span>
+                        <span className="text-sm text-slate-300">Attached Diagram:</span>
                         <button
                           onClick={() => handleRemoveDiagram(question.id)}
                           className="text-red-400 hover:text-red-300 text-sm"
@@ -1240,7 +1240,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                 </div>
               ) : currentAnswer?.diagram ? (
-                <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                <div className="bg-white/5 p-3 rounded-lg border border-[#1a2943]">
                   {renderDiagram(currentAnswer.diagram, "Your diagram")}
                 </div>
               ) : null}
@@ -1257,16 +1257,16 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               <h3 className="text-lg font-semibold text-white">
                 Question {index + 1} - Multi-Part
                 {question.optionalParts && (
-                  <span className="ml-2 text-sm font-normal text-blue-300">
+                  <span className="ml-2 text-sm font-normal text-[#43ead6]">
                     (Answer {question.requiredPartsCount} of {(question.subquestions || []).length})
                   </span>
                 )}
               </h3>
-              <span className="text-blue-400 text-sm font-medium">{question.points} points total</span>
+              <span className="text-[#43ead6] text-sm font-medium">{question.points} points total</span>
             </div>
             
             {/* Render question text with equations */}
-            <div className="text-gray-300 text-lg">
+            <div className="text-slate-300 text-lg">
               <DisplayTextWithEquations
                 text={question.question}
                 equations={question.equations || []}
@@ -1275,7 +1275,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Show code if available */}
             {question.code && (
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 overflow-x-auto mb-4">
+              <div className="bg-[#0d1f38] rounded-lg p-4 border border-[#1a2943] overflow-x-auto mb-4">
                 <pre className="text-sm text-green-400">
                     {question.code}
                 </pre>
@@ -1287,8 +1287,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Optional Parts Selection UI */}
             {question.optionalParts && !isAlreadySubmitted && (
-              <div className="mb-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                <div className="text-blue-300 font-medium mb-3">
+              <div className="mb-4 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg p-4">
+                <div className="text-[#43ead6] font-medium mb-3">
                   Select exactly {question.requiredPartsCount} of {(question.subquestions || []).length} parts to answer
                 </div>
                 <div className="space-y-2">
@@ -1298,17 +1298,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     const isDisabled = !isSelected && isMaxSelected;
                     
                     return (
-                      <label key={subq.id} className={`flex items-start space-x-3 p-2 rounded ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-900/10'}`}>
+                      <label key={subq.id} className={`flex items-start space-x-3 p-2 rounded ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#43ead6]/10/10'}`}>
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={(e) => handlePartSelection(question.id, subq.id, e.target.checked)}
                           disabled={isDisabled}
-                          className="mt-1 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                          className="mt-1 text-[#43ead6] bg-white/[0.08] border-white/20 rounded focus:ring-[#43ead6]/50 focus:ring-2"
                         />
                         <div className="flex-1">
                           <div className="text-white font-medium">Part {idx + 1} ({subq.points} pts)</div>
-                          <div className="text-gray-300 text-sm mt-1">{subq.question.substring(0, 100)}{subq.question.length > 100 ? '...' : ''}</div>
+                          <div className="text-slate-300 text-sm mt-1">{subq.question.substring(0, 100)}{subq.question.length > 100 ? '...' : ''}</div>
                         </div>
                       </label>
                     );
@@ -1323,8 +1323,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             )}
             
             {question.optionalParts && isAlreadySubmitted && (selectedParts[question.id] || []).length > 0 && (
-              <div className="mb-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                <div className="text-blue-300 font-medium mb-2">
+              <div className="mb-4 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg p-4">
+                <div className="text-[#43ead6] font-medium mb-2">
                   Selected Parts: {(selectedParts[question.id] || []).length} of {(question.subquestions || []).length}
                 </div>
               </div>
@@ -1332,13 +1332,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             
             {/* Main Question Code */}
             {((question.hasMainCode && question.mainCode) || (question.hasCode && question.code)) && (
-              <div className="bg-gray-800 rounded-lg p-4 border border-purple-500/30">
+              <div className="bg-white/5 rounded-lg p-4 border border-purple-500/30">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-purple-400 text-sm font-medium">
                     Main Code ({(question.mainCodeLanguage || question.codeLanguage)?.toUpperCase() || 'CODE'})
                   </span>
                 </div>
-                <pre className="bg-gray-900 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto font-mono border border-gray-700">
+                <pre className="bg-[#0d1f38] rounded-lg p-4 text-sm text-slate-300 overflow-x-auto font-mono border border-[#1a2943]">
                   <code>{question.mainCode || question.code}</code>
                 </pre>
               </div>
@@ -1363,9 +1363,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 }
                 
                 return (
-                <div key={subq.id} className="bg-gray-800 rounded-lg p-4 border border-blue-500/30">
+                <div key={subq.id} className="bg-white/5 rounded-lg p-4 border border-[#43ead6]/30">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex-1 text-blue-300 font-medium">
+                    <div className="flex-1 text-[#43ead6] font-medium">
                       <DisplayTextWithEquations
                         text={subq.question}
                         equations={subq.equations || []}
@@ -1376,11 +1376,11 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         subq.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                         subq.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
                         subq.type === 'diagram-required-in-answer' ? 'bg-green-500/20 text-green-300' :
-                        subq.type === 'multi-part' ? 'bg-blue-500/20 text-blue-300' :
+                        subq.type === 'multi-part' ? 'bg-[#43ead6]/15 text-[#43ead6]' :
                         subq.type === 'multiple-choice' ? 'bg-teal-500/20 text-teal-300' :
                         subq.type === 'true-false' ? 'bg-yellow-500/20 text-yellow-300' :
                         subq.type === 'fill-blank' ? 'bg-pink-500/20 text-pink-300' :
-                        'bg-gray-500/20 text-gray-300'
+                        'bg-white/10 text-slate-300'
                       }`}>
                         {subq.type === 'code-writing' ? 'Code' :
                          subq.type === 'diagram-analysis' ? 'Diagram' :
@@ -1391,17 +1391,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                          subq.type === 'fill-blank' ? 'Fill' :
                          subq.type?.replace('-', ' ') || 'Text'}
                       </span>
-                      <span className="text-blue-400 text-sm">{subq.points} pts</span>
+                      <span className="text-[#43ead6] text-sm">{subq.points} pts</span>
                     </div>
                   </div>
                   
                   {/* Sub-question Code */}
                   {((subq.hasSubCode && subq.subCode) || (subq.hasCode && subq.code)) && (
-                    <div className="bg-gray-900 rounded-lg p-3 border border-purple-500/30 mb-3">
+                    <div className="bg-[#0d1f38] rounded-lg p-3 border border-purple-500/30 mb-3">
                       <div className="text-purple-400 text-xs font-medium mb-2">
                         Code ({(subq.codeLanguage)?.toUpperCase() || 'CODE'})
                       </div>
-                      <pre className="bg-gray-800 rounded p-2 text-xs text-gray-300 overflow-x-auto font-mono">
+                      <pre className="bg-white/5 rounded p-2 text-xs text-slate-300 overflow-x-auto font-mono">
                         <code>{subq.subCode || subq.code}</code>
                       </pre>
                     </div>
@@ -1414,7 +1414,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   {subq.type === 'multiple-choice' ? (
                     <div className="space-y-2">
                       {subq.allowMultipleCorrect && (
-                        <div className="text-sm text-gray-400 mb-2">
+                        <div className="text-sm text-slate-400 mb-2">
                           Select all correct answers
                         </div>
                       )}
@@ -1500,7 +1500,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     </div>
                   ) : subq.type === 'fill-blank' ? (
                     <div>
-                      <p className="text-gray-300 text-sm mb-2">Fill in the blank(s):</p>
+                      <p className="text-slate-300 text-sm mb-2">Fill in the blank(s):</p>
                       <input
                         type="text"
                         value={(currentAnswer?.subAnswers || {})[subq.id] || ''}
@@ -1516,7 +1516,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         }}
                         placeholder={!(currentAnswer?.subAnswers || {})[subq.id] ? "Enter your answer..." : ""}
                         readOnly={isAlreadySubmitted}
-                        className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                        className={`w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                       />
                     </div>
                   ) : subq.type === 'numerical' ? (
@@ -1534,7 +1534,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         handleAnswerChange(question.id, newAnswer);
                       }}
                       placeholder="Enter numerical answer..."
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                     />
                   ) : subq.type === 'code-writing' ? (
                     <div>
@@ -1555,7 +1555,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         }}
                         placeholder={`// Write your ${subq.codeLanguage || 'code'} here...`}
                         rows={6}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm font-mono"
+                        className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm font-mono"
                       />
                     </div>
                   ) : subq.type === 'diagram-analysis' || subq.type === 'diagram-required-in-answer' || subq.type === 'short-answer' || subq.type === 'long-answer' ? (
@@ -1570,15 +1570,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         placeholder={(typeof (currentAnswer?.subAnswers || {})[subq.id] === 'string' ? !(currentAnswer?.subAnswers || {})[subq.id] : !((currentAnswer?.subAnswers || {})[subq.id]?.text)) ? (subq.type === 'diagram-analysis' ? "Enter your diagram analysis..." : "Enter your answer...") : ""}
                         rows={subq.type === 'long-answer' ? 6 : 4}
                         readOnly={isAlreadySubmitted}
-                        className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                        className={`w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                       />
                       {/* Diagram upload for subquestions */}
                       {!isAlreadySubmitted && (
                         <div>
                           {(currentAnswer?.subAnswers || {})[subq.id]?.diagram ? (
-                            <div className="bg-gray-800 p-2 rounded border border-gray-600">
+                            <div className="bg-white/5 p-2 rounded border border-white/20">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-gray-400">Attached Diagram:</span>
+                                <span className="text-xs text-slate-400">Attached Diagram:</span>
                                 <button
                                   onClick={() => handleRemoveDiagram(question.id, true, subq.id)}
                                   className="text-red-400 hover:text-red-300 text-xs"
@@ -1603,7 +1603,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               />
                               <label
                                 htmlFor={`diagram-upload-${question.id}-${subq.id}`}
-                                className="inline-flex items-center px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded cursor-pointer transition-colors text-xs"
+                                className="inline-flex items-center px-3 py-1 bg-white/10 hover:bg-white/15 text-white rounded cursor-pointer transition-colors text-xs"
                               >
                                 <ImageIcon size={12} className="mr-1" />
                                 Attach Diagram
@@ -1614,18 +1614,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       )}
                       {/* show diagram if already submitted */}
                       {isAlreadySubmitted && (currentAnswer?.subAnswers || {})[subq.id]?.diagram && (
-                          <div className="bg-gray-800 p-2 rounded border border-gray-600">
-                              <div className="text-xs text-gray-400 mb-1">Submitted Diagram:</div>
+                          <div className="bg-white/5 p-2 rounded border border-white/20">
+                              <div className="text-xs text-slate-400 mb-1">Submitted Diagram:</div>
                               {renderDiagram((currentAnswer?.subAnswers || {})[subq.id]?.diagram, "Submitted diagram")}
                           </div>
                       )}
                     </div>
                   ) : subq.type === 'multi-part' ? (
-                    <div className="space-y-3 ml-4 border-l-2 border-blue-400/30 pl-4">
+                    <div className="space-y-3 ml-4 border-l-2 border-[#43ead6]/30 pl-4">
                       {/* Optional Parts Selection for Nested Multi-part */}
                       {subq.optionalParts && !isAlreadySubmitted && (
-                        <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                          <div className="text-blue-300 font-medium text-xs mb-2">
+                        <div className="mb-3 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg p-3">
+                          <div className="text-[#43ead6] font-medium text-xs mb-2">
                             Select exactly {subq.requiredPartsCount} of {(subq.subquestions || []).length} sub-parts to answer
                           </div>
                           <div className="space-y-1">
@@ -1636,17 +1636,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               const isDisabled = !isSelected && isMaxSelected;
                               
                               return (
-                                <label key={subSubq.id} className={`flex items-start space-x-2 p-1 rounded text-xs ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-900/10'}`}>
+                                <label key={subSubq.id} className={`flex items-start space-x-2 p-1 rounded text-xs ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#43ead6]/10/10'}`}>
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={(e) => handlePartSelection(question.id, subSubq.id, e.target.checked, subq.id)}
                                     disabled={isDisabled}
-                                    className="mt-0.5 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-1"
+                                    className="mt-0.5 text-[#43ead6] bg-white/[0.08] border-white/20 rounded focus:ring-[#43ead6]/50 focus:ring-1"
                                   />
                                   <div className="flex-1">
                                     <span className="text-white font-medium">Part {subIndex + 1}.{ssIdx + 1} ({subSubq.points} pts)</span>
-                                    <div className="text-gray-300 text-xs mt-0.5">{subSubq.question.substring(0, 80)}{subSubq.question.length > 80 ? '...' : ''}</div>
+                                    <div className="text-slate-300 text-xs mt-0.5">{subSubq.question.substring(0, 80)}{subSubq.question.length > 80 ? '...' : ''}</div>
                                   </div>
                                 </label>
                               );
@@ -1661,8 +1661,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       )}
                       
                       {subq.optionalParts && isAlreadySubmitted && (selectedParts[`${question.id}.${subq.id}`] || []).length > 0 && (
-                        <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-2">
-                          <div className="text-blue-300 font-medium text-xs">
+                        <div className="mb-3 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg p-2">
+                          <div className="text-[#43ead6] font-medium text-xs">
                             Selected Sub-parts: {(selectedParts[`${question.id}.${subq.id}`] || []).length} of {(subq.subquestions || []).length}
                           </div>
                         </div>
@@ -1679,18 +1679,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         }
                         
                         return (
-                        <div key={subSubq.id} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                        <div key={subSubq.id} className="bg-white/[0.08] rounded-lg p-3 border border-white/20">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-blue-200 text-sm font-medium">
                               Part {subIndex + 1}.{subSubIndex + 1}: {subSubq.question}
                             </span>
-                            <span className="text-blue-300 text-xs">{subSubq.points} pts</span>
+                            <span className="text-[#43ead6] text-xs">{subSubq.points} pts</span>
                           </div>
                           
                           {/* Sub-sub-question code if present */}
                           {subSubq.code && (
-                            <div className="bg-gray-800 rounded p-2 mb-2 border border-gray-600">
-                              <p className="text-gray-400 text-xs mb-1">Code:</p>
+                            <div className="bg-white/5 rounded p-2 mb-2 border border-white/20">
+                              <p className="text-slate-400 text-xs mb-1">Code:</p>
                               <pre className="text-green-400 text-xs overflow-x-auto font-mono">
                                 {subSubq.code}
                               </pre>
@@ -1699,8 +1699,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           
                           {/* Sub-sub-question diagram if present */}
                           {subSubq.diagram && (
-                            <div className="bg-gray-800 rounded p-2 mb-2 border border-gray-600">
-                              <p className="text-gray-400 text-xs mb-1">Diagram:</p>
+                            <div className="bg-white/5 rounded p-2 mb-2 border border-white/20">
+                              <p className="text-slate-400 text-xs mb-1">Diagram:</p>
                               {renderDiagram(subSubq.diagram, "Sub-sub-question diagram")}
                             </div>
                           )}
@@ -1709,7 +1709,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           {(subSubq.type === 'multiple-choice' || subSubq.type === 'multiple_choice') ? (
                             <div className="space-y-1">
                               {subSubq.allowMultipleCorrect && (
-                                <div className="text-xs text-gray-400 mb-1">
+                                <div className="text-xs text-slate-400 mb-1">
                                   Select all correct answers
                                 </div>
                               )}
@@ -1818,7 +1818,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               }}
                               placeholder="Fill in the blank..."
                               readOnly={isAlreadySubmitted}
-                              className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                              className={`w-full px-2 py-1 bg-white/10 border border-white/25 rounded text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
                           ) : subSubq.type === 'numerical' ? (
                             <input
@@ -1842,7 +1842,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               }}
                               placeholder="Enter number..."
                               readOnly={isAlreadySubmitted}
-                              className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                              className={`w-full px-2 py-1 bg-white/10 border border-white/25 rounded text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-green-500 text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
                           ) : (subSubq.type === 'code-writing' || subSubq.type === 'code_writing') ? (
                             <div>
@@ -1870,7 +1870,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 placeholder={`// Write your ${subSubq.codeLanguage || 'code'} here...`}
                                 rows={6}
                                 readOnly={isAlreadySubmitted}
-                                className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none text-sm font-mono ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                                className={`w-full px-2 py-1 bg-white/10 border border-white/25 rounded text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none text-sm font-mono ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                               />
                             </div>
                           ) : (subSubq.type === 'diagram-analysis' || subSubq.type === 'diagram_analysis' || subSubq.type === 'short-answer' || subSubq.type === 'short_answer' || subSubq.type === 'long-answer' || subSubq.type === 'long_answer') ? (
@@ -1902,15 +1902,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 placeholder={(subSubq.type === 'diagram-analysis' || subSubq.type === 'diagram_analysis') ? "Enter your diagram analysis..." : "Enter your answer..."}
                                 rows={(subSubq.type === 'long-answer' || subSubq.type === 'long_answer') ? 6 : 3}
                                 readOnly={isAlreadySubmitted}
-                                className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                                className={`w-full px-2 py-1 bg-white/10 border border-white/25 rounded text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                               />
                               {/* Diagram upload for nested sub-subquestions */}
                               {!isAlreadySubmitted && (
                                 <div>
                                   {(currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram ? (
-                                    <div className="bg-gray-700 p-2 rounded border border-gray-500">
+                                    <div className="bg-white/[0.08] p-2 rounded border border-white/25">
                                       <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs text-gray-400">Attached Diagram:</span>
+                                        <span className="text-xs text-slate-400">Attached Diagram:</span>
                                         <button
                                           onClick={() => {
                                             const newAnswer = {
@@ -1976,7 +1976,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                       />
                                       <label
                                         htmlFor={`diagram-upload-${question.id}-${subq.id}-${subSubq.id}`}
-                                        className="inline-flex items-center px-2 py-1 bg-gray-500 hover:bg-gray-400 text-white rounded cursor-pointer transition-colors text-xs"
+                                        className="inline-flex items-center px-2 py-1 bg-white/10 hover:bg-white/15 text-white rounded cursor-pointer transition-colors text-xs"
                                       >
                                         <ImageIcon size={12} className="mr-1" />
                                         Attach Diagram
@@ -1987,8 +1987,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               )}
                               {/* show diagram if already submitted */}
                                 {isAlreadySubmitted && (currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram && (
-                                    <div className="bg-gray-700 p-2 rounded border border-gray-500">
-                                        <div className="text-xs text-gray-400 mb-1">Submitted Diagram:</div>
+                                    <div className="bg-white/[0.08] p-2 rounded border border-white/25">
+                                        <div className="text-xs text-slate-400 mb-1">Submitted Diagram:</div>
                                         {renderDiagram((currentAnswer?.subAnswers?.[subq.id]?.subAnswers || {})[subSubq.id]?.diagram, "Submitted diagram")}
                                     </div>
                                 )}
@@ -2015,7 +2015,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               placeholder={!(((currentAnswer?.subAnswers || {})[subq.id]?.subAnswers || {})[subSubq.id]) ? "Enter your answer..." : ""}
                               rows={2}
                               readOnly={isAlreadySubmitted}
-                              className={`w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
+                              className={`w-full px-2 py-1 bg-white/10 border border-white/25 rounded text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50 resize-none text-sm ${isAlreadySubmitted ? 'cursor-not-allowed opacity-60' : ''}`}
                             />
                           )}
                         </div>
@@ -2037,7 +2037,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       }}
                       placeholder={`Answer for part ${subIndex + 1}...`}
                       rows={4}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 focus:border-transparent resize-none text-sm"
                     />
                   )}
                 </div>
@@ -2052,7 +2052,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         return (
           <div key={question.id} className="space-y-4">
             <h3 className="text-lg font-semibold text-white">Question {index + 1}</h3>
-            <p className="text-gray-400">Unknown question type: {question.type}</p>
+            <p className="text-slate-400">Unknown question type: {question.type}</p>
           </div>
         );
     }
@@ -2139,8 +2139,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     const subQuestionFeedback = getSubQuestionFeedback(feedbackKey);
     if (!subQuestion) {
       return (
-        <div className="bg-gray-800 rounded p-3">
-          <p className="text-gray-300">{typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}</p>
+        <div className="bg-white/5 rounded p-3">
+          <p className="text-slate-300">{typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}</p>
         </div>
       );
     }
@@ -2159,7 +2159,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <p className="text-teal-300 font-medium text-sm">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
               {selectedOptions.length > 0 ? (
                 <ul className="mt-1 space-y-1">
@@ -2172,8 +2172,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               )}
             </div>
             {subQuestion.options && (
-              <div className="bg-gray-900 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Available options:</p>
+              <div className="bg-[#0d1f38] rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Available options:</p>
                 <div className="space-y-1">
                   {subQuestion.options.map((option, index) => (
                     <div 
@@ -2181,7 +2181,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       className={`text-xs p-2 rounded ${
                         selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
-                          : 'text-gray-400 bg-gray-800'
+                          : 'text-slate-400 bg-white/5'
                       }`}
                     >
                       {option}
@@ -2192,7 +2192,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             )}
             {/* Sub-question feedback */}
             {subQuestionFeedback && (
-              <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+              <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                 <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
                   <Brain size={12} className="mr-1" />
                   AI Feedback
@@ -2206,20 +2206,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 )}
                 {subQuestionFeedback.breakdown && (
                   <div className="mb-2">
-                    <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                    <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                    <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                    <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                   </div>
                 )}
                 {subQuestionFeedback.strengths && (
                   <div className="mb-2">
                     <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                    <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                   </div>
                 )}
                 {subQuestionFeedback.areas_for_improvement && (
                   <div>
                     <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                    <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                    <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                   </div>
                 )}
               </div>
@@ -2231,21 +2231,21 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'code-writing':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-xs">Code Answer:</p>
-                <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400">
+                <p className="text-slate-400 text-xs">Code Answer:</p>
+                <span className="text-xs bg-white/[0.08] px-2 py-1 rounded text-slate-400">
                   {subQuestion.code_language || 'code'}
                 </span>
               </div>
-              <pre className="text-gray-200 text-xs overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-2 rounded">
+              <pre className="text-slate-200 text-xs overflow-x-auto whitespace-pre-wrap font-mono bg-[#0d1f38] p-2 rounded">
                 {subAnswer}
               </pre>
             </div>
             {subQuestion.subCode && (
-              <div className="bg-gray-900 rounded p-3">
-                <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
-                <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
+              <div className="bg-[#0d1f38] rounded p-3">
+                <p className="text-slate-400 text-xs mb-2">Reference Code:</p>
+                <pre className="text-slate-300 text-xs overflow-x-auto font-mono">
                   {subQuestion.subCode}
                 </pre>
               </div>
@@ -2271,13 +2271,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             : 'Possible AI-Generated Content'}
                         </p>
                         {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
-                          <p className="text-xs text-gray-300 mb-1">
+                          <p className="text-xs text-slate-300 mb-1">
                             Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                             Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                           </p>
                         )}
                         {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
-                          <div className="text-xs text-gray-300 mb-1">
+                          <div className="text-xs text-slate-300 mb-1">
                             <p className="font-medium">Detection Reasons:</p>
                             <ul className="list-disc list-inside space-y-0.5 mt-1">
                               {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -2286,7 +2286,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             </ul>
                           </div>
                         )}
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-400">
                           Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                         </p>
                       </div>
@@ -2294,7 +2294,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                 )}
                 
-                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                   <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
                     <Brain size={12} className="mr-1" />
                     AI Feedback
@@ -2308,20 +2308,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                   {subQuestionFeedback.breakdown && (
                     <div className="mb-2">
-                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                      <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                     </div>
                   )}
                   {subQuestionFeedback.strengths && (
                     <div className="mb-2">
                       <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                     </div>
                   )}
                   {subQuestionFeedback.areas_for_improvement && (
                     <div>
                       <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>
@@ -2334,7 +2334,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'true_false':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                 subAnswer === 'true' || subAnswer === true 
                   ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
@@ -2364,13 +2364,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             : 'Possible AI-Generated Content'}
                         </p>
                         {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
-                          <p className="text-xs text-gray-300 mb-1">
+                          <p className="text-xs text-slate-300 mb-1">
                             Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                             Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                           </p>
                         )}
                         {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
-                          <div className="text-xs text-gray-300 mb-1">
+                          <div className="text-xs text-slate-300 mb-1">
                             <p className="font-medium">Detection Reasons:</p>
                             <ul className="list-disc list-inside space-y-0.5 mt-1">
                               {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -2379,7 +2379,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             </ul>
                           </div>
                         )}
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-400">
                           Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                         </p>
                       </div>
@@ -2387,7 +2387,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                 )}
                 
-                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                   <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
                     <Brain size={12} className="mr-1" />
                     AI Feedback
@@ -2401,20 +2401,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                   {subQuestionFeedback.breakdown && (
                     <div className="mb-2">
-                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                      <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                     </div>
                   )}
                   {subQuestionFeedback.strengths && (
                     <div className="mb-2">
                       <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                     </div>
                   )}
                   {subQuestionFeedback.areas_for_improvement && (
                     <div>
                       <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>
@@ -2427,15 +2427,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'fill_blank':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
+            <div className="bg-white/5 rounded p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <span className="text-xs bg-orange-600 px-2 py-1 rounded text-orange-100">
                   FILL IN THE BLANK
                 </span>
               </div>
-              <div className="bg-gray-900 rounded p-3">
+              <div className="bg-[#0d1f38] rounded p-3">
                 <p className="text-orange-300 font-medium text-sm">Student's Answer:</p>
-                <p className="text-white mt-1 font-mono bg-gray-800 px-2 py-1 rounded inline-block">
+                <p className="text-white mt-1 font-mono bg-white/5 px-2 py-1 rounded inline-block">
                   "{subAnswer}"
                 </p>
               </div>
@@ -2461,13 +2461,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             : 'Possible AI-Generated Content'}
                         </p>
                         {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
-                          <p className="text-xs text-gray-300 mb-1">
+                          <p className="text-xs text-slate-300 mb-1">
                             Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                             Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                           </p>
                         )}
                         {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
-                          <div className="text-xs text-gray-300 mb-1">
+                          <div className="text-xs text-slate-300 mb-1">
                             <p className="font-medium">Detection Reasons:</p>
                             <ul className="list-disc list-inside space-y-0.5 mt-1">
                               {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -2476,7 +2476,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             </ul>
                           </div>
                         )}
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-400">
                           Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                         </p>
                       </div>
@@ -2484,7 +2484,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                 )}
                 
-                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                   <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
                     <Brain size={12} className="mr-1" />
                     AI Feedback
@@ -2498,20 +2498,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                   {subQuestionFeedback.breakdown && (
                     <div className="mb-2">
-                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                      <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                     </div>
                   )}
                   {subQuestionFeedback.strengths && (
                     <div className="mb-2">
                       <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                     </div>
                   )}
                   {subQuestionFeedback.areas_for_improvement && (
                     <div>
                       <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>
@@ -2525,7 +2525,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         // Recursively render nested multi-part questions
         // Pass the feedbackKey as the prefix for nested levels
         return (
-          <div className="ml-4 border-l-2 border-blue-400/30 pl-4">
+          <div className="ml-4 border-l-2 border-[#43ead6]/30 pl-4">
             {renderMultiPartAnswer(subQuestion, subAnswer, null, feedbackKey)}
           </div>
         );
@@ -2540,12 +2540,12 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'diagram-analysis':
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
-              <p className="text-gray-200 text-sm whitespace-pre-wrap">
+            <div className="bg-white/5 rounded p-3">
+              <p className="text-slate-200 text-sm whitespace-pre-wrap">
                   {typeof subAnswer === 'string' ? subAnswer : subAnswer.text || JSON.stringify(subAnswer)}
                   {subAnswer.diagram && (
                     <div className="mt-3">
-                      <p className="text-gray-400 text-xs mb-1">Attached Diagram:</p>
+                      <p className="text-slate-400 text-xs mb-1">Attached Diagram:</p>
                       {renderDiagram(subAnswer.diagram, "Student's diagram")}
                     </div>
                   )}
@@ -2572,13 +2572,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             : 'Possible AI-Generated Content'}
                         </p>
                         {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
-                          <p className="text-xs text-gray-300 mb-1">
+                          <p className="text-xs text-slate-300 mb-1">
                             Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                             Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                           </p>
                         )}
                         {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
-                          <div className="text-xs text-gray-300 mb-1">
+                          <div className="text-xs text-slate-300 mb-1">
                             <p className="font-medium">Detection Reasons:</p>
                             <ul className="list-disc list-inside space-y-0.5 mt-1">
                               {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -2587,7 +2587,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             </ul>
                           </div>
                         )}
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-400">
                           Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                         </p>
                       </div>
@@ -2595,7 +2595,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                 )}
                 
-                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                   <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
                     <Brain size={12} className="mr-1" />
                     AI Feedback
@@ -2609,20 +2609,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                   {subQuestionFeedback.breakdown && (
                     <div className="mb-2">
-                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                      <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                     </div>
                   )}
                   {subQuestionFeedback.strengths && (
                     <div className="mb-2">
                       <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                     </div>
                   )}
                   {subQuestionFeedback.areas_for_improvement && (
                     <div>
                       <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>
@@ -2634,8 +2634,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       default:
         return (
           <div className="space-y-2">
-            <div className="bg-gray-800 rounded p-3">
-              <p className="text-gray-200 text-sm whitespace-pre-wrap">
+            <div className="bg-white/5 rounded p-3">
+              <p className="text-slate-200 text-sm whitespace-pre-wrap">
                 {typeof subAnswer === 'string' ? subAnswer : JSON.stringify(subAnswer)}
               </p>
             </div>
@@ -2660,13 +2660,13 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             : 'Possible AI-Generated Content'}
                         </p>
                         {subQuestionFeedback.ai_flag.original_score && subQuestionFeedback.ai_flag.penalized_score && (
-                          <p className="text-xs text-gray-300 mb-1">
+                          <p className="text-xs text-slate-300 mb-1">
                             Original: <span className="line-through">{subQuestionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                             Penalized: <span className="font-bold text-red-300">{subQuestionFeedback.ai_flag.penalized_score.toFixed(1)}</span>
                           </p>
                         )}
                         {subQuestionFeedback.ai_flag.reasons && subQuestionFeedback.ai_flag.reasons.length > 0 && (
-                          <div className="text-xs text-gray-300 mb-1">
+                          <div className="text-xs text-slate-300 mb-1">
                             <p className="font-medium">Detection Reasons:</p>
                             <ul className="list-disc list-inside space-y-0.5 mt-1">
                               {subQuestionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -2675,7 +2675,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             </ul>
                           </div>
                         )}
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-400">
                           Confidence: {(subQuestionFeedback.ai_flag.confidence * 100).toFixed(1)}%
                         </p>
                       </div>
@@ -2683,7 +2683,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                 )}
                 
-                <div className="bg-gray-900 rounded-lg p-3 border border-green-500/20">
+                <div className="bg-[#0d1f38] rounded-lg p-3 border border-green-500/20">
                   <p className="text-green-400 font-medium text-xs mb-2 flex items-center">
                     <Brain size={12} className="mr-1" />
                     AI Feedback
@@ -2697,20 +2697,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   )}
                   {subQuestionFeedback.breakdown && (
                     <div className="mb-2">
-                      <p className="text-gray-400 text-xs mb-1">Breakdown:</p>
-                      <p className="text-gray-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
+                      <p className="text-slate-400 text-xs mb-1">Breakdown:</p>
+                      <p className="text-slate-200 text-xs whitespace-pre-wrap">{subQuestionFeedback.breakdown}</p>
                     </div>
                   )}
                   {subQuestionFeedback.strengths && (
                     <div className="mb-2">
                       <p className="text-green-400 text-xs mb-1">✓ Strengths:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.strengths}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.strengths}</p>
                     </div>
                   )}
                   {subQuestionFeedback.areas_for_improvement && (
                     <div>
                       <p className="text-orange-400 text-xs mb-1">→ Areas for Improvement:</p>
-                      <p className="text-gray-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
+                      <p className="text-slate-200 text-xs">{subQuestionFeedback.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>
@@ -2818,7 +2818,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const renderMultiPartAnswer = (question, answer, questionId = null, feedbackKeyPrefix = null) => {
     if (!question || !question.subquestions) {
       return (
-        <div className="bg-gray-700 rounded p-3">
+        <div className="bg-white/[0.08] rounded p-3">
           <p className="text-white">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
         </div>
       );
@@ -2831,30 +2831,30 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       <div className="space-y-4">
         {/* Main question code/diagram if present */}
         {question.hasMainCode && question.mainCode && (
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-white/5 rounded-lg p-4 border border-white/20">
             <div className="flex items-center space-x-2 mb-3">
-              <span className="text-xs bg-blue-600 px-2 py-1 rounded text-blue-100">
+              <span className="text-xs bg-[#43ead6] px-2 py-1 rounded text-blue-100">
                 MAIN CODE
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-slate-400">
                 {question.mainCodeLanguage || 'code'}
               </span>
             </div>
-            <pre className="text-gray-200 text-sm overflow-x-auto whitespace-pre-wrap font-mono bg-gray-900 p-3 rounded">
+            <pre className="text-slate-200 text-sm overflow-x-auto whitespace-pre-wrap font-mono bg-[#0d1f38] p-3 rounded">
               {question.mainCode}
             </pre>
           </div>
         )}
 
         {question.hasMainDiagram && question.mainDiagram && (
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-white/5 rounded-lg p-4 border border-white/20">
             <div className="flex items-center space-x-2 mb-3">
               <span className="text-xs bg-purple-600 px-2 py-1 rounded text-purple-100">
                 MAIN DIAGRAM
               </span>
             </div>
-            <div className="bg-gray-900 p-3 rounded">
-              <p className="text-gray-300 text-sm">Diagram: {JSON.stringify(question.mainDiagram)}</p>
+            <div className="bg-[#0d1f38] p-3 rounded">
+              <p className="text-slate-300 text-sm">Diagram: {JSON.stringify(question.mainDiagram)}</p>
             </div>
           </div>
         )}
@@ -2905,18 +2905,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             const subQuestionFeedback = getSubQuestionFeedback(currentFeedbackKey);
             
             return (
-              <div key={subQuestion.id || index} className="bg-gray-700 rounded-lg p-4 border-l-4 border-teal-500">
+              <div key={subQuestion.id || index} className="bg-white/[0.08] rounded-lg p-4 border-l-4 border-teal-500">
                 {/* Sub-question header */}
                 <div className="mb-3">
                   <div className="flex items-center space-x-3 mb-2">
                     <span className="bg-teal-600 text-white px-2 py-1 rounded text-sm font-medium">
                       Part {partNumber}
                     </span>
-                    <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                    <span className="bg-white/10 text-slate-300 px-2 py-1 rounded text-xs uppercase">
                       {subQuestion.type?.replace('_', ' ')}
                     </span>
                     {subQuestion.points && (
-                      <span className="text-gray-400 text-xs">
+                      <span className="text-slate-400 text-xs">
                         {subQuestion.points} pts
                       </span>
                     )}
@@ -2931,15 +2931,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   </div>
                   
                   {/* Sub-question text */}
-                  <div className="bg-gray-600 rounded p-3">
-                    <p className="text-gray-100 font-medium text-sm">{subQuestion.question}</p>
+                  <div className="bg-white/10 rounded p-3">
+                    <p className="text-slate-100 font-medium text-sm">{subQuestion.question}</p>
                   </div>
 
                   {/* Sub-question code if present */}
                   {subQuestion.hasSubCode && subQuestion.subCode && (
-                    <div className="mt-2 bg-gray-800 rounded p-3">
-                      <p className="text-gray-400 text-xs mb-2">Reference Code:</p>
-                      <pre className="text-gray-300 text-xs overflow-x-auto font-mono">
+                    <div className="mt-2 bg-white/5 rounded p-3">
+                      <p className="text-slate-400 text-xs mb-2">Reference Code:</p>
+                      <pre className="text-slate-300 text-xs overflow-x-auto font-mono">
                         {subQuestion.subCode}
                       </pre>
                     </div>
@@ -2947,21 +2947,21 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
                   {/* Sub-question diagram if present */}
                   {subQuestion.hasDiagram && subQuestion.subDiagram && (
-                    <div className="mt-2 bg-gray-800 rounded p-3">
-                      <p className="text-gray-400 text-xs mb-2">Diagram:</p>
-                      <p className="text-gray-300 text-xs">{JSON.stringify(subQuestion.subDiagram)}</p>
+                    <div className="mt-2 bg-white/5 rounded p-3">
+                      <p className="text-slate-400 text-xs mb-2">Diagram:</p>
+                      <p className="text-slate-300 text-xs">{JSON.stringify(subQuestion.subDiagram)}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Sub-question answer */}
                 <div>
-                  <p className="text-gray-300 font-medium text-sm mb-2">Answer:</p>
+                  <p className="text-slate-300 font-medium text-sm mb-2">Answer:</p>
                   {subAnswer !== undefined ? (
                     renderSubQuestionAnswer(subQuestion, subAnswer, currentFeedbackKey)
                   ) : (
-                    <div className="bg-gray-800 rounded p-3">
-                      <p className="text-gray-500 text-sm italic">No answer provided</p>
+                    <div className="bg-white/5 rounded p-3">
+                      <p className="text-slate-500 text-sm italic">No answer provided</p>
                     </div>
                   )}
                 </div>
@@ -2978,8 +2978,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   const renderAnswer = (question, answer) => {
     if (!question) {
       return (
-        <div className="bg-gray-700 rounded p-3">
-          <p className="text-gray-300">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
+        <div className="bg-white/[0.08] rounded p-3">
+          <p className="text-slate-300">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
         </div>
       );
     }
@@ -2998,8 +2998,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
         return (
           <div className="space-y-3">
-            <div className="bg-gray-700 rounded p-3">
-              <p className="text-gray-300 font-medium">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
+            <div className="bg-white/[0.08] rounded p-3">
+              <p className="text-slate-300 font-medium">Selected Answer{selectedOptions.length > 1 ? 's' : ''}:</p>
               {selectedOptions.length > 0 ? (
                 <ul className="mt-2 space-y-1">
                   {selectedOptions.map((opt, idx) => (
@@ -3011,8 +3011,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               )}
             </div>
             {question.options && (
-              <div className="bg-gray-800 rounded p-3 border border-gray-600">
-                <p className="text-gray-400 text-sm mb-2">Available Options:</p>
+              <div className="bg-white/5 rounded p-3 border border-white/20">
+                <p className="text-slate-400 text-sm mb-2">Available Options:</p>
                 <ul className="space-y-1">
                   {question.options.map((option, index) => (
                     <li 
@@ -3020,7 +3020,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       className={`text-sm p-2 rounded ${
                         selectedIndices.includes(index)
                           ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' 
-                          : 'text-gray-400'
+                          : 'text-slate-400'
                       }`}
                     >
                       {option}
@@ -3036,10 +3036,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       case 'code-writing':
         return (
           <div className="space-y-3">
-            <div className="bg-gray-700 rounded p-3">
+            <div className="bg-white/[0.08] rounded p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-300 font-medium">Code Answer:</p>
-                <span className="text-xs bg-gray-600 px-2 py-1 rounded text-gray-300">
+                <p className="text-slate-300 font-medium">Code Answer:</p>
+                <span className="text-xs bg-white/10 px-2 py-1 rounded text-slate-300">
                   {question.code_language || 'code'}
                 </span>
               </div>
@@ -3067,7 +3067,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
       default:
         // For short_answer, long_answer, true_false, and other types
         return (
-          <div className="bg-gray-700 rounded p-3">
+          <div className="bg-white/[0.08] rounded p-3">
             <p className="text-white whitespace-pre-wrap">{typeof answer === 'string' ? answer : JSON.stringify(answer)}</p>
           </div>
         );
@@ -3082,15 +3082,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
     return (
       <div className="space-y-3">
         {answerText && (
-          <div className="bg-gray-700 rounded p-3">
+          <div className="bg-white/[0.08] rounded p-3">
             <p className="text-white whitespace-pre-wrap">{answerText}</p>
           </div>
         )}
         {diagram && diagram.s3_key && (
-          <div className="bg-gray-800 p-3 rounded border border-gray-700">
+          <div className="bg-white/5 p-3 rounded border border-[#1a2943]">
             <div className="flex items-center space-x-2 mb-2">
               <ImageIcon size={16} className="text-teal-400" />
-              <span className="text-sm text-gray-300">Attached Diagram</span>
+              <span className="text-sm text-slate-300">Attached Diagram</span>
             </div>
             <DiagramImage diagramData={diagram} displayName={diagram.filename || 'Student diagram'} />
           </div>
@@ -3102,12 +3102,12 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
   if (submitted) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 max-w-md w-full text-center">
+        <div className="bg-[#0d1f38] rounded-xl p-8 border border-[#182842] max-w-md w-full text-center">
           <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={32} className="text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-4">Assignment Submitted!</h2>
-          <p className="text-gray-400 mb-6">
+          <p className="text-slate-400 mb-6">
             Your assignment has been submitted successfully. You will receive a confirmation email shortly.
           </p>
           <button
@@ -3123,24 +3123,24 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-xl border border-gray-800 w-full max-w-6xl h-[90vh] flex flex-col">
+      <div className="bg-[#0d1f38] rounded-xl border border-[#182842] w-full max-w-6xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-[#182842]">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-white">{actualAssignment.title}</h2>
-            <p className="text-gray-400 mt-1">
+            <p className="text-slate-400 mt-1">
               {assignment.owner_name ? `by ${assignment.owner_name}` : 
                assignment.owner_email ? `by ${assignment.owner_email}` : 
                'Assignment'}
             </p>
             {actualAssignment.description && (
-              <p className="text-gray-300 mt-2 text-sm max-w-2xl">
+              <p className="text-slate-300 mt-2 text-sm max-w-2xl">
                 {actualAssignment.description}
               </p>
             )}
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-gray-400">
+            <div className="flex items-center space-x-2 text-slate-400">
               <Clock size={16} />
               <span className="text-sm">
                 {actualAssignment.due_date ? 
@@ -3151,7 +3151,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-slate-400 hover:text-white transition-colors"
             >
               <X size={24} />
             </button>
@@ -3174,20 +3174,20 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     <div className="text-3xl font-bold text-green-400">
                       {submission.score && submission.percentage ? `${submission.percentage}%` : submission.score || 'N/A'}
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-slate-400">
                       {submission.score ? `${submission.score} points` : ''}
                     </div>
                   </div>
                 </div>
                 
                 {submission.overall_feedback && (
-                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <p className="text-gray-300 font-medium mb-2">Overall Feedback:</p>
-                    <p className="text-gray-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
+                  <div className="bg-white/5 rounded-lg p-4 mb-4">
+                    <p className="text-slate-300 font-medium mb-2">Overall Feedback:</p>
+                    <p className="text-slate-200 whitespace-pre-wrap">{submission.overall_feedback}</p>
                   </div>
                 )}
                 
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-slate-400">
                   Graded at: {submission.graded_at ? formatDate(submission.graded_at) : 'N/A'}
                 </div>
               </div>
@@ -3204,7 +3204,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                     const questionFeedback = submission.feedback?.[questionId];
                     
                     return (
-                      <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                      <div key={questionId} className="bg-white/5 rounded-lg p-6 border border-[#1a2943]">
                         {/* Question Header */}
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-3">
@@ -3213,12 +3213,12 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                 Question {questionNumber}
                               </span>
                               {question?.type && (
-                                <span className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs uppercase">
+                                <span className="bg-white/10 text-slate-300 px-2 py-1 rounded text-xs uppercase">
                                   {question.type.replace('_', ' ')}
                                 </span>
                               )}
                               {question?.points && (
-                                <span className="text-gray-400 text-sm">
+                                <span className="text-slate-400 text-sm">
                                   {question.points} {question.points === 1 ? 'point' : 'points'}
                                 </span>
                               )}
@@ -3248,10 +3248,10 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           
                           {/* Optional Parts Indicator */}
                           {question?.type === 'multi-part' && question?.optionalParts && (
-                            <div className="mb-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                            <div className="mb-3 bg-[#43ead6]/10/20 border border-[#43ead6]/30 rounded-lg p-3">
                               <div className="flex items-center space-x-2 text-sm">
-                                <span className="text-blue-300 font-medium">Optional Parts:</span>
-                                <span className="text-gray-300">
+                                <span className="text-[#43ead6] font-medium">Optional Parts:</span>
+                                <span className="text-slate-300">
                                   Student answered {answer?.subAnswers ? Object.keys(answer.subAnswers).filter(k => answer.subAnswers[k]).length : 0} of {question.requiredPartsCount} required parts
                                   {question.subquestions ? ` (${question.subquestions.length} total)` : ''}
                                 </span>
@@ -3272,15 +3272,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           
                           {/* Question Text */}
                           {question?.question && (
-                            <div className="bg-gray-700 rounded-lg p-4 mb-4">
+                            <div className="bg-white/[0.08] rounded-lg p-4 mb-4">
                               <p className="text-white font-medium mb-2">Question:</p>
-                              <p className="text-gray-200 whitespace-pre-wrap">{question.question}</p>
+                              <p className="text-slate-200 whitespace-pre-wrap">{question.question}</p>
                               
                               {/* Additional question content for specific types */}
                               {question.type === 'code_writing' && question.starter_code && (
                                 <div className="mt-3">
-                                  <p className="text-gray-400 text-sm mb-2">Starter Code:</p>
-                                  <pre className="bg-gray-800 p-3 rounded text-sm text-gray-300 overflow-x-auto">
+                                  <p className="text-slate-400 text-sm mb-2">Starter Code:</p>
+                                  <pre className="bg-white/5 p-3 rounded text-sm text-slate-300 overflow-x-auto">
                                     {question.starter_code}
                                   </pre>
                                 </div>
@@ -3291,7 +3291,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         
                         {/* Answer Section */}
                         <div className="mb-4">
-                          <p className="text-gray-300 font-medium mb-3">Student Answer:</p>
+                          <p className="text-slate-300 font-medium mb-3">Student Answer:</p>
                           {(question?.type === 'short-answer' || question?.type === 'long-answer' || question?.type === 'diagram-analysis') 
                             ? renderAnswerWithDiagram(answer)
                             : renderAnswer(question, answer)
@@ -3319,14 +3319,14 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                         : 'Possible AI-Generated Content'}
                                     </p>
                                     {questionFeedback.ai_flag.original_score && questionFeedback.ai_flag.penalized_score && (
-                                      <p className="text-sm text-gray-300 mb-2">
+                                      <p className="text-sm text-slate-300 mb-2">
                                         Original Score: <span className="line-through">{questionFeedback.ai_flag.original_score.toFixed(1)}</span> → 
                                         Penalized Score: <span className="font-bold text-red-300">{questionFeedback.ai_flag.penalized_score.toFixed(1)}</span> 
                                         <span className="text-red-400 ml-2">(50% penalty applied)</span>
                                       </p>
                                     )}
                                     {questionFeedback.ai_flag.reasons && questionFeedback.ai_flag.reasons.length > 0 && (
-                                      <div className="text-sm text-gray-300">
+                                      <div className="text-sm text-slate-300">
                                         <p className="font-medium mb-1">Detection Reasons:</p>
                                         <ul className="list-disc list-inside space-y-1">
                                           {questionFeedback.ai_flag.reasons.map((reason, idx) => (
@@ -3335,7 +3335,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                         </ul>
                                       </div>
                                     )}
-                                    <p className="text-xs text-gray-400 mt-2">
+                                    <p className="text-xs text-slate-400 mt-2">
                                       Confidence: {(questionFeedback.ai_flag.confidence * 100).toFixed(1)}% | 
                                       Model Score: {(questionFeedback.ai_flag.model_score * 100).toFixed(1)}%
                                     </p>
@@ -3345,7 +3345,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                             )}
                             
                             {/* Regular Feedback */}
-                            <div className="bg-gray-900 rounded-lg p-4 border border-green-500/20">
+                            <div className="bg-[#0d1f38] rounded-lg p-4 border border-green-500/20">
                               <p className="text-green-400 font-medium mb-3 flex items-center">
                                 <Brain size={16} className="mr-2" />
                                 AI Feedback
@@ -3353,22 +3353,22 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               
                               {questionFeedback.breakdown && (
                                 <div className="mb-3">
-                                  <p className="text-gray-400 text-sm mb-1">Breakdown:</p>
-                                  <p className="text-gray-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
+                                  <p className="text-slate-400 text-sm mb-1">Breakdown:</p>
+                                  <p className="text-slate-200 text-sm whitespace-pre-wrap">{questionFeedback.breakdown}</p>
                                 </div>
                               )}
                               
                               {questionFeedback.strengths && (
                                 <div className="mb-3">
                                   <p className="text-green-400 text-sm mb-1">✓ Strengths:</p>
-                                  <p className="text-gray-200 text-sm">{questionFeedback.strengths}</p>
+                                  <p className="text-slate-200 text-sm">{questionFeedback.strengths}</p>
                                 </div>
                               )}
                               
                               {questionFeedback.areas_for_improvement && (
                                 <div>
                                   <p className="text-orange-400 text-sm mb-1">→ Areas for Improvement:</p>
-                                  <p className="text-gray-200 text-sm">{questionFeedback.areas_for_improvement}</p>
+                                  <p className="text-slate-200 text-sm">{questionFeedback.areas_for_improvement}</p>
                                 </div>
                               )}
                             </div>
@@ -3377,18 +3377,18 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       </div>
                     );
                   }) :
-                  <p className="text-gray-400">No answers available</p>
+                  <p className="text-slate-400">No answers available</p>
                 }
               </div>
             ) : (
               <div className="space-y-6">
                 {/* PDF Submission Header */}
                 <div className="text-center py-8">
-                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <FileText size={40} className="text-gray-400" />
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText size={40} className="text-slate-400" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-4">PDF Submission</h3>
-                  <p className="text-gray-400 mb-6">
+                  <p className="text-slate-400 mb-6">
                     This student submitted their answers as a PDF file.
                   </p>
                   <button 
@@ -3426,7 +3426,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         return aNum - bNum;
                       })
                       .map(([questionId, feedback]) => (
-                        <div key={questionId} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <div key={questionId} className="bg-white/5 rounded-lg p-6 border border-[#1a2943]">
                           {/* Question Header */}
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
@@ -3435,7 +3435,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               </span>
                               {/* Optional Part Indicator for sub-questions */}
                               {questionId.includes('.') && (
-                                <span className="text-blue-400 text-xs bg-blue-900/20 px-2 py-1 rounded">
+                                <span className="text-[#43ead6] text-xs bg-[#43ead6]/10/20 px-2 py-1 rounded">
                                   Selected Part
                                 </span>
                               )}
@@ -3450,9 +3450,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                           {/* Feedback Content */}
                           <div className="space-y-4">
                             {feedback.breakdown && (
-                              <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
-                                <p className="text-gray-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
-                                <p className="text-gray-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
+                              <div className="bg-[#0d1f38] rounded-lg p-4 border border-white/20">
+                                <p className="text-slate-400 text-sm mb-2 font-medium">Detailed Breakdown:</p>
+                                <p className="text-slate-200 text-sm whitespace-pre-wrap">{feedback.breakdown}</p>
                               </div>
                             )}
                             
@@ -3462,7 +3462,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                   <CheckCircle size={16} className="mr-2" />
                                   Strengths:
                                 </p>
-                                <p className="text-gray-200 text-sm">{feedback.strengths}</p>
+                                <p className="text-slate-200 text-sm">{feedback.strengths}</p>
                               </div>
                             )}
                             
@@ -3472,7 +3472,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                                   <AlertCircle size={16} className="mr-2" />
                                   Areas for Improvement:
                                 </p>
-                                <p className="text-gray-200 text-sm">{feedback.areas_for_improvement}</p>
+                                <p className="text-slate-200 text-sm">{feedback.areas_for_improvement}</p>
                               </div>
                             )}
                           </div>
@@ -3486,7 +3486,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
           </>) : (<>{submissionMethod === 'in-app' ? (
             <div className="h-full flex">
               {/* Questions List */}
-              <div className="w-80 bg-gray-800 border-r border-gray-700 overflow-y-auto">
+              <div className="w-80 bg-white/5 border-r border-[#1a2943] overflow-y-auto">
                 <div className="p-4">
                   <h3 className="text-lg font-semibold text-white mb-4">Questions</h3>
                   <div className="space-y-2">
@@ -3514,7 +3514,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               ? `bg-${color}-600 text-white`
                               : isAnswered
                               ? `bg-${color}-600/20 text-${color}-400 border border-${color}-600/30`
-                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                              : 'bg-white/[0.08] text-slate-300 hover:bg-white/10'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -3523,8 +3523,8 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                               <span className={`text-xs px-2 py-1 rounded ${
                                 question.type === 'code-writing' ? 'bg-purple-500/20 text-purple-300' :
                                 question.type === 'diagram-analysis' ? 'bg-orange-500/20 text-orange-300' :
-                                question.type === 'multi-part' ? 'bg-blue-500/20 text-blue-300' :
-                                'bg-gray-500/20 text-gray-300'
+                                question.type === 'multi-part' ? 'bg-[#43ead6]/15 text-[#43ead6]' :
+                                'bg-white/10 text-slate-300'
                               }`}>
                                 {question.type === 'code-writing' ? 'Code' :
                                  question.type === 'diagram-analysis' ? 'Diagram' :
@@ -3555,17 +3555,17 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
             /* PDF Upload Mode */
             <div className="h-full flex items-center justify-center p-6">
               <div className="text-center max-w-md">
-                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Upload size={40} className="text-gray-400" />
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Upload size={40} className="text-slate-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-4">Upload PDF Answer Sheet</h3>
-                <p className="text-gray-400 mb-6">
+                <p className="text-slate-400 mb-6">
                   Upload a PDF containing your answers. Diagrams will be automatically extracted and analyzed.
                 </p>
                 <div className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
                   isAlreadySubmitted 
-                    ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed' 
-                    : 'border-gray-700 hover:border-gray-600'
+                    ? 'border-white/20 bg-white/5/50 cursor-not-allowed' 
+                    : 'border-[#1a2943] hover:border-white/20'
                 }`}>
                   <input
                     type="file"
@@ -3581,7 +3581,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         <AlertCircle size={32} className="text-yellow-400" />
                       </div>
                       <p className="text-yellow-400 font-medium mb-1">Assignment Already Submitted</p>
-                      <p className="text-gray-300 text-sm mb-2">
+                      <p className="text-slate-300 text-sm mb-2">
                         PDF upload is disabled for submitted assignments
                       </p>
                     </div>
@@ -3593,7 +3593,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                         </svg>
                       </div>
                       <p className="text-green-400 font-medium mb-1">✓ PDF Selected</p>
-                      <p className="text-gray-300 text-sm mb-2">{pdfFile.name}</p>
+                      <p className="text-slate-300 text-sm mb-2">{pdfFile.name}</p>
                       <button
                         onClick={() => setPdfFile(null)}
                         className="text-red-400 hover:text-red-300 text-sm"
@@ -3606,9 +3606,9 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                       htmlFor="pdf-upload"
                       className="cursor-pointer flex flex-col items-center"
                     >
-                      <Upload size={32} className="text-gray-400 mb-3" />
+                      <Upload size={32} className="text-slate-400 mb-3" />
                       <p className="text-white font-medium mb-1">Click to upload PDF</p>
-                      <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
+                      <p className="text-slate-400 text-sm">Maximum file size: 10MB</p>
                     </label>
                   )}
                 </div>
@@ -3618,16 +3618,16 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-800">
+        <div className="p-6 border-t border-[#182842]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <span className="text-gray-400 text-sm">Submission Method:</span>
+                <span className="text-slate-400 text-sm">Submission Method:</span>
                 <select
                   value={submissionMethod}
                   onChange={(e) => setSubmissionMethod(e.target.value)}
                   disabled={isAlreadySubmitted}
-                  className={`px-3 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                  className={`px-3 py-1 bg-white/5 border border-[#1a2943] rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                     isAlreadySubmitted ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -3637,7 +3637,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
               </div>
             </div>
             
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-slate-400">
               {isAlreadySubmitted ? (
                 <span className="text-green-400 font-medium">{isGraded ? '✓ Assignment graded - viewing feedback' : '✓ Assignment submitted - viewing submission'}</span>
               ) : (
@@ -3659,15 +3659,15 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   disabled={isSaving || isAlreadySubmitted}
                   className={`px-4 py-2 font-medium rounded-lg transition-colors ${
                     isSaving || isAlreadySubmitted
-                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-700 text-white hover:bg-gray-600'
+                      ? 'bg-white/[0.08] text-slate-400 cursor-not-allowed' 
+                      : 'bg-white/[0.08] text-white hover:bg-white/10'
                   }`}
                 >
                   <Save size={16} className="mr-2 inline" />
                   {isSaving ? 'Saving...' : isAlreadySubmitted ? 'Submitted' : 'Save Draft'}
                 </button>
                 {lastSaved && (
-                  <span className="text-xs text-gray-400 mt-1">
+                  <span className="text-xs text-slate-400 mt-1">
                     Saved {lastSaved.toLocaleTimeString()}
                   </span>
                 )}
@@ -3677,7 +3677,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                 disabled={isSubmitting || isAlreadySubmitted || pdfUploading}
                 className={`px-6 py-2 font-medium rounded-lg transition-all duration-300 ${
                   isSubmitting || isAlreadySubmitted || pdfUploading
-                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    ? 'bg-white/[0.08] text-slate-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
                 }`}
               >

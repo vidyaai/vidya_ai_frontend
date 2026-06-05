@@ -54,8 +54,8 @@ const ChatHistory = ({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-0 mt-2 mr-2 z-40 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
-      <div className="px-4 py-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+    <div className="absolute right-0 top-0 mt-2 mr-2 z-40 w-80 bg-[#0d1f38] border border-[#182842] rounded-xl shadow-2xl overflow-hidden">
+      <div className="px-4 py-3 bg-[#0d1f38] border-b border-[#182842] flex items-center justify-between">
         <div className="text-white font-semibold text-sm">Chat History</div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-sm">✕</button>
       </div>
@@ -66,8 +66,8 @@ const ChatHistory = ({
           sortedSessions.map((s) => (
             <div
               key={s.id}
-              className={`group flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors ${
-                s.id === activeSessionId ? 'bg-gray-800' : ''
+              className={`group flex items-center justify-between px-4 py-3 hover:bg-[#0d1f38] transition-colors ${
+                s.id === activeSessionId ? 'bg-[#0d1f38]' : ''
               }`}
             >
               <button
@@ -107,7 +107,7 @@ const ChatHistory = ({
       {/* Shared Content Error Modal */}
       {sharedContentError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-[#0d1f38] border border-[#182842] rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-yellow-600 rounded-full flex items-center justify-center">
                 <AlertTriangle size={20} className="text-white" />
@@ -118,13 +118,13 @@ const ChatHistory = ({
               </div>
             </div>
             
-            <div className="bg-gray-700 rounded-lg p-4 mb-4">
+            <div className="bg-white/[0.08] rounded-lg p-4 mb-4">
               <p className="text-gray-300 text-sm mb-3">
                 {sharedContentError.message}
               </p>
               
               {sharedContentError.sharedLink && (
-                <div className="border-t border-gray-600 pt-3">
+                <div className="border-t border-[#1a2943] pt-3">
                   <h4 className="text-white font-medium text-sm mb-2">Share Link Details:</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
@@ -155,7 +155,7 @@ const ChatHistory = ({
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setSharedContentError(null)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                className="px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg"
               >
                 Close
               </button>
@@ -164,7 +164,7 @@ const ChatHistory = ({
                   setSharedContentError(null);
                   alert('Please go to the Sharing section to manage your share links and delete the one blocking this deletion.');
                 }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                className="px-4 py-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded-lg"
               >
                 Manage Share Links
               </button>

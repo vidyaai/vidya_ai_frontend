@@ -360,9 +360,9 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
       })();
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-[#071224]">
       {isGoingBack && (
-        <div className="fixed inset-0 z-50 bg-gray-950 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">
               <defs>
@@ -380,13 +380,13 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
       <TopBar onNavigateToHome={onNavigateToHome} />
 
       {/* Page Header */}
-      <div className="bg-gray-900 border-b border-gray-800">
+      <div className="bg-[#0d1f38] border-b border-[#182842]">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={selectedCourseId !== undefined ? () => setSelectedCourseId(undefined) : () => setIsGoingBack(true)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft size={24} />
               </button>
@@ -394,12 +394,12 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                 {selectedCourseId !== undefined ? (
                   <>
                     <h1 className="text-3xl font-bold text-white">{selectedCourseLabel}</h1>
-                    <p className="text-gray-400 mt-1">Assignments in this course</p>
+                    <p className="text-slate-400 mt-1">Assignments in this course</p>
                   </>
                 ) : (
                   <>
                     <h1 className="text-3xl font-bold text-white">My Courses</h1>
-                    <p className="text-gray-400 mt-1">Select a course to view and manage assignments</p>
+                    <p className="text-slate-400 mt-1">Select a course to view and manage assignments</p>
                   </>
                 )}
               </div>
@@ -417,14 +417,14 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                 </button>
                 <button
                   onClick={handleGenerateAssignment}
-                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                  className="inline-flex items-center px-4 py-2 bg-[#43ead6] text-[#051224] rounded-lg hover:bg-[#43ead6]/80 transition-all duration-300"
                 >
                   <Sparkles size={20} className="mr-2" />
                   Generate with AI
                 </button>
                 <button
                   onClick={handleCreateAssignment}
-                  className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-white/[0.08] hover:bg-white/10 text-white rounded-lg transition-colors"
                 >
                   <Plus size={20} />
                 </button>
@@ -451,7 +451,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
           {loadingCourses ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 size={32} className="text-teal-500 animate-spin" />
-              <span className="ml-3 text-gray-300">Loading courses...</span>
+              <span className="ml-3 text-slate-300">Loading courses...</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -487,19 +487,19 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
           {/* Statistics Cards */}
           {!loading && !error && assignments.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842]">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center">
                     <FileText size={24} className="text-white" />
                   </div>
                   <div className="ml-4">
                     <p className="text-2xl font-bold text-white">{assignments.length}</p>
-                    <p className="text-gray-400">Total Assignments</p>
+                    <p className="text-slate-400">Total Assignments</p>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842]">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                     <Users size={24} className="text-white" />
@@ -508,26 +508,26 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                     <p className="text-2xl font-bold text-white">
                       {assignments.reduce((sum, assignment) => sum + parseInt(assignment.shared_count || 0), 0)}
                     </p>
-                    <p className="text-gray-400">Students Reached</p>
+                    <p className="text-slate-400">Students Reached</p>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842]">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-[#43ead6]/40 to-[#43ead6]/20 rounded-lg flex items-center justify-center">
                     <Calendar size={24} className="text-white" />
                   </div>
                   <div className="ml-4">
                     <p className="text-2xl font-bold text-white">
                       {assignments.filter(a => a.status === 'published').length}
                     </p>
-                    <p className="text-gray-400">Published</p>
+                    <p className="text-slate-400">Published</p>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842]">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                     <Clock size={24} className="text-white" />
@@ -536,7 +536,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                     <p className="text-2xl font-bold text-white">
                       {assignments.filter(a => a.status === 'draft').length}
                     </p>
-                    <p className="text-gray-400">Drafts</p>
+                    <p className="text-slate-400">Drafts</p>
                   </div>
                 </div>
               </div>
@@ -547,7 +547,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 size={32} className="text-teal-500 animate-spin" />
-              <span className="ml-3 text-gray-300">Loading assignments...</span>
+              <span className="ml-3 text-slate-300">Loading assignments...</span>
             </div>
           )}
 
@@ -568,9 +568,9 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
           {/* Empty State */}
           {!loading && !error && assignments.length === 0 && (
             <div className="text-center py-16">
-              <FileText size={48} className="text-gray-600 mx-auto mb-4" />
+              <FileText size={48} className="text-slate-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">No Assignments Yet</h3>
-              <p className="text-gray-400 mb-6">Create your first assignment in this course</p>
+              <p className="text-slate-400 mb-6">Create your first assignment in this course</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={handleParseFromDocument}
@@ -581,7 +581,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                 </button>
                 <button
                   onClick={handleGenerateAssignment}
-                  className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                  className="inline-flex items-center px-5 py-2.5 bg-[#43ead6] text-[#051224] rounded-lg hover:bg-[#43ead6]/80 transition-all duration-300"
                 >
                   <Sparkles size={20} className="mr-2" />
                   Generate with AI
@@ -596,40 +596,40 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
               {assignments.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg flex flex-col"
+                  className="bg-[#0d1f38] rounded-xl p-6 border border-[#182842] hover:border-[#1a2943] transition-all duration-300 hover:shadow-lg flex flex-col"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-2">{assignment.title}</h3>
-                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">{assignment.description}</p>
+                      <p className="text-slate-400 text-sm mb-3 line-clamp-2">{assignment.description}</p>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       assignment.status === 'published' 
                         ? 'bg-green-500/20 text-green-400' 
                         : assignment.status === 'draft'
                         ? 'bg-orange-500/20 text-orange-400'
-                        : 'bg-gray-500/20 text-gray-400'
+                        : 'bg-white/10 text-slate-400'
                     }`}>
                       {assignment.status}
                     </span>
                   </div>
 
                   <div className="space-y-2 mb-4 flex-1">
-                    <div className="flex items-center text-sm text-gray-400">
+                    <div className="flex items-center text-sm text-slate-400">
                       <Calendar size={16} className="mr-2" />
                       <span>Created: {new Date(assignment.created_at).toLocaleDateString()}</span>
                     </div>
                     {assignment.due_date && (
-                      <div className="flex items-center text-sm text-gray-400">
+                      <div className="flex items-center text-sm text-slate-400">
                         <Clock size={16} className="mr-2" />
                         <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
                       </div>
                     )}
-                    <div className="flex items-center text-sm text-gray-400">
+                    <div className="flex items-center text-sm text-slate-400">
                       <Plus size={16} className="mr-2" />
                       <span>{assignment.total_questions} questions ({assignment.total_points} points)</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-400">
+                    <div className="flex items-center text-sm text-slate-400">
                       <Users size={16} className="mr-2" />
                       <span>{assignment.shared_count || 0} students</span>
                     </div>
@@ -640,7 +640,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                         assignment.engineering_level === 'mbbs_preclinical' ? 'bg-green-500/20 text-green-300' :
                         assignment.engineering_level === 'mbbs_clinical' ? 'bg-teal-500/20 text-teal-300' :
                         assignment.engineering_level === 'md' ? 'bg-purple-500/20 text-purple-300' :
-                        'bg-blue-500/20 text-blue-300'
+                        'bg-[#43ead6]/15 text-[#43ead6]'
                       }`}>
                         {assignment.engineering_level === 'graduate' ? 'Graduate' :
                          assignment.engineering_level === 'pre_med' ? 'Pre-Med' :
@@ -652,19 +652,19 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {(assignment.question_types || []).map((type, index) => (
-                        <span key={index} className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">
+                        <span key={index} className="px-2 py-1 bg-white/[0.08] text-slate-300 text-xs rounded">
                           {type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-700 mt-auto">
+                  <div className="flex items-center justify-between pt-4 border-t border-[#1a2943] mt-auto">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditAssignment(assignment)}
                         disabled={loadingEdit}
-                        className="p-2 text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 text-slate-400 hover:text-[#43ead6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Edit Assignment"
                       >
                         {loadingEdit ? (
@@ -677,7 +677,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                       {!assignment.course_id && assignment.status === 'published' && (
                         <button
                           onClick={() => handleShareAssignment(assignment)}
-                          className="p-2 text-gray-400 hover:text-green-400 transition-colors"
+                          className="p-2 text-slate-400 hover:text-green-400 transition-colors"
                           title="Share Assignment"
                         >
                           <Share2 size={16} />
@@ -685,7 +685,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                       )}
                       <button
                         onClick={() => handleDeleteAssignment(assignment.id)}
-                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                        className="p-2 text-slate-400 hover:text-red-400 transition-colors"
                         title="Delete Assignment"
                       >
                         <Trash2 size={16} />
@@ -702,7 +702,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
                       <button
                         onClick={() => handleDownloadPDF(assignment)}
                         disabled={downloadingPDF === assignment.id}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 bg-[#43ead6] hover:bg-[#43ead6]/90 text-[#051224] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Download assignment PDF"
                       >
                         {downloadingPDF === assignment.id ? (

@@ -1794,7 +1794,7 @@ const AssignmentSubmissions = ({ assignment, onBack, onNavigateToHome }) => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="flex-1 px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 px-4 py-3 bg-[#1a2943] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Submissions</option>
                 <option value="processing">Processing</option>

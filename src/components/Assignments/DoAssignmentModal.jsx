@@ -3627,7 +3627,7 @@ const DoAssignmentModal = ({ assignment, onClose, onAssignmentUpdate }) => {
                   value={submissionMethod}
                   onChange={(e) => setSubmissionMethod(e.target.value)}
                   disabled={isAlreadySubmitted}
-                  className={`px-3 py-1 bg-white/5 border border-[#1a2943] rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                  className={`px-3 py-1 bg-[#1a2943] border border-[#1a2943] rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                     isAlreadySubmitted ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >

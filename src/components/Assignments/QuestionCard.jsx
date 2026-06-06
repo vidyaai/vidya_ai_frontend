@@ -1166,7 +1166,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-[#1a2943] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1358,7 +1358,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-[#1a2943] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1510,7 +1510,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-[#1a2943] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1649,7 +1649,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-[#1a2943] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1794,7 +1794,7 @@ const QuestionCard = ({
                     <select
                       value={question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-[#1a2943] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -1921,7 +1921,7 @@ const QuestionCard = ({
                 <select
                   value={question.codeLanguage || 'python'}
                   onChange={(e) => handleCodeLanguageChange(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-[#0d1f38] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="python">Python</option>
                   <option value="java">Java</option>
@@ -1941,7 +1941,7 @@ const QuestionCard = ({
                 <select
                   value={question.outputType || 'code'}
                   onChange={(e) => onUpdate({ outputType: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-[#0d1f38] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="code">Complete Code</option>
                   <option value="function">Function Only</option>
@@ -2299,7 +2299,7 @@ const QuestionCard = ({
                     <select
                       value={question.mainCodeLanguage || question.codeLanguage || 'python'}
                       onChange={(e) => onUpdate({ mainCodeLanguage: e.target.value, codeLanguage: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/[0.08] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-[#1a2943] border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="python">Python</option>
                       <option value="java">Java</option>
@@ -2453,7 +2453,7 @@ const QuestionCard = ({
                         <select
                           value={subq.type || 'short-answer'}
                           onChange={(e) => handleSubquestionChange(subIndex, 'type', e.target.value)}
-                          className="px-3 py-2 bg-white/10 border border-white/25 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 focus:border-transparent"
+                          className="px-3 py-2 bg-[#414f63] border border-white/25 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50 focus:border-transparent"
                         >
                           <option value="short-answer">Short Answer</option>
                           <option value="multiple-choice">Multiple Choice</option>
@@ -2469,7 +2469,7 @@ const QuestionCard = ({
                           <select
                             value={subq.codeLanguage || 'python'}
                             onChange={(e) => handleSubquestionChange(subIndex, 'codeLanguage', e.target.value)}
-                            className="px-3 py-2 bg-white/10 border border-white/25 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="px-3 py-2 bg-[#414f63] border border-white/25 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           >
                             <option value="python">Python</option>
                             <option value="java">Java</option>
@@ -2929,7 +2929,7 @@ const QuestionCard = ({
                                     newSubSubquestions[subSubIndex] = { ...newSubSubquestions[subSubIndex], type: e.target.value };
                                     handleSubquestionChange(subIndex, 'subquestions', newSubSubquestions);
                                   }}
-                                  className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50"
+                                  className="w-full px-2 py-1 bg-[#546173] border border-white/20 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#43ead6]/50"
                                 >
                                   <option value="short-answer">Short Answer</option>
                                   <option value="multiple-choice">Multiple Choice</option>

@@ -846,7 +846,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 <select
                   value={engineeringLevel}
                   onChange={(e) => setEngineeringLevel(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
+                  className="w-full px-4 py-3 bg-[#1a2943] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
                 >
                   <option value="">None</option>
                   {subjectCategory === 'medical' ? (
@@ -871,7 +871,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                 <select
                   value={engineeringDiscipline}
                   onChange={(e) => setEngineeringDiscipline(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
+                  className="w-full px-4 py-3 bg-[#1a2943] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
                 >
                   <option value="">None</option>
                   {subjectCategory === 'engineering' && (
@@ -931,7 +931,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     <select
                       value={engineeringLevel}
                       onChange={(e) => setEngineeringLevel(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
+                      className="w-full px-4 py-3 bg-[#1a2943] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
                     >
                       <option value="">None</option>
                       {subjectCategory === 'medical' ? (
@@ -956,7 +956,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
                     <select
                       value={engineeringDiscipline}
                       onChange={(e) => setEngineeringDiscipline(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
+                      className="w-full px-4 py-3 bg-[#1a2943] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
                     >
                       <option value="">None</option>
                       {subjectCategory === 'engineering' && (
@@ -1005,7 +1005,7 @@ const AIAssignmentGeneratorWizard = ({ onBack, onNavigateToHome, onContinueToBui
               <select
                 value={difficultyLevel}
                 onChange={(e) => setDifficultyLevel(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
+                className="w-full px-4 py-3 bg-[#1a2943] border border-[#1a2943] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#43ead6]/50"
               >
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>

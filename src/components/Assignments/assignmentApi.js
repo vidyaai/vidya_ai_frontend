@@ -462,6 +462,15 @@ export const assignmentApi = {
   },
 
   // Delete a diagram file
+  async regenerateDiagram(assignmentId, payload) {
+    const response = await api.post(
+      `/api/assignments/${assignmentId}/diagrams/regenerate`,
+      payload,
+      { headers: { 'ngrok-skip-browser-warning': 'true' } }
+    );
+    return response.data.diagram;
+  },
+
   async deleteDiagram(fileId, assignmentId = null) {
     const url = assignmentId
       ? `/api/assignments/diagrams/${fileId}?assignment_id=${assignmentId}`

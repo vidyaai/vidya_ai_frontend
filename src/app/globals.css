@@ -31,6 +31,13 @@ body {
   min-height: 100vh;
 }
 
+/* Embed routes report document.body.scrollHeight to the host page so its
+   iframe can size to fit (see useEmbedResize) - min-height: 100vh would
+   pin the iframe at whatever height the host initially gave it. */
+body.vidya-embed {
+  min-height: 0;
+}
+
 body {
   color: rgb(255, 255, 255);
   background: rgb(3, 7, 18);

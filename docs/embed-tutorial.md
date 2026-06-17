@@ -3,9 +3,10 @@
 A hands-on, step-by-step walkthrough for testing the Vidya AI iframe embed
 against a plain HTML page, a React (Vite) app, and a Next.js app, all running
 locally. For the customer-facing reference (just the snippets, no walkthrough),
-see [embed-integration.md](../../vidya_ai_backend/embed-integration.md). For
-internal backend test setup, see
-[embed-integration-dev-testing.md](../../vidya_ai_backend/embed-integration-dev-testing.md).
+see [embed-integration.md](https://github.com/vidyaai/vidya_ai_backend/blob/frontend_render/embed-integration.md)
+in the `vidya_ai_backend` repo. For internal backend test setup, see
+[embed-integration-dev-testing.md](https://github.com/vidyaai/vidya_ai_backend/blob/frontend_render/embed-integration-dev-testing.md)
+there too.
 
 Runnable example projects for every section below live in
 [`docs/examples/`](./examples/).
@@ -338,5 +339,5 @@ Once you're happy locally, the only things that change:
    side, and the `e.origin` check on the host page, to the real Vidya origin
    (already done in the examples above).
 
-See [embed-integration.md](../../vidya_ai_backend/embed-integration.md) for
-the customer-facing version of these snippets.
+See [embed-integration.md](https://github.com/vidyaai/vidya_ai_backend/blob/frontend_render/embed-integration.md)
+for the customer-facing version of these snippets.

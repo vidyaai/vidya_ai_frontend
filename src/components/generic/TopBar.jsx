@@ -154,7 +154,7 @@ const TopBar = ({ onNavigateToHome }) => {
   );
 
   return (
-    <header className="bg-[#071224]/90 backdrop-blur-md border-b border-[#12213a]">
+    <header className="relative z-50 bg-[#071224]/90 backdrop-blur-md border-b border-[#12213a]">
       {isNavigatingHome && (
         <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <svg className="animate-spin" width="80" height="80" viewBox="0 0 80 80">

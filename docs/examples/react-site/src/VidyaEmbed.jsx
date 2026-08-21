@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 // Origin of YOUR running Vidya AI frontend (https://vidyaai.co in production).
-const VIDYA_BASE = 'http://localhost:3000'
+const VIDYA_BASE = 'http://54.153.26.252:3000'
 
 // Stand-in for YOUR backend's token-minting endpoint - see ../mint-server.js.
 // A real customer backend mints this after checking its own login session.

@@ -32,6 +32,19 @@ export { API_URL };
 // Shared axios instance with Firebase ID token attached when available
 export const api = axios.create({ baseURL: API_URL });
 
+// Dedupe concurrent forced refreshes - if several requests 401 at once, only one
+// real getIdToken(true) call should hit Firebase; the rest await the same promise.
+let refreshPromise = null;
+
+export function refreshIdToken() {
+  if (!refreshPromise) {
+    refreshPromise = auth.currentUser
+      .getIdToken(true)
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
 api.interceptors.request.use(async (config) => {
   try {
     const user = auth?.currentUser;
@@ -46,10 +59,31 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Response interceptor to handle 429 errors with better messaging
+// Response interceptor: force-refresh and retry once on a 401 (expired/stale
+// ID token), then handle 429 errors with better messaging
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      auth?.currentUser &&
+      originalRequest &&
+      !originalRequest._retried
+    ) {
+      originalRequest._retried = true;
+      try {
+        const token = await refreshIdToken();
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      } catch {
+        // Refresh itself failed (e.g. revoked token) - fall through and
+        // reject with the original 401 below.
+      }
+    }
+
     if (error.response && error.response.status === 429) {
       const detail = error.response.data?.detail;
       

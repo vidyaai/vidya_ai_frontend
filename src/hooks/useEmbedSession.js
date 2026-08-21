@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signInWithCustomToken } from 'firebase/auth';
-import { auth, api } from '@/components/generic/utils.jsx';
+import { auth, api, refreshIdToken } from '@/components/generic/utils.jsx';
 import { useAuth } from '@/context/AuthContext';
 
 const INITIAL_STATE = { status: 'loading', error: null, courseId: null, videoId: null, userType: null };
@@ -27,6 +27,7 @@ export function useEmbedSession() {
 
   useEffect(() => {
     let cancelled = false;
+    let heartbeatId = null;
 
     async function exchange() {
       if (!auth) {
@@ -54,6 +55,14 @@ export function useEmbedSession() {
           videoId: video_id ?? null,
           userType: user_type ?? null,
         });
+
+        // Firebase ID tokens last 1hr, and the SDK's own background refresh
+        // timer can be throttled in a backgrounded/inactive iframe tab, with
+        // no recovery path. Force a real refresh well before expiry so the
+        // embed session never goes stale during a long-running tab.
+        heartbeatId = setInterval(() => {
+          if (auth.currentUser) refreshIdToken().catch(() => {});
+        }, 10 * 60 * 1000); // 10 min, comfortably under the 60 min ID token TTL
       } catch (err) {
         if (cancelled) return;
         const detail = err?.response?.data?.detail;
@@ -65,6 +74,7 @@ export function useEmbedSession() {
     exchange();
     return () => {
       cancelled = true;
+      if (heartbeatId) clearInterval(heartbeatId);
     };
   }, [token, isDemo]);
 

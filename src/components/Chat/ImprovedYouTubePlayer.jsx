@@ -7,7 +7,7 @@ import InteractivePanel from './InteractivePanel';
 import { API_URL, saveToLocalStorage, loadFromLocalStorage, api } from '../generic/utils.jsx';
 import VideoUploader from './VideoUploader.jsx';
 
-const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGallery, onClearVideo }) => {
+const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome = undefined, onNavigateToGallery = undefined, onClearVideo = undefined, embed = false }) => {
   const [navigatingTo, setNavigatingTo] = useState(null);
 
   useEffect(() => {
@@ -690,7 +690,8 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
           </svg>
         </div>
       )}
-      {/* Top Navigation Bar */}
+      {/* Top Navigation Bar - hidden in embed mode, there's nowhere for these links to go */}
+      {!embed && (
       <div className="flex items-center gap-3 mb-4">
         {/* Menu Button */}
         <div className="relative" ref={menuRef}>
@@ -754,6 +755,7 @@ const ImprovedYoutubePlayer = ({ selectedVideo, onNavigateToHome, onNavigateToGa
           </button>
         )}
       </div>
+      )}
 
       <form onSubmit={handleYoutubeSubmit} className="mb-4">
         <div className="flex items-center gap-2">

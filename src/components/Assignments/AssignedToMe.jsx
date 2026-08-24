@@ -20,7 +20,7 @@ import CourseCard from '../Courses/CourseCard';
 import StudentCourseView from '../Courses/StudentCourseView';
 import { courseApi } from '../Courses/courseApi';
 
-const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSection }) => {
+const AssignedToMe = ({ onBack = undefined, onNavigateToHome = undefined, initialCourseId, initialSection, embed = false }) => {
   const [isGoingBack, setIsGoingBack] = useState(false);
 
   useEffect(() => {
@@ -261,7 +261,7 @@ const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSectio
   }
 
   return (
-    <div className="min-h-screen bg-[#071224]">
+    <div className={`${embed ? '' : 'min-h-screen'} bg-[#071224]`}>
       {isGoingBack && (
         <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -285,12 +285,14 @@ const AssignedToMe = ({ onBack, onNavigateToHome, initialCourseId, initialSectio
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setIsGoingBack(true)}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft size={24} />
-              </button>
+              {!embed && (
+                <button
+                  onClick={() => setIsGoingBack(true)}
+                  className="p-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={24} />
+                </button>
+              )}
               <div>
                 <h1 className="text-3xl font-bold text-white">Assigned to Me</h1>
                 <p className="text-slate-400 mt-2">Complete assignments shared with you</p>

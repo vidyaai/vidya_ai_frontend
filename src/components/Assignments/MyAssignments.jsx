@@ -28,7 +28,7 @@ import CreateCourseModal from '../Courses/CreateCourseModal';
 import CourseDetailView from '../Courses/CourseDetailView';
 import { courseApi } from '../Courses/courseApi';
 
-const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSection }) => {
+const MyAssignments = ({ onBack = undefined, onNavigateToHome = undefined, initialCourseId, initialSection, embed = false }) => {
   const [isGoingBack, setIsGoingBack] = useState(false);
 
   useEffect(() => {
@@ -360,7 +360,7 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
       })();
 
   return (
-    <div className="min-h-screen bg-[#071224]">
+    <div className={`${embed ? '' : 'min-h-screen'} bg-[#071224]`}>
       {isGoingBack && (
         <div className="fixed inset-0 z-50 bg-[#071224] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -384,12 +384,14 @@ const MyAssignments = ({ onBack, onNavigateToHome, initialCourseId, initialSecti
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={selectedCourseId !== undefined ? () => setSelectedCourseId(undefined) : () => setIsGoingBack(true)}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft size={24} />
-              </button>
+              {(selectedCourseId !== undefined || !embed) && (
+                <button
+                  onClick={selectedCourseId !== undefined ? () => setSelectedCourseId(undefined) : () => setIsGoingBack(true)}
+                  className="p-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={24} />
+                </button>
+              )}
               <div>
                 {selectedCourseId !== undefined ? (
                   <>

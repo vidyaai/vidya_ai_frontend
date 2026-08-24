@@ -450,9 +450,7 @@ export const assignmentApi = {
 
   // Get a diagram file URL synchronously (for immediate display) - deprecated, use async version
   getDiagramUrlSync(fileId, assignmentId = null) {
-    const baseUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:8000' 
-      : '';
+    const baseUrl = api.defaults.baseURL || window.location.origin;
     
     const url = assignmentId
       ? `${baseUrl}/api/assignments/diagrams/${fileId}?assignment_id=${assignmentId}`

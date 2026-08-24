@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Vidya AI Embed - Plain HTML Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    iframe { width: 100%; border: 0; display: block; border-radius: 8px; }
+    .controls { margin-bottom: 16px; display: flex; gap: 8px; }
+    button { padding: 8px 14px; cursor: pointer; }
+    #status { color: #666; font-size: 14px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Vidya AI &mdash; HTML Embed Test</h1>
+  <p>This page stands in for a third-party site (e.g. a coaching institute's
+     student dashboard) embedding Vidya AI via an iframe.</p>
+
+  <div class="controls">
+    <button id="demo-btn">Load demo mode (no token)</button>
+    <button id="auth-btn">Load authenticated mode (mint a token)</button>
+  </div>
+  <div id="status"></div>
+  <iframe id="vidya-frame" title="Vidya AI" style="height: 600px;"
+          allow="microphone; camera; clipboard-write"></iframe>
+
+  <script>
+    // Origin of YOUR running Vidya AI frontend. In production this is
+    // https://vidyaai.co - here it's the local dev server from
+    // `npm run dev` in vidya_ai_frontend.
+    const VIDYA_BASE = 'http://localhost:3000';
+
+    // Stand-in for YOUR backend's token-minting endpoint (see mint-server.js
+    // one level up). A real customer backend would mint this after checking
+    // its own login session, not from an open unauthenticated endpoint.
+    const MINT_SERVER = 'http://localhost:4001/mint-token?sub=html-demo-user';
+
+    const frame = document.getElementById('vidya-frame');
+    const status = document.getElementById('status');
+
+    // Auto-resize: Vidya posts {type: 'vidya-resize', height} on content changes.
+    window.addEventListener('message', (e) => {
+      if (e.origin !== VIDYA_BASE) return;
+      if (e.data && e.data.type === 'vidya-resize') {
+        frame.style.height = e.data.height + 'px';
+      }
+    });
+
+    document.getElementById('demo-btn').addEventListener('click', () => {
+      status.textContent = 'Loading demo session...';
+      frame.src = `${VIDYA_BASE}/embed/chat?demo=true`;
+      status.textContent = 'Demo mode loaded.';
+    });
+
+    document.getElementById('auth-btn').addEventListener('click', async () => {
+      status.textContent = 'Minting token...';
+      try {
+        const res = await fetch(MINT_SERVER);
+        if (!res.ok) throw new Error(`mint-server returned ${res.status}`);
+        const { token } = await res.json();
+        // v=dQw4w9WgXcQ pre-selects a YouTube video, same as the `video`
+        // JWT claim would in a real integration.
+        frame.src = `${VIDYA_BASE}/embed/chat?token=${token}&v=dQw4w9WgXcQ`;
+        status.textContent = 'Authenticated session loaded.';
+      } catch (err) {
+        status.textContent = `Failed to load: ${err.message}. Is mint-server.js running on port 4001?`;
+      }
+    });
+  </script>
+</body>
+</html>

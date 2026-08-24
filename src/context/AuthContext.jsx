@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState(null);
   const [userTypeLoading, setUserTypeLoading] = useState(false);
+  // True while rendering inside a third-party embed iframe — used to suppress
+  // top nav / account chrome that has no business being shown inside a host site.
+  const [isEmbed, setIsEmbed] = useState(false);
 
   // Check if Firebase is properly configured
   const isFirebaseConfigured = auth !== null;
@@ -227,6 +230,10 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, [isFirebaseConfigured]);
 
+  useEffect(() => {
+    document.body.classList.toggle('vidya-embed', isEmbed);
+  }, [isEmbed]);
+
   const value = {
     currentUser,
     loading,
@@ -238,7 +245,9 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     logout,
     resetPassword,
-    isFirebaseConfigured
+    isFirebaseConfigured,
+    isEmbed,
+    setIsEmbed
   };
 
   return (

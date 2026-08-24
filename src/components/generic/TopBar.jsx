@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_URL } from './utils';
 
 const TopBar = ({ onNavigateToHome }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isEmbed } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -57,12 +57,15 @@ const TopBar = ({ onNavigateToHome }) => {
   };
 
   useEffect(() => {
-    if (currentUser) fetchSubscription();
-  }, [currentUser]);
+    if (currentUser && !isEmbed) fetchSubscription();
+  }, [currentUser, isEmbed]);
 
   useEffect(() => {
-    if (isUserDropdownOpen && currentUser) fetchSubscription();
-  }, [isUserDropdownOpen, currentUser]);
+    if (isUserDropdownOpen && currentUser && !isEmbed) fetchSubscription();
+  }, [isUserDropdownOpen, currentUser, isEmbed]);
+
+  // Embed pages render entirely without Vidya's top nav / account chrome.
+  if (isEmbed) return null;
 
   const handleLogout = async () => {
     try {
